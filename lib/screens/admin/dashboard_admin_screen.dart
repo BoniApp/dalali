@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:dalali/services/admin/admin_service.dart';
 import 'package:dalali/utils/helpers.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:dalali/services/supabase_service.dart';
 
 class DashboardAdminScreen extends StatelessWidget {
   const DashboardAdminScreen({super.key});
@@ -165,16 +166,16 @@ class _RevenueCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 16),
-            StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('transactions')
-                  .where('status', isEqualTo: 'completed')
-                  .snapshots(),
+            StreamBuilder<List<Map<String, dynamic>>>(
+              stream: SupabaseService.client
+                  .from('transactions')
+                  .stream(primaryKey: ['id'])
+                  .eq('status', 'completed')
+                  .map((rows) => rows),
               builder: (context, snapshot) {
-                final docs = snapshot.data?.docs ?? [];
+                final docs = snapshot.data ?? [];
                 final totalRevenue = docs.fold<double>(0, (total, d) {
-                  final data = d.data() as Map<String, dynamic>;
-                  return total + ((data['amount'] as num?)?.toDouble() ?? 0);
+                  return total + ((d['amount'] as num?)?.toDouble() ?? 0);
                 });
                 final platformShare = totalRevenue * 0.40;
                 final agentShare = totalRevenue * 0.60;
