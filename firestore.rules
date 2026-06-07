@@ -1,0 +1,473 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ═══════════════════════════════════════════════════════════
+    //  HELPER FUNCTIONS
+    // ═══════════════════════════════════════════════════════════
+
+    function isAuth() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return isAuth() && request.auth.uid == uid;
+    }
+
+    function getUserRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+
+    function isRole(role) {
+      return isAuth() && getUserRole() == role;
+    }
+
+    function isLandlord()  { return isRole('landlord'); }
+    function isAgent()     { return isRole('agent'); }
+    function isSeeker()    { return isRole('seeker'); }
+    function isAdmin()     {
+      return isAuth()
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+    }
+
+    function incomingData() {
+      return request.resource.data;
+    }
+
+    function existingData() {
+      return resource.data;
+    }
+
+    function hasOnly(fields) {
+      return incomingData().keys().hasAll(fields)
+          && incomingData().keys().hasOnly(fields);
+    }
+
+    function isValidString(field) {
+      return incomingData()[field] is string
+          && incomingData()[field].size() > 0
+          && incomingData()[field].size() < 2000;
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    //  USERS
+    // ═══════════════════════════════════════════════════════════
+
+    match /users/{userId} {
+      allow read: if isAuth();
+      allow create: if isOwner(userId)
+        && incomingData().keys().hasAll(['fullName','email','phone','role','createdAt'])
+        && incomingData().role in ['seeker','landlord','agent']
+        && (!('isApproved' in incomingData().keys()))
+        && (!('isBoosted' in incomingData().keys()));
+
+      allow update: if (isOwner(userId) || isAdmin())
+        && (!('isApproved' in incomingData().diff(existingData()).affectedKeys()))
+        && (!('role' in incomingData().diff(existingData()).affectedKeys()) || isAdmin());
+
+      allow delete: if isAdmin();
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    //  PROPERTIES
+    // ═══════════════════════════════════════════════════════════
+
+    match /properties/{propertyId} {
+      allow read: if true;
+
+      allow create: if isAuth()
+        && (isLandlord() || isAgent())
+        && incomingData().landlordId == request.auth.uid
+        && incomingData().isApproved == false
+        && incomingData().viewCount == 0
+        && incomingData().inquiryCount == 0
+        && incomingData().rating == 0
+        && incomingData().reviewCount == 0
+        && isValidString('title')
+        && isValidString('location');
+
+      allow update: if isAuth()
+        && (request.auth.uid == existingData().landlordId || isAdmin())
+        && (!('isApproved' in incomingData().diff(existingData()).affectedKeys()) || isAdmin())
+        && (!('isBoosted' in incomingData().diff(existingData()).affectedKeys()) || isAdmin())
+        && (!('boostExpiresAt' in incomingData().diff(existingData()).affectedKeys()) || isAdmin())
+        && (!('viewCount' in incomingData().diff(existingData()).affectedKeys()) || isAdmin())
+        && (!('inquiryCount' in incomingData().diff(existingData()).affectedKeys()) || isAdmin())
+        && (!('rating' in incomingData().diff(existingData()).affectedKeys()) || isAdmin())
+        && (!('reviewCount' in incomingData().diff(existingData()).affectedKeys()) || isAdmin());
+
+      allow delete: if isAuth()
+        && (request.auth.uid == existingData().landlordId || isAdmin());
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    //  FAVORITES
+    // ═══════════════════════════════════════════════════════════
+
+    match /favorites/{favoriteId} {
+      allow read: if isAuth();
+      allow create: if isAuth()
+        && incomingData().userId == request.auth.uid;
+      allow delete: if isAuth()
+        && existingData().userId == request.auth.uid;
+      allow update: if false;
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    //  APPOINTMENTS
+    // ═══════════════════════════════════════════════════════════
+
+    match /appointments/{appointmentId} {
+      allow read: if isAuth()
+        && (existingData().seekerId == request.auth.uid
+            || existingData().landlordId == request.auth.uid);
+
+      allow create: if isAuth()
+        && incomingData().seekerId == request.auth.uid;
+
+      allow update: if isAuth()
+        && (existingData().seekerId == request.auth.uid
+            || existingData().landlordId == request.auth.uid
+            || isAdmin());
+
+      allow delete: if isAdmin();
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    //  INQUIRIES
+    // ═══════════════════════════════════════════════════════════
+
+    match /inquiries/{inquiryId} {
+      allow read: if isAuth()
+        && (existingData().seekerId == request.auth.uid
+            || get(/databases/$(database)/documents/properties/$(existingData().propertyId)).data.landlordId == request.auth.uid
+            || isAdmin());
+
+      allow create: if isAuth()
+        && incomingData().seekerId == request.auth.uid
+        && isValidString('message');
+
+      allow update: if isAuth()
+        && (existingData().seekerId == request.auth.uid
+            || get(/databases/$(database)/documents/properties/$(existingData().propertyId)).data.landlordId == request.auth.uid
+            || isAdmin());
+
+      allow delete: if isAdmin();
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    //  HTN: MOVE LISTINGS
+    // ═══════════════════════════════════════════════════════════
+
+    match /move_listings/{moveId} {
+      // Public read for active/planning moves
+      allow read: if true;
+
+      allow create: if isAuth()
+        && incomingData().userId == request.auth.uid
+        && isValidString('currentPropertyTitle')
+        && isValidString('currentLocation');
+
+      allow update: if isAuth()
+        && (existingData().userId == request.auth.uid || isAdmin());
+
+      allow delete: if isAuth()
+        && (existingData().userId == request.auth.uid || isAdmin());
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    //  HTN: REVIEWS
+    // ═══════════════════════════════════════════════════════════
+
+    match /reviews/{reviewId} {
+      allow read: if true;
+
+      // Anyone authenticated can create a review, but app layer enforces verified stays
+      allow create: if isAuth()
+        && incomingData().reviewerId == request.auth.uid
+        && incomingData().cleanliness >= 1 && incomingData().cleanliness <= 5
+        && incomingData().valueForMoney >= 1 && incomingData().valueForMoney <= 5
+        && incomingData().safety >= 1 && incomingData().safety <= 5
+        && incomingData().communication >= 1 && incomingData().communication <= 5
+        && incomingData().fairness >= 1 && incomingData().fairness <= 5
+        && incomingData().maintenance >= 1 && incomingData().maintenance <= 5;
+
+      allow update: if isAuth() && existingData().reviewerId == request.auth.uid;
+      allow delete: if isAdmin();
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    //  HTN: NEIGHBOURHOOD REPORTS
+    // ═══════════════════════════════════════════════════════════
+
+    match /neighbourhood_reports/{reportId} {
+      // Public read for all active reports
+      allow read: if true;
+
+      allow create: if isAuth()
+        && incomingData().reporterId == request.auth.uid
+        && isValidString('location')
+        && incomingData().severity in ['low','medium','high','critical']
+        && incomingData().type in ['theft','noise','scam','hazard','assault','vandalism','other'];
+
+      allow update: if isAuth()
+        && (existingData().reporterId == request.auth.uid || isAdmin());
+
+      allow delete: if isAdmin();
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    //  HTN: REWARDS
+    // ═══════════════════════════════════════════════════════════
+
+    match /rewards/{rewardId} {
+      allow read: if isAuth()
+        && (existingData().userId == request.auth.uid || isAdmin());
+
+      // Only server/cloud functions or admins create rewards
+      allow create: if isAdmin();
+
+      allow update: if isAuth()
+        && existingData().userId == request.auth.uid
+        && (!('points' in incomingData().diff(existingData()).affectedKeys()))
+        && (!('type' in incomingData().diff(existingData()).affectedKeys()));
+
+      allow delete: if isAdmin();
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    //  TENANCY LIFECYCLE
+    // ═══════════════════════════════════════════════════════════
+
+    match /tenancy_applications/{applicationId} {
+      allow read: if isAuth()
+        && (existingData().tenantId == request.auth.uid
+            || existingData().landlordId == request.auth.uid
+            || isAdmin());
+
+      allow create: if isAuth()
+        && incomingData().tenantId == request.auth.uid
+        && incomingData().keys().hasAll(['propertyId','tenantId','landlordId','status','createdAt'])
+        && incomingData().status == 'pending';
+
+      allow update: if isAuth()
+        && ((existingData().landlordId == request.auth.uid
+             && incomingData().diff(existingData()).affectedKeys().hasOnly(['status']))
+            || (existingData().tenantId == request.auth.uid
+                && !('status' in incomingData().diff(existingData()).affectedKeys())
+                && !('landlordId' in incomingData().diff(existingData()).affectedKeys())
+                && !('tenantId' in incomingData().diff(existingData()).affectedKeys())
+                && !('propertyId' in incomingData().diff(existingData()).affectedKeys())
+                && !('createdAt' in incomingData().diff(existingData()).affectedKeys())));
+
+      allow delete: if isAdmin();
+    }
+
+    match /tenancies/{tenancyId} {
+      allow read: if isAuth()
+        && (existingData().tenantId == request.auth.uid
+            || existingData().landlordId == request.auth.uid
+            || isAdmin());
+
+      allow create: if isAuth()
+        && (isLandlord() || isAdmin())
+        && incomingData().landlordId == request.auth.uid
+        && incomingData().keys().hasAll(['tenantId','landlordId','propertyId','rentAmount','moveInDate','status']);
+
+      allow update: if isAuth()
+        && (existingData().landlordId == request.auth.uid || isAdmin())
+        && incomingData().diff(existingData()).affectedKeys().hasOnly(['status']);
+
+      allow delete: if isAdmin();
+    }
+
+    match /maintenance_requests/{requestId} {
+      allow read: if isAuth()
+        && (existingData().tenantId == request.auth.uid
+            || existingData().landlordId == request.auth.uid
+            || isAdmin());
+
+      allow create: if isAuth()
+        && incomingData().tenantId == request.auth.uid
+        && incomingData().keys().hasAll(['tenantId','landlordId','propertyId','status','description','createdAt'])
+        && incomingData().status == 'open';
+
+      allow update: if isAuth()
+        && ((existingData().landlordId == request.auth.uid
+             && incomingData().diff(existingData()).affectedKeys().hasOnly(['status']))
+            || (existingData().tenantId == request.auth.uid
+                && existingData().status == 'open'
+                && incomingData().diff(existingData()).affectedKeys().hasOnly(['description','photos'])));
+
+      allow delete: if isAdmin();
+    }
+
+    match /rent_schedules/{scheduleId} {
+      allow read: if isAuth()
+        && (existingData().tenantId == request.auth.uid
+            || existingData().landlordId == request.auth.uid
+            || isAdmin());
+
+      allow create: if isAuth()
+        && (isLandlord() || isAdmin())
+        && incomingData().landlordId == request.auth.uid
+        && incomingData().keys().hasAll(['tenancyId','tenantId','landlordId','dueDate','amount','status'])
+        && incomingData().status == 'pending';
+
+      allow update: if isAuth()
+        && existingData().tenantId == request.auth.uid
+        && existingData().status == 'pending'
+        && incomingData().status == 'paid'
+        && incomingData().diff(existingData()).affectedKeys().hasOnly(['status']);
+
+      allow delete: if isAdmin();
+    }
+
+    match /move_checklists/{checklistId} {
+      allow read: if isAuth()
+        && (existingData().userId == request.auth.uid || isAdmin());
+
+      allow create: if isAuth()
+        && incomingData().userId == request.auth.uid
+        && incomingData().keys().hasAll(['userId','items']);
+
+      allow update: if isAuth()
+        && (existingData().userId == request.auth.uid || isAdmin())
+        && !('userId' in incomingData().diff(existingData()).affectedKeys());
+
+      allow delete: if isAdmin();
+    }
+
+    match /agreements/{agreementId} {
+      allow read: if isAuth()
+        && (existingData().tenantId == request.auth.uid
+            || existingData().landlordId == request.auth.uid
+            || isAdmin());
+
+      allow create: if isAuth()
+        && (incomingData().tenantId == request.auth.uid || incomingData().landlordId == request.auth.uid)
+        && incomingData().keys().hasAll(['tenancyId','tenantId','landlordId','content','createdAt']);
+
+      allow update: if false;
+
+      allow delete: if isAdmin();
+    }
+
+    match /handover_reports/{reportId} {
+      allow read: if isAuth()
+        && (existingData().tenantId == request.auth.uid
+            || existingData().landlordId == request.auth.uid
+            || isAdmin());
+
+      allow create: if isAuth()
+        && (incomingData().tenantId == request.auth.uid || incomingData().landlordId == request.auth.uid)
+        && incomingData().keys().hasAll(['tenancyId','tenantId','landlordId','condition','photos','createdAt']);
+
+      allow update: if false;
+
+      allow delete: if isAdmin();
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    //  WALLET SYSTEM (Financial Security)
+    // ═══════════════════════════════════════════════════════════
+
+    // Wallets: Users can ONLY read their own wallet.
+    // ALL balance mutations happen server-side via Firebase Functions.
+    match /wallets/{userId} {
+      allow read: if isOwner(userId);
+      allow create, update, delete: if false; // Server-only mutations
+    }
+
+    // Transactions: Append-only ledger.
+    // Users can read transactions they are party to (payer or payee).
+    // Only backend service accounts can create transactions.
+    match /transactions/{transactionId} {
+      allow read: if isAuth()
+        && (existingData().payerId == request.auth.uid
+            || existingData().payeeId == request.auth.uid
+            || isAdmin());
+
+      // Only allow creation if initiated by the payer (payment intent)
+      // Actual wallet crediting is done server-side
+      allow create: if isAuth()
+        && incomingData().payerId == request.auth.uid
+        && incomingData().status == 'pending'
+        && incomingData().keys().hasAll(['type','status','amount','currency','payerId','paymentMethod','createdAt']);
+
+      allow update: if false; // Server-only status updates
+      allow delete: if false; // Append-only, never delete
+    }
+
+    // Withdrawals: Users can create withdrawal requests.
+    // Only backend can update status.
+    match /withdrawals/{withdrawalId} {
+      allow read: if isAuth()
+        && (existingData().userId == request.auth.uid || isAdmin());
+
+      allow create: if isAuth()
+        && incomingData().userId == request.auth.uid
+        && incomingData().status == 'pending'
+        && incomingData().keys().hasAll(['userId','amount','phone','provider','status','createdAt']);
+
+      allow update: if false; // Server-only status updates
+      allow delete: if false;
+    }
+
+    // System Settings: Public read, admin-only write
+    match /systemSettings/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    //  ADMIN COLLECTIONS
+    // ═══════════════════════════════════════════════════════════
+
+    // Admin Logs: Append-only audit trail, admin read-only
+    match /adminLogs/{logId} {
+      allow read: if isAdmin();
+      allow create: if isAdmin();
+      allow update, delete: if false;
+    }
+
+    // Fraud Reports: Admin read/write
+    match /fraudReports/{reportId} {
+      allow read: if isAdmin();
+      allow create: if isAuth(); // Users can submit reports
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // Disputes: Admin read/write, involved parties read
+    match /disputes/{disputeId} {
+      allow read: if isAdmin()
+        || existingData().reporterId == request.auth.uid
+        || existingData().respondentId == request.auth.uid;
+
+      allow create: if isAuth();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // Admin override: admins can read all wallets for dashboard
+    match /wallets/{userId} {
+      allow read: if isAdmin();
+    }
+
+    // Admin override: admins can read all transactions for dashboard
+    match /transactions/{transactionId} {
+      allow read: if isAdmin();
+    }
+
+    // Admin override: admins can read all withdrawals for dashboard
+    match /withdrawals/{withdrawalId} {
+      allow read: if isAdmin();
+    }
+
+    // Admin override: admins can read all properties for dashboard
+    match /properties/{propertyId} {
+      allow read: if isAdmin();
+    }
+  }
+}
