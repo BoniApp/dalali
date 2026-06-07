@@ -16,7 +16,7 @@ import 'package:dalali/models/move_checklist_model.dart';
 import 'package:dalali/models/maintenance_request_model.dart';
 import 'package:dalali/models/rent_schedule_model.dart';
 import 'package:dalali/services/mock_data_service.dart';
-import 'package:dalali/services/firestore_service.dart';
+import 'package:dalali/services/data_service.dart';
 import 'package:dalali/services/auth_service.dart';
 import 'package:dalali/services/safety_engine.dart';
 
@@ -40,7 +40,7 @@ class AppState extends ChangeNotifier {
   List<RentScheduleModel> _rentSchedules = [];
 
   final AuthService _authService = AuthService();
-  final FirestoreService _firestore = FirestoreService();
+  final DataService _data = DataService();
 
   // Firestore stream subscriptions (cancelled on logout)
   final List<StreamSubscription> _subscriptions = [];
@@ -68,7 +68,7 @@ class AppState extends ChangeNotifier {
       if (user != null) {
         _authMode = AuthMode.supabase;
         // Load user profile from database
-        final userDoc = await _firestore.getUserById(user.id);
+        final userDoc = await _data.getUserById(user.id);
         if (userDoc != null) {
           currentUser = userDoc;
         } else {
@@ -81,7 +81,7 @@ class AppState extends ChangeNotifier {
             createdAt: DateTime.now(),
           );
         }
-        _subscribeToFirestore();
+        _subscribeToDatabase();
         notifyListeners();
       }
     });
@@ -223,7 +223,7 @@ class AppState extends ChangeNotifier {
     );
     if (existing >= 0) {
       _favorites.removeAt(existing);
-      if (_isFirebase) _firestore.removeFavorite(currentUser!.id, propertyId);
+      if (_isFirebase) _data.removeFavorite(currentUser!.id, propertyId);
     } else {
       _favorites.add(FavoriteModel(
         id: 'f${DateTime.now().millisecondsSinceEpoch}',
@@ -231,7 +231,7 @@ class AppState extends ChangeNotifier {
         propertyId: propertyId,
         createdAt: DateTime.now(),
       ));
-      if (_isFirebase) _firestore.addFavorite(currentUser!.id, propertyId);
+      if (_isFirebase) _data.addFavorite(currentUser!.id, propertyId);
     }
     notifyListeners();
   }
@@ -246,27 +246,27 @@ class AppState extends ChangeNotifier {
     if (_authMode == AuthMode.supabase) {
       _authService.signOut();
     }
-    _unsubscribeFromFirestore();
+    _unsubscribeFromDatabase();
     currentUser = null;
     _authMode = AuthMode.demo;
     notifyListeners();
   }
 
-  // ─── Firestore Stream Subscriptions ─────────────────────────
+  // ─── Database Stream Subscriptions ──────────────────────────
 
-  void _subscribeToFirestore() {
+  void _subscribeToDatabase() {
     if (currentUser == null) return;
-    _unsubscribeFromFirestore();
+    _unsubscribeFromDatabase();
 
     // Properties
-    _subscriptions.add(_firestore.getProperties(limit: 100).listen((list) {
+    _subscriptions.add(_data.getProperties(limit: 100).listen((list) {
       _properties = list;
       _recomputeSafetyScores();
       notifyListeners();
     }));
 
     // Favorites
-    _subscriptions.add(_firestore.getFavoritePropertyIds(currentUser!.id).listen((ids) {
+    _subscriptions.add(_data.getFavoritePropertyIds(currentUser!.id).listen((ids) {
       _favorites = ids.map((id) => FavoriteModel(
         id: 'f_$id',
         userId: currentUser!.id,
@@ -278,14 +278,14 @@ class AppState extends ChangeNotifier {
 
     // Appointments
     final isLandlord = currentUser!.role == UserRole.landlord || currentUser!.role == UserRole.agent;
-    _subscriptions.add(_firestore.getAppointments(currentUser!.id, isLandlord: isLandlord).listen((list) {
+    _subscriptions.add(_data.getAppointments(currentUser!.id, isLandlord: isLandlord).listen((list) {
       _appointments = list;
       notifyListeners();
     }));
 
     // Inquiries (landlord sees all for their properties)
     if (isLandlord) {
-      _subscriptions.add(_firestore.getInquiriesForLandlord(currentUser!.id).listen((list) {
+      _subscriptions.add(_data.getInquiriesForLandlord(currentUser!.id).listen((list) {
         _inquiries = list;
         notifyListeners();
       }));
@@ -362,7 +362,7 @@ class AppState extends ChangeNotifier {
     }));
   }
 
-  void _unsubscribeFromFirestore() {
+  void _unsubscribeFromDatabase() {
     for (final sub in _subscriptions) {
       sub.cancel();
     }
@@ -441,7 +441,7 @@ class AppState extends ChangeNotifier {
         reviewCount: newCount,
         rating: newRating,
       );
-      if (_isFirebase) _firestore.updateProperty(_properties[pIdx]);
+      if (_isFirebase) _data.updateProperty(_properties[pIdx]);
     }
     notifyListeners();
   }
@@ -450,7 +450,7 @@ class AppState extends ChangeNotifier {
 
   void addNeighbourhoodReport(NeighbourhoodReportModel report) {
     _neighbourhoodReports.add(report);
-    if (_isFirebase) _firestore.addNeighbourhoodReport(report);
+    if (_isFirebase) _data.addNeighbourhoodReport(report);
     // Recompute safety scores for nearby properties
     _recomputeSafetyScores();
     notifyListeners();
@@ -490,7 +490,7 @@ class AppState extends ChangeNotifier {
 
   void applyForTenancy(TenancyApplicationModel application) {
     _tenancyApplications.add(application);
-    if (_isFirebase) _firestore.addTenancyApplication(application);
+    if (_isFirebase) _data.addTenancyApplication(application);
     notifyListeners();
   }
 
@@ -502,7 +502,7 @@ class AppState extends ChangeNotifier {
         status: ApplicationStatus.approved,
         resolvedAt: DateTime.now(),
       );
-      if (_isFirebase) _firestore.updateApplicationStatus(applicationId, ApplicationStatus.approved);
+      if (_isFirebase) _data.updateApplicationStatus(applicationId, ApplicationStatus.approved);
       // Create tenancy record
       final property = _properties.firstWhere((p) => p.id == app.propertyId);
       final tenancy = TenancyModel(
@@ -522,12 +522,12 @@ class AppState extends ChangeNotifier {
         createdAt: DateTime.now(),
       );
       _tenancies.add(tenancy);
-      if (_isFirebase) _firestore.addTenancy(tenancy);
+      if (_isFirebase) _data.addTenancy(tenancy);
       // Mark property reserved
       final pIdx = _properties.indexWhere((p) => p.id == app.propertyId);
       if (pIdx >= 0) {
         _properties[pIdx] = property.copyWith(status: PropertyStatus.pending);
-        if (_isFirebase) _firestore.updateProperty(_properties[pIdx]);
+        if (_isFirebase) _data.updateProperty(_properties[pIdx]);
       }
       notifyListeners();
     }
@@ -541,7 +541,7 @@ class AppState extends ChangeNotifier {
         resolvedAt: DateTime.now(),
         notes: reason,
       );
-      if (_isFirebase) _firestore.updateApplicationStatus(applicationId, ApplicationStatus.rejected);
+      if (_isFirebase) _data.updateApplicationStatus(applicationId, ApplicationStatus.rejected);
       notifyListeners();
     }
   }
@@ -554,12 +554,12 @@ class AppState extends ChangeNotifier {
         status: TenancyStatus.active,
         activatedAt: DateTime.now(),
       );
-      if (_isFirebase) _firestore.updateTenancyStatus(tenancyId, TenancyStatus.active);
+      if (_isFirebase) _data.updateTenancyStatus(tenancyId, TenancyStatus.active);
       // Mark property occupied
       final pIdx = _properties.indexWhere((p) => p.id == t.propertyId);
       if (pIdx >= 0) {
         _properties[pIdx] = _properties[pIdx].copyWith(status: PropertyStatus.occupied);
-        if (_isFirebase) _firestore.updateProperty(_properties[pIdx]);
+        if (_isFirebase) _data.updateProperty(_properties[pIdx]);
       }
       notifyListeners();
     }
@@ -573,12 +573,12 @@ class AppState extends ChangeNotifier {
         status: TenancyStatus.completed,
         completedAt: DateTime.now(),
       );
-      if (_isFirebase) _firestore.updateTenancyStatus(tenancyId, TenancyStatus.completed);
+      if (_isFirebase) _data.updateTenancyStatus(tenancyId, TenancyStatus.completed);
       // Mark property available again
       final pIdx = _properties.indexWhere((p) => p.id == t.propertyId);
       if (pIdx >= 0) {
         _properties[pIdx] = _properties[pIdx].copyWith(status: PropertyStatus.available);
-        if (_isFirebase) _firestore.updateProperty(_properties[pIdx]);
+        if (_isFirebase) _data.updateProperty(_properties[pIdx]);
       }
       notifyListeners();
     }
@@ -586,7 +586,7 @@ class AppState extends ChangeNotifier {
 
   void addMaintenanceRequest(MaintenanceRequestModel request) {
     _maintenanceRequests.add(request);
-    if (_isFirebase) _firestore.addMaintenanceRequest(request);
+    if (_isFirebase) _data.addMaintenanceRequest(request);
     notifyListeners();
   }
 
@@ -598,7 +598,7 @@ class AppState extends ChangeNotifier {
         resolvedAt: status == MaintenanceStatus.resolved ? DateTime.now() : null,
         resolutionNotes: resolutionNotes,
       );
-      if (_isFirebase) _firestore.updateMaintenanceStatus(requestId, status, resolutionNotes: resolutionNotes);
+      if (_isFirebase) _data.updateMaintenanceStatus(requestId, status, resolutionNotes: resolutionNotes);
       notifyListeners();
     }
   }
@@ -616,7 +616,7 @@ class AppState extends ChangeNotifier {
         status: PaymentStatus.paid,
         paidAt: DateTime.now(),
       );
-      if (_isFirebase) _firestore.markRentPaid(scheduleId);
+      if (_isFirebase) _data.markRentPaid(scheduleId);
       notifyListeners();
     }
   }
@@ -663,7 +663,7 @@ class AppState extends ChangeNotifier {
 
   void addProperty(PropertyModel property) {
     _properties.add(property);
-    if (_isFirebase) _firestore.addProperty(property);
+    if (_isFirebase) _data.addProperty(property);
     notifyListeners();
   }
 
@@ -671,14 +671,14 @@ class AppState extends ChangeNotifier {
     final index = _properties.indexWhere((p) => p.id == property.id);
     if (index >= 0) {
       _properties[index] = property;
-      if (_isFirebase) _firestore.updateProperty(property);
+      if (_isFirebase) _data.updateProperty(property);
       notifyListeners();
     }
   }
 
   void addAppointment(AppointmentModel appointment) {
     _appointments.add(appointment);
-    if (_isFirebase) _firestore.addAppointment(appointment);
+    if (_isFirebase) _data.addAppointment(appointment);
     notifyListeners();
   }
 
@@ -699,14 +699,14 @@ class AppState extends ChangeNotifier {
         status: status,
         createdAt: old.createdAt,
       );
-      if (_isFirebase) _firestore.updateAppointmentStatus(id, status);
+      if (_isFirebase) _data.updateAppointmentStatus(id, status);
       notifyListeners();
     }
   }
 
   void addInquiry(InquiryModel inquiry) {
     _inquiries.add(inquiry);
-    if (_isFirebase) _firestore.addInquiry(inquiry);
+    if (_isFirebase) _data.addInquiry(inquiry);
     notifyListeners();
   }
 
@@ -725,7 +725,7 @@ class AppState extends ChangeNotifier {
         createdAt: old.createdAt,
         isRead: true,
       );
-      if (_isFirebase) _firestore.markInquiryRead(id);
+      if (_isFirebase) _data.markInquiryRead(id);
       notifyListeners();
     }
   }

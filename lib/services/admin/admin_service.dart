@@ -1,24 +1,12 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dalali/models/admin/admin_user_model.dart';
 import 'package:dalali/models/wallet_model.dart';
-import 'package:dalali/models/property_model.dart';
 import 'package:dalali/models/user_model.dart';
+import 'package:dalali/services/supabase_service.dart';
 
 /// Centralized admin service for dashboard operations.
-/// All write operations log to adminLogs collection automatically.
+/// All write operations log to admin_logs table automatically.
 class AdminService {
-  final FirebaseFirestore _db = FirebaseFirestore.instance;
-
-  // Collections
-  CollectionReference get _users => _db.collection('users');
-  CollectionReference get _properties => _db.collection('properties');
-  CollectionReference get _wallets => _db.collection('wallets');
-  CollectionReference get _transactions => _db.collection('transactions');
-  CollectionReference get _withdrawals => _db.collection('withdrawals');
-  CollectionReference get _adminLogs => _db.collection('adminLogs');
-  CollectionReference get _fraudReports => _db.collection('fraudReports');
-  CollectionReference get _disputes => _db.collection('disputes');
-  DocumentReference get _systemSettings => _db.collection('systemSettings').doc('default');
+  final _db = SupabaseService.client;
 
   // ─── ADMIN LOGS ─────────────────────────────────────────────────
 
@@ -32,416 +20,263 @@ class AdminService {
     Map<String, dynamic>? before,
     Map<String, dynamic>? after,
   }) async {
-    await _adminLogs.add({
-      'adminId': adminId,
-      'adminName': adminName,
-      'adminRole': adminRole.name,
+    await _db.from('admin_logs').insert({
+      'admin_id': adminId,
+      'admin_name': adminName,
+      'admin_role': adminRole.name,
       'action': action,
-      'targetCollection': targetCollection,
-      'targetId': targetId,
-      'before': before,
-      'after': after,
-      'createdAt': FieldValue.serverTimestamp(),
+      'target_table': targetCollection,
+      'target_id': targetId,
+      'details': {'before': before, 'after': after},
     });
   }
 
   // ─── USERS ──────────────────────────────────────────────────────
 
-  Stream<List<UserModel>> getAllUsers({int limit = 100}) {
-    return _users
-        .orderBy('createdAt', descending: true)
-        .limit(limit)
-        .snapshots()
-        .map((snap) => snap.docs.map((d) {
-          final data = d.data() as Map<String, dynamic>;
-          return _userFromJson(data, d.id);
-        }).toList());
+  Future<List<Map<String, dynamic>>> getAllUsers({int limit = 100}) async {
+    final rows = await _db.from('users').select().limit(limit);
+    return rows;
   }
 
-  Stream<int> getTotalUsersCount() {
-    return _users.snapshots().map((s) => s.size);
+  Future<Map<String, dynamic>?> getUserById(String userId) async {
+    return await _db.from('users').select().eq('id', userId).maybeSingle();
   }
 
-  Stream<int> getActiveUsersToday() {
-    final startOfDay = DateTime.now().subtract(const Duration(days: 1));
-    return _users
-        .where('lastActive', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
-        .snapshots()
-        .map((s) => s.size);
-  }
-
-  Future<void> suspendUser(String userId, {required String adminId, required String adminName, required AdminRole adminRole}) async {
-    final before = (await _users.doc(userId).get()).data() as Map<String, dynamic>?;
-    await _users.doc(userId).update({'suspended': true, 'suspendedAt': FieldValue.serverTimestamp()});
+  Future<void> updateUserRole({
+    required String adminId,
+    required String adminName,
+    required AdminRole adminRole,
+    required String userId,
+    required String newRole,
+  }) async {
+    final before = await getUserById(userId);
+    await _db.from('users').update({'role': newRole}).eq('id', userId);
     await _logAction(
       adminId: adminId,
       adminName: adminName,
       adminRole: adminRole,
-      action: 'SUSPEND_USER',
+      action: 'update_user_role',
       targetCollection: 'users',
       targetId: userId,
       before: before,
-      after: {'suspended': true},
+      after: {'role': newRole},
     );
   }
 
-  Future<void> verifyUser(String userId, {required String adminId, required String adminName, required AdminRole adminRole}) async {
-    final before = (await _users.doc(userId).get()).data() as Map<String, dynamic>?;
-    await _users.doc(userId).update({
-      'verificationStatus': 'verified',
-      'isVerifiedLandlord': true,
-      'verifiedAt': FieldValue.serverTimestamp(),
-    });
+  Future<void> verifyLandlord({
+    required String adminId,
+    required String adminName,
+    required AdminRole adminRole,
+    required String userId,
+  }) async {
+    await _db.from('users').update({
+      'is_verified_landlord': true,
+      'verification_status': 'verified',
+    }).eq('id', userId);
     await _logAction(
       adminId: adminId,
       adminName: adminName,
       adminRole: adminRole,
-      action: 'VERIFY_USER',
+      action: 'verify_landlord',
       targetCollection: 'users',
       targetId: userId,
-      before: before,
-      after: {'verificationStatus': 'verified'},
     );
   }
 
-  // ─── LISTINGS ───────────────────────────────────────────────────
-
-  Stream<List<PropertyModel>> getAllListings({int limit = 100}) {
-    return _properties
-        .orderBy('createdAt', descending: true)
-        .limit(limit)
-        .snapshots()
-        .map((snap) => snap.docs.map((d) {
-          // We need FirestoreService's _propertyFromJson but can't import it cleanly.
-          // We'll do a lightweight read here for the admin dashboard.
-          final data = d.data() as Map<String, dynamic>;
-          return _propertyFromJson(data, d.id);
-        }).toList());
-  }
-
-  Stream<int> getPendingListingsCount() {
-    return _properties
-        .where('isApproved', isEqualTo: false)
-        .snapshots()
-        .map((s) => s.size);
-  }
-
-  Stream<int> getActiveListingsCount() {
-    return _properties
-        .where('status', isEqualTo: 'available')
-        .where('isApproved', isEqualTo: true)
-        .snapshots()
-        .map((s) => s.size);
-  }
-
-  Future<void> approveListing(String propertyId, {required String adminId, required String adminName, required AdminRole adminRole}) async {
-    final before = (await _properties.doc(propertyId).get()).data() as Map<String, dynamic>?;
-    await _properties.doc(propertyId).update({'isApproved': true, 'approvedAt': FieldValue.serverTimestamp()});
+  Future<void> banUser({
+    required String adminId,
+    required String adminName,
+    required AdminRole adminRole,
+    required String userId,
+  }) async {
+    await _db.from('users').update({'is_approved': false}).eq('id', userId);
     await _logAction(
       adminId: adminId,
       adminName: adminName,
       adminRole: adminRole,
-      action: 'APPROVE_LISTING',
-      targetCollection: 'properties',
-      targetId: propertyId,
-      before: before,
-      after: {'isApproved': true},
+      action: 'ban_user',
+      targetCollection: 'users',
+      targetId: userId,
     );
   }
 
-  Future<void> rejectListing(String propertyId, {required String adminId, required String adminName, required AdminRole adminRole}) async {
-    final before = (await _properties.doc(propertyId).get()).data() as Map<String, dynamic>?;
-    await _properties.doc(propertyId).update({'isApproved': false, 'rejectedAt': FieldValue.serverTimestamp()});
+  // ─── PROPERTIES ─────────────────────────────────────────────────
+
+  Future<List<Map<String, dynamic>>> getAllProperties({int limit = 100}) async {
+    final rows = await _db.from('properties').select().limit(limit);
+    return rows;
+  }
+
+  Future<void> approveProperty({
+    required String adminId,
+    required String adminName,
+    required AdminRole adminRole,
+    required String propertyId,
+  }) async {
+    await _db.from('properties').update({'is_approved': true}).eq('id', propertyId);
     await _logAction(
       adminId: adminId,
       adminName: adminName,
       adminRole: adminRole,
-      action: 'REJECT_LISTING',
+      action: 'approve_property',
       targetCollection: 'properties',
       targetId: propertyId,
-      before: before,
-      after: {'isApproved': false},
     );
   }
 
-  Future<void> removeListing(String propertyId, {required String adminId, required String adminName, required AdminRole adminRole}) async {
-    final before = (await _properties.doc(propertyId).get()).data() as Map<String, dynamic>?;
-    await _properties.doc(propertyId).update({'status': 'removed', 'removedAt': FieldValue.serverTimestamp()});
+  Future<void> rejectProperty({
+    required String adminId,
+    required String adminName,
+    required AdminRole adminRole,
+    required String propertyId,
+    String? reason,
+  }) async {
+    await _db.from('properties').update({'is_approved': false}).eq('id', propertyId);
     await _logAction(
       adminId: adminId,
       adminName: adminName,
       adminRole: adminRole,
-      action: 'REMOVE_LISTING',
+      action: 'reject_property',
       targetCollection: 'properties',
       targetId: propertyId,
-      before: before,
-      after: {'status': 'removed'},
+    );
+  }
+
+  Future<void> boostProperty({
+    required String adminId,
+    required String adminName,
+    required AdminRole adminRole,
+    required String propertyId,
+    required int durationDays,
+  }) async {
+    await _db.from('properties').update({
+      'is_boosted': true,
+      'boost_expires_at': DateTime.now().add(Duration(days: durationDays)).toIso8601String(),
+    }).eq('id', propertyId);
+    await _logAction(
+      adminId: adminId,
+      adminName: adminName,
+      adminRole: adminRole,
+      action: 'boost_property',
+      targetCollection: 'properties',
+      targetId: propertyId,
     );
   }
 
   // ─── WALLETS ────────────────────────────────────────────────────
 
-  Stream<List<WalletModel>> getAllWallets({int limit = 100}) {
-    return _wallets
-        .orderBy('updatedAt', descending: true)
-        .limit(limit)
-        .snapshots()
-        .map((snap) => snap.docs.map((d) =>
-            WalletModel.fromJson(d.data() as Map<String, dynamic>)).toList());
+  Future<List<Map<String, dynamic>>> getAllWallets({int limit = 100}) async {
+    final rows = await _db.from('wallets').select().limit(limit);
+    return rows;
   }
 
-  Future<void> freezeWallet(String userId, {required String adminId, required String adminName, required AdminRole adminRole}) async {
-    final before = (await _wallets.doc(userId).get()).data() as Map<String, dynamic>?;
-    await _wallets.doc(userId).update({'frozen': true, 'frozenAt': FieldValue.serverTimestamp()});
-    await _logAction(
-      adminId: adminId,
-      adminName: adminName,
-      adminRole: adminRole,
-      action: 'FREEZE_WALLET',
-      targetCollection: 'wallets',
-      targetId: userId,
-      before: before,
-      after: {'frozen': true},
-    );
-  }
-
-  Future<void> unfreezeWallet(String userId, {required String adminId, required String adminName, required AdminRole adminRole}) async {
-    final before = (await _wallets.doc(userId).get()).data() as Map<String, dynamic>?;
-    await _wallets.doc(userId).update({'frozen': false, 'unfrozenAt': FieldValue.serverTimestamp()});
-    await _logAction(
-      adminId: adminId,
-      adminName: adminName,
-      adminRole: adminRole,
-      action: 'UNFREEZE_WALLET',
-      targetCollection: 'wallets',
-      targetId: userId,
-      before: before,
-      after: {'frozen': false},
-    );
+  Future<Map<String, dynamic>?> getWalletByUserId(String userId) async {
+    return await _db.from('wallets').select().eq('user_id', userId).maybeSingle();
   }
 
   // ─── TRANSACTIONS ───────────────────────────────────────────────
 
-  Stream<List<TransactionModel>> getAllTransactions({int limit = 100}) {
-    return _transactions
-        .orderBy('createdAt', descending: true)
-        .limit(limit)
-        .snapshots()
-        .map((snap) => snap.docs.map((d) =>
-            TransactionModel.fromJson(d.data() as Map<String, dynamic>, d.id)).toList());
+  Future<List<Map<String, dynamic>>> getAllTransactions({int limit = 200}) async {
+    final rows = await _db.from('transactions').select().order('created_at', ascending: false).limit(limit);
+    return rows;
   }
 
-  Stream<int> getCompletedTransactionsCount() {
-    return _transactions
-        .where('status', isEqualTo: 'completed')
-        .snapshots()
-        .map((s) => s.size);
+  Future<List<Map<String, dynamic>>> getTransactionsByStatus(String status, {int limit = 100}) async {
+    final rows = await _db.from('transactions').select().eq('status', status).limit(limit);
+    return rows;
   }
 
   // ─── WITHDRAWALS ────────────────────────────────────────────────
 
-  Stream<List<WithdrawalModel>> getAllWithdrawals({int limit = 100}) {
-    return _withdrawals
-        .orderBy('createdAt', descending: true)
-        .limit(limit)
-        .snapshots()
-        .map((snap) => snap.docs.map((d) =>
-            WithdrawalModel.fromJson(d.data() as Map<String, dynamic>, d.id)).toList());
+  Future<List<Map<String, dynamic>>> getAllWithdrawals({int limit = 200}) async {
+    final rows = await _db.from('withdrawals').select().order('created_at', ascending: false).limit(limit);
+    return rows;
   }
 
-  Stream<int> getPendingWithdrawalsCount() {
-    return _withdrawals
-        .where('status', isEqualTo: 'pending')
-        .snapshots()
-        .map((s) => s.size);
-  }
-
-  Future<void> approveWithdrawal(String withdrawalId, {required String adminId, required String adminName, required AdminRole adminRole}) async {
-    final before = (await _withdrawals.doc(withdrawalId).get()).data() as Map<String, dynamic>?;
-    await _withdrawals.doc(withdrawalId).update({'status': 'processing', 'approvedAt': FieldValue.serverTimestamp(), 'approvedBy': adminId});
+  Future<void> approveWithdrawal({
+    required String adminId,
+    required String adminName,
+    required AdminRole adminRole,
+    required String withdrawalId,
+  }) async {
+    await _db.from('withdrawals').update({'status': 'processing'}).eq('id', withdrawalId);
     await _logAction(
       adminId: adminId,
       adminName: adminName,
       adminRole: adminRole,
-      action: 'APPROVE_WITHDRAWAL',
+      action: 'approve_withdrawal',
       targetCollection: 'withdrawals',
       targetId: withdrawalId,
-      before: before,
-      after: {'status': 'processing'},
     );
   }
 
-  Future<void> rejectWithdrawal(String withdrawalId, {required String reason, required String adminId, required String adminName, required AdminRole adminRole}) async {
-    final before = (await _withdrawals.doc(withdrawalId).get()).data() as Map<String, dynamic>?;
-    await _withdrawals.doc(withdrawalId).update({
+  Future<void> rejectWithdrawal({
+    required String adminId,
+    required String adminName,
+    required AdminRole adminRole,
+    required String withdrawalId,
+    String? reason,
+  }) async {
+    await _db.from('withdrawals').update({
       'status': 'failed',
-      'failureReason': reason,
-      'rejectedAt': FieldValue.serverTimestamp(),
-      'rejectedBy': adminId,
-    });
+      'failure_reason': reason,
+    }).eq('id', withdrawalId);
     await _logAction(
       adminId: adminId,
       adminName: adminName,
       adminRole: adminRole,
-      action: 'REJECT_WITHDRAWAL',
+      action: 'reject_withdrawal',
       targetCollection: 'withdrawals',
       targetId: withdrawalId,
-      before: before,
-      after: {'status': 'failed', 'failureReason': reason},
     );
   }
 
-  // ─── FRAUD REPORTS ──────────────────────────────────────────────
+  // ─── FRAUD / DISPUTES ───────────────────────────────────────────
 
-  Stream<List<FraudReportModel>> getAllFraudReports({int limit = 100}) {
-    return _fraudReports
-        .where('resolved', isEqualTo: false)
-        .orderBy('createdAt', descending: true)
-        .limit(limit)
-        .snapshots()
-        .map((snap) => snap.docs.map((d) =>
-            FraudReportModel.fromJson(d.data() as Map<String, dynamic>, d.id)).toList());
+  Future<List<Map<String, dynamic>>> getFraudReports({int limit = 100}) async {
+    final rows = await _db.from('fraud_reports').select().limit(limit);
+    return rows;
   }
 
-  Stream<int> getUnresolvedFraudCount() {
-    return _fraudReports
-        .where('resolved', isEqualTo: false)
-        .snapshots()
-        .map((s) => s.size);
+  Future<List<Map<String, dynamic>>> getDisputes({int limit = 100}) async {
+    final rows = await _db.from('disputes').select().limit(limit);
+    return rows;
   }
 
-  Future<void> resolveFraudReport(String reportId, {required String adminId, required String adminName, required AdminRole adminRole}) async {
-    await _fraudReports.doc(reportId).update({
-      'resolved': true,
-      'resolvedBy': adminId,
-      'resolvedAt': FieldValue.serverTimestamp(),
-    });
-    await _logAction(
-      adminId: adminId,
-      adminName: adminName,
-      adminRole: adminRole,
-      action: 'RESOLVE_FRAUD',
-      targetCollection: 'fraudReports',
-      targetId: reportId,
-    );
-  }
+  // ─── ANALYTICS ──────────────────────────────────────────────────
 
-  // ─── DISPUTES ───────────────────────────────────────────────────
+  Future<Map<String, dynamic>> getDashboardStats() async {
+    // Simple count by fetching all IDs (for small datasets)
+    final users = await _db.from('users').select('id');
+    final properties = await _db.from('properties').select('id');
+    final transactions = await _db.from('transactions').select('id');
 
-  Stream<List<DisputeModel>> getAllDisputes({int limit = 100}) {
-    return _disputes
-        .orderBy('createdAt', descending: true)
-        .limit(limit)
-        .snapshots()
-        .map((snap) => snap.docs.map((d) =>
-            DisputeModel.fromJson(d.data() as Map<String, dynamic>, d.id)).toList());
-  }
-
-  Future<void> resolveDispute(String disputeId, {required String resolution, required String adminId, required String adminName, required AdminRole adminRole}) async {
-    await _disputes.doc(disputeId).update({
-      'status': 'resolved',
-      'resolution': resolution,
-      'resolvedBy': adminId,
-      'resolvedAt': FieldValue.serverTimestamp(),
-    });
-    await _logAction(
-      adminId: adminId,
-      adminName: adminName,
-      adminRole: adminRole,
-      action: 'RESOLVE_DISPUTE',
-      targetCollection: 'disputes',
-      targetId: disputeId,
-      after: {'status': 'resolved', 'resolution': resolution},
-    );
+    return {
+      'totalUsers': users.length,
+      'totalProperties': properties.length,
+      'totalTransactions': transactions.length,
+    };
   }
 
   // ─── SYSTEM SETTINGS ────────────────────────────────────────────
 
-  Future<void> updateSystemSettings(Map<String, dynamic> settings, {required String adminId, required String adminName, required AdminRole adminRole}) async {
-    final before = (await _systemSettings.get()).data() as Map<String, dynamic>?;
-    await _systemSettings.update(settings);
+  Future<Map<String, dynamic>?> getSystemSettings() async {
+    return await _db.from('system_settings').select().eq('id', 'default').maybeSingle();
+  }
+
+  Future<void> updateSystemSettings({
+    required String adminId,
+    required String adminName,
+    required AdminRole adminRole,
+    required Map<String, dynamic> settings,
+  }) async {
+    await _db.from('system_settings').update(settings).eq('id', 'default');
     await _logAction(
       adminId: adminId,
       adminName: adminName,
       adminRole: adminRole,
-      action: 'UPDATE_SETTINGS',
-      targetCollection: 'systemSettings',
-      before: before,
-      after: settings,
-    );
-  }
-
-  // ─── ADMIN LOGS ─────────────────────────────────────────────────
-
-  Stream<List<AdminLogModel>> getAdminLogs({int limit = 100}) {
-    return _adminLogs
-        .orderBy('createdAt', descending: true)
-        .limit(limit)
-        .snapshots()
-        .map((snap) => snap.docs.map((d) =>
-            AdminLogModel.fromJson(d.data() as Map<String, dynamic>, d.id)).toList());
-  }
-
-  // ─── Lightweight JSON helpers for admin reads ───────────────────
-
-  UserModel _userFromJson(Map<String, dynamic> json, String id) {
-    return UserModel(
-      id: id,
-      fullName: json['fullName'] ?? '',
-      email: json['email'] ?? '',
-      phone: json['phone'] ?? '',
-      role: UserRole.values.firstWhere((e) => e.name == json['role'], orElse: () => UserRole.seeker),
-      verificationStatus: VerificationStatus.values.firstWhere(
-        (e) => e.name == json['verificationStatus'],
-        orElse: () => VerificationStatus.unverified,
-      ),
-      isPhoneVerified: json['isPhoneVerified'] ?? false,
-      createdAt: (json['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
-      nationalId: json['nationalId'],
-      agentLicense: json['agentLicense'],
-      subscriptionTier: json['subscriptionTier'] ?? 0,
-    );
-  }
-
-  PropertyModel _propertyFromJson(Map<String, dynamic> json, String id) {
-    // Lightweight version for admin listing - enough for table display
-    return PropertyModel(
-      id: id,
-      title: json['title'] ?? '',
-      description: json['description'] ?? '',
-      location: json['location'] ?? '',
-      latitude: (json['latitude'] as num?)?.toDouble() ?? 0,
-      longitude: (json['longitude'] as num?)?.toDouble() ?? 0,
-      rentPrice: (json['rentPrice'] as num?)?.toDouble() ?? 0,
-      bedrooms: json['bedrooms'] ?? 0,
-      bathrooms: json['bathrooms'] ?? 0,
-      propertyType: PropertyType.values.firstWhere(
-        (e) => e.name == json['propertyType'],
-        orElse: () => PropertyType.apartment,
-      ),
-      isFurnished: json['isFurnished'] ?? false,
-      hasWater: json['hasWater'] ?? false,
-      hasParking: json['hasParking'] ?? false,
-      hasSecurity: json['hasSecurity'] ?? false,
-      images: List<String>.from(json['images'] ?? []),
-      status: PropertyStatus.values.firstWhere(
-        (e) => e.name == json['status'],
-        orElse: () => PropertyStatus.available,
-      ),
-      listingType: ListingType.values.firstWhere(
-        (e) => e.name == json['listingType'],
-        orElse: () => ListingType.basic,
-      ),
-      sourceType: ListingSource.values.firstWhere(
-        (e) => e.name == json['sourceType'],
-        orElse: () => ListingSource.landlordListing,
-      ),
-      landlordId: json['landlordId'] ?? '',
-      landlordName: json['landlordName'] ?? '',
-      landlordPhone: json['landlordPhone'] ?? '',
-      isLandlordVerified: json['isLandlordVerified'] ?? false,
-      createdAt: (json['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
-      isApproved: json['isApproved'] ?? false,
+      action: 'update_system_settings',
+      targetCollection: 'system_settings',
     );
   }
 }

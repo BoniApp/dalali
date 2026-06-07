@@ -1,106 +1,80 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dalali/models/wallet_model.dart';
+import 'package:dalali/services/supabase_service.dart';
 
 /// Client-side wallet service.
 ///
 /// ⚠️ IMPORTANT: This service is READ-ONLY for wallet balances.
 /// All wallet mutations (credit, debit, split) happen server-side
-/// via Firebase Functions to prevent fraud.
+/// via Supabase Edge Functions to prevent fraud.
 class WalletService {
-  final FirebaseFirestore _db = FirebaseFirestore.instance;
-
-  CollectionReference get _wallets => _db.collection('wallets');
-  CollectionReference get _transactions => _db.collection('transactions');
-  CollectionReference get _withdrawals => _db.collection('withdrawals');
-  DocumentReference get _systemSettings => _db.collection('systemSettings').doc('default');
+  final _db = SupabaseService.client;
 
   // ─── WALLET ─────────────────────────────────────────────────
 
-  /// Stream a user's wallet document.
   Stream<WalletModel?> getWallet(String userId) {
-    return _wallets
-        .doc(userId)
-        .snapshots()
-        .map((doc) {
-      if (!doc.exists) return null;
-      return WalletModel.fromJson(doc.data() as Map<String, dynamic>);
-    });
+    return _db
+        .from('wallets')
+        .stream(primaryKey: ['user_id'])
+        .eq('user_id', userId)
+        .map((rows) => rows.isEmpty ? null : WalletModel.fromJson(rows.first));
   }
 
-  /// Get wallet once (for initial load).
   Future<WalletModel?> getWalletOnce(String userId) async {
-    final doc = await _wallets.doc(userId).get();
-    if (!doc.exists) return null;
-    return WalletModel.fromJson(doc.data() as Map<String, dynamic>);
+    final data = await _db
+        .from('wallets')
+        .select()
+        .eq('user_id', userId)
+        .maybeSingle();
+    if (data == null) return null;
+    return WalletModel.fromJson(data);
   }
 
   // ─── TRANSACTIONS ───────────────────────────────────────────
 
-  /// Stream a user's transactions (as payer or payee).
   Stream<List<TransactionModel>> getUserTransactions(String userId, {int limit = 50}) {
-    return _transactions
-        .where(Filter.or(
-          Filter('payerId', isEqualTo: userId),
-          Filter('payeeId', isEqualTo: userId),
-        ))
-        .orderBy('createdAt', descending: true)
+    return _db
+        .from('transactions')
+        .stream(primaryKey: ['id'])
+        .or('payer_id.eq.$userId,payee_id.eq.$userId')
+        .order('created_at', ascending: false)
         .limit(limit)
-        .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => TransactionModel.fromJson(
-                doc.data() as Map<String, dynamic>, doc.id))
-            .toList());
+        .map((rows) => rows.map((r) => TransactionModel.fromJson(r, r['id'] ?? '')).toList());
   }
 
-  /// Stream transactions for a specific property.
-  Stream<List<TransactionModel>> getPropertyTransactions(String propertyId, {int limit = 20}) {
-    return _transactions
-        .where('propertyId', isEqualTo: propertyId)
-        .orderBy('createdAt', descending: true)
-        .limit(limit)
-        .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => TransactionModel.fromJson(
-                doc.data() as Map<String, dynamic>, doc.id))
-            .toList());
+  Future<void> createTransaction(TransactionModel tx) async {
+    await _db.from('transactions').insert(tx.toJson());
   }
 
   // ─── WITHDRAWALS ────────────────────────────────────────────
 
-  /// Stream a user's withdrawal requests.
-  Stream<List<WithdrawalModel>> getUserWithdrawals(String userId, {int limit = 30}) {
-    return _withdrawals
-        .where('userId', isEqualTo: userId)
-        .orderBy('createdAt', descending: true)
+  Stream<List<WithdrawalModel>> getUserWithdrawals(String userId, {int limit = 50}) {
+    return _db
+        .from('withdrawals')
+        .stream(primaryKey: ['id'])
+        .eq('user_id', userId)
+        .order('created_at', ascending: false)
         .limit(limit)
-        .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => WithdrawalModel.fromJson(
-                doc.data() as Map<String, dynamic>, doc.id))
-            .toList());
+        .map((rows) => rows.map((r) => WithdrawalModel.fromJson(r)).toList());
   }
 
-  /// Create a withdrawal request.
-  /// This writes to Firestore; the backend Firebase Function
-  /// picks it up and processes the Selcom payout.
-  Future<void> requestWithdrawal(WithdrawalModel withdrawal) async {
-    await _withdrawals.doc(withdrawal.id).set(withdrawal.toJson());
+  Future<void> createWithdrawal(WithdrawalModel wd) async {
+    await _db.from('withdrawals').insert(wd.toJson());
   }
 
   // ─── SYSTEM SETTINGS ────────────────────────────────────────
 
-  /// Stream system-wide financial settings.
-  Stream<SystemSettingsModel> getSystemSettings() {
-    return _systemSettings.snapshots().map((doc) {
-      if (!doc.exists) return SystemSettingsModel(updatedAt: DateTime.now());
-      return SystemSettingsModel.fromJson(doc.data() as Map<String, dynamic>);
-    });
-  }
-
-  /// Get system settings once.
-  Future<SystemSettingsModel> getSystemSettingsOnce() async {
-    final doc = await _systemSettings.get();
-    if (!doc.exists) return SystemSettingsModel(updatedAt: DateTime.now());
-    return SystemSettingsModel.fromJson(doc.data() as Map<String, dynamic>);
+  Future<Map<String, dynamic>> getSystemSettings() async {
+    final data = await _db
+        .from('system_settings')
+        .select()
+        .eq('id', 'default')
+        .maybeSingle();
+    return data ?? {
+      'agency_fee': 20000,
+      'agent_share': 0.60,
+      'platform_share': 0.40,
+      'settlement_delay_hours': 48,
+      'min_withdrawal': 5000,
+    };
   }
 }

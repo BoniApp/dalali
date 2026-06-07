@@ -1,9 +1,9 @@
 import 'dart:developer' show log;
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dalali/models/move_listing_model.dart';
 import 'package:dalali/models/property_model.dart';
 import 'package:dalali/models/user_model.dart';
-import 'package:dalali/services/firestore_service.dart';
+import 'package:dalali/services/data_service.dart';
+import 'package:dalali/services/supabase_service.dart';
 
 /// Orchestrates the "I'm Moving" flow:
 /// 1. User starts move → creates MoveListing + auto-lists current home
@@ -11,8 +11,8 @@ import 'package:dalali/services/firestore_service.dart';
 /// 3. User finds new home → marks move complete
 /// 4. System awards points
 class MoveEngineService {
-  final FirestoreService _firestore = FirestoreService();
-  final FirebaseFirestore _db = FirebaseFirestore.instance;
+  final DataService _data = DataService();
+  final _db = SupabaseService.client;
 
   /// Starts a new move for the user.
   /// Creates a move_listing doc and auto-creates a property listing
@@ -42,8 +42,19 @@ class MoveEngineService {
       createdAt: DateTime.now(),
     );
 
-    final moveRef = await _firestore.addMoveListing(move);
-    final moveId = moveRef.id;
+    final moveData = await _db.from('move_listings').insert({
+      'user_id': user.id,
+      'user_name': user.fullName,
+      'current_property_title': currentPropertyTitle,
+      'current_location': currentLocation,
+      'move_date': moveDate.toIso8601String(),
+      'status': 'planning',
+      'budget_min': budgetMin,
+      'budget_max': budgetMax,
+      'preferred_location': preferredLocation,
+      'created_at': DateTime.now().toIso8601String(),
+    }).select('id').single();
+    final moveId = moveData['id'] as String;
 
     // 2. Optionally auto-list their current home as a property
     String? propertyId;
@@ -58,17 +69,17 @@ class MoveEngineService {
         createdAt: DateTime.now(),
         isApproved: false, // requires moderation
       );
-      final propRef = await _db.collection('properties').add(
+      final propData = await _db.from('properties').insert(
         _propertyToJson(homeToList),
-      );
-      propertyId = propRef.id;
+      ).select('id').single();
+      propertyId = propData['id'] as String;
     }
 
     // 3. Update user move mode
-    await _db.collection('users').doc(user.id).update({
-      'moveMode': 'planning',
-      'activeMoveListingId': moveId,
-    });
+    await _db.from('users').update({
+      'move_mode': 'planning',
+      'active_move_listing_id': moveId,
+    }).eq('id', user.id);
 
     log('🚚 Move started: $moveId for user ${user.id}');
 
@@ -80,10 +91,10 @@ class MoveEngineService {
 
   /// Marks a move as active (user has begun the transition).
   Future<void> activateMove(String moveId, String userId) async {
-    await _firestore.updateMoveStatus(moveId, MoveStatus.active);
-    await _db.collection('users').doc(userId).update({
-      'moveMode': 'active',
-    });
+    await _db.from('move_listings').update({'status': 'active'}).eq('id', moveId);
+    await _db.from('users').update({
+      'move_mode': 'active',
+    }).eq('id', userId);
     log('▶️ Move activated: $moveId');
   }
 
@@ -93,21 +104,24 @@ class MoveEngineService {
     required String userId,
     required String newPropertyId,
   }) async {
-    await _firestore.updateMoveStatus(moveId, MoveStatus.completed, newPropertyId: newPropertyId);
-    await _db.collection('users').doc(userId).update({
-      'moveMode': 'none',
-      'activeMoveListingId': null,
-    });
+    await _db.from('move_listings').update({
+      'status': 'completed',
+      'new_property_id': newPropertyId,
+    }).eq('id', moveId);
+    await _db.from('users').update({
+      'move_mode': 'none',
+      'active_move_listing_id': null,
+    }).eq('id', userId);
     log('✅ Move completed: $moveId → $newPropertyId');
   }
 
   /// Cancels an in-progress move.
   Future<void> cancelMove(String moveId, String userId) async {
-    await _firestore.updateMoveStatus(moveId, MoveStatus.cancelled);
-    await _db.collection('users').doc(userId).update({
-      'moveMode': 'none',
-      'activeMoveListingId': null,
-    });
+    await _db.from('move_listings').update({'status': 'cancelled'}).eq('id', moveId);
+    await _db.from('users').update({
+      'move_mode': 'none',
+      'active_move_listing_id': null,
+    }).eq('id', userId);
     log('❌ Move cancelled: $moveId');
   }
 
@@ -139,14 +153,14 @@ class MoveEngineService {
       'landlordName': p.landlordName,
       'landlordPhone': p.landlordPhone,
       'isLandlordVerified': p.isLandlordVerified,
-      'createdAt': Timestamp.fromDate(p.createdAt),
-      'viewCount': p.viewCount,
-      'inquiryCount': p.inquiryCount,
-      'isApproved': p.isApproved,
+      'created_at': p.createdAt.toIso8601String(),
+      'view_count': p.viewCount,
+      'inquiry_count': p.inquiryCount,
+      'is_approved': p.isApproved,
       'rating': p.rating,
-      'reviewCount': p.reviewCount,
-      'isBoosted': p.isBoosted,
-      'boostExpiresAt': p.boostExpiresAt != null ? Timestamp.fromDate(p.boostExpiresAt!) : null,
+      'review_count': p.reviewCount,
+      'is_boosted': p.isBoosted,
+      'boost_expires_at': p.boostExpiresAt?.toIso8601String(),
       'tags': p.tags,
       'utilities': p.utilities.toJson(),
     };

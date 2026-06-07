@@ -1,15 +1,13 @@
 import 'dart:developer' show log;
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dalali/models/reward_model.dart';
+import 'package:dalali/services/supabase_service.dart';
 
 /// Awards HTN reward points for user actions.
 class RewardService {
-  final FirebaseFirestore _db = FirebaseFirestore.instance;
-  CollectionReference get _rewards => _db.collection('rewards');
-  CollectionReference get _users => _db.collection('users');
+  final _db = SupabaseService.client;
 
   Future<void> awardListingBonus(String userId) async {
-    await _createReward(
+    await createReward(
       userId: userId,
       type: RewardType.listingBonus,
       points: 100,
@@ -18,7 +16,7 @@ class RewardService {
   }
 
   Future<void> awardMoveComplete(String userId) async {
-    await _createReward(
+    await createReward(
       userId: userId,
       type: RewardType.moveComplete,
       points: 250,
@@ -27,7 +25,7 @@ class RewardService {
   }
 
   Future<void> awardReviewSubmitted(String userId) async {
-    await _createReward(
+    await createReward(
       userId: userId,
       type: RewardType.reviewSubmitted,
       points: 50,
@@ -36,46 +34,38 @@ class RewardService {
   }
 
   Future<void> awardReferral(String userId, {String? referredUserName}) async {
-    await _createReward(
+    await createReward(
       userId: userId,
       type: RewardType.referral,
       points: 200,
       description: referredUserName != null
-          ? 'Referred $referredUserName to HTN'
-          : 'Referred a new user to HTN',
+          ? 'Referred $referredUserName to Dalali'
+          : 'Referred a new user to Dalali',
     );
   }
 
-  Future<void> _createReward({
+  Future<void> createReward({
     required String userId,
     required RewardType type,
     required int points,
     required String description,
   }) async {
-    final reward = RewardModel(
-      id: '',
-      userId: userId,
-      type: type,
-      points: points,
-      description: description,
-      createdAt: DateTime.now(),
-    );
-
-    final ref = await _rewards.add({
-      'userId': reward.userId,
-      'type': reward.type.name,
-      'points': reward.points,
-      'description': reward.description,
-      'createdAt': Timestamp.fromDate(reward.createdAt),
+    await _db.from('rewards').insert({
+      'user_id': userId,
+      'type': type.name,
+      'points': points,
+      'description': description,
       'claimed': false,
-      'claimedAt': null,
+      'created_at': DateTime.now().toIso8601String(),
     });
 
     // Increment user's total points
-    await _users.doc(userId).update({
-      'totalRewardPoints': FieldValue.increment(points),
-    });
+    final user = await _db.from('users').select('total_reward_points').eq('id', userId).maybeSingle();
+    final currentPoints = (user?['total_reward_points'] as int?) ?? 0;
+    await _db.from('users').update({
+      'total_reward_points': currentPoints + points,
+    }).eq('id', userId);
 
-    log('🏆 Reward created: ${type.name} +$points pts → $userId (doc: ${ref.id})');
+    log('🏆 Reward created: ${type.name} +$points pts → $userId');
   }
 }
