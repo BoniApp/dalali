@@ -84,7 +84,7 @@ class ProfileScreen extends StatelessWidget {
                 ),
               ],
             ),
-            if (authMode == AuthMode.firebase)
+            if (authMode == AuthMode.supabase)
               Padding(
                 padding: const EdgeInsets.only(top: 8),
                 child: Chip(

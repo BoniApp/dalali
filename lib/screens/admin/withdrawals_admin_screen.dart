@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:dalali/models/wallet_model.dart';
 import 'package:dalali/services/admin/admin_service.dart';
 import 'package:dalali/utils/helpers.dart';
 import 'package:intl/intl.dart';
@@ -22,7 +21,7 @@ class WithdrawalsAdminScreen extends StatelessWidget {
             const SizedBox(height: 24),
             Card(
               elevation: 2,
-              child: StreamBuilder<List<WithdrawalModel>>(
+              child: StreamBuilder<List<Map<String, dynamic>>>(
                 stream: AdminService().getAllWithdrawals(limit: 100),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
@@ -47,17 +46,17 @@ class WithdrawalsAdminScreen extends StatelessWidget {
                       ],
                       rows: wds.map((w) => DataRow(
                         cells: [
-                          DataCell(Text(w.id.substring(0, w.id.length > 8 ? 8 : w.id.length), style: const TextStyle(fontFamily: 'monospace', fontSize: 12))),
-                          DataCell(Text(w.userId, style: const TextStyle(fontSize: 12))),
-                          DataCell(Text(Helpers.formatPrice(w.amount), style: const TextStyle(fontWeight: FontWeight.w500))),
-                          DataCell(Text(w.phone)),
-                          DataCell(Text(w.provider.name)),
-                          DataCell(_StatusChip(status: w.status)),
-                          DataCell(Text(DateFormat('dd MMM yyyy').format(w.createdAt), style: const TextStyle(fontSize: 12))),
+                          DataCell(Text((w['id'] ?? '').substring(0, (w['id'] ?? '').length > 8 ? 8 : (w['id'] ?? '').length), style: const TextStyle(fontFamily: 'monospace', fontSize: 12))),
+                          DataCell(Text(w['user_id'] ?? '', style: const TextStyle(fontSize: 12))),
+                          DataCell(Text(Helpers.formatPrice((w['amount'] as num?)?.toDouble() ?? 0.0), style: const TextStyle(fontWeight: FontWeight.w500))),
+                          DataCell(Text(w['phone'] ?? '')),
+                          DataCell(Text(w['provider'] ?? '-')),
+                          DataCell(_StatusChip(status: w['status'] ?? 'pending')),
+                          DataCell(Text(DateFormat('dd MMM yyyy').format(DateTime.tryParse(w['created_at'] ?? '') ?? DateTime.now()), style: const TextStyle(fontSize: 12))),
                           DataCell(Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              if (w.status == WithdrawalStatus.pending) ...[
+                              if ((w['status'] ?? '') == 'pending') ...[
                                 IconButton(
                                   icon: const Icon(Icons.check_circle, color: Colors.green, size: 18),
                                   tooltip: 'Approve',
@@ -86,16 +85,17 @@ class WithdrawalsAdminScreen extends StatelessWidget {
 }
 
 class _StatusChip extends StatelessWidget {
-  final WithdrawalStatus status;
+  final String status;
   const _StatusChip({required this.status});
 
   @override
   Widget build(BuildContext context) {
-    final (color, label) = switch (status) {
-      WithdrawalStatus.pending => (Colors.orange, 'Pending'),
-      WithdrawalStatus.processing => (Colors.blue, 'Processing'),
-      WithdrawalStatus.completed => (Colors.green, 'Completed'),
-      WithdrawalStatus.failed => (Colors.red, 'Failed'),
+    final (color, label) = switch (status.toLowerCase()) {
+      'pending' => (Colors.orange, 'Pending'),
+      'processing' => (Colors.blue, 'Processing'),
+      'completed' => (Colors.green, 'Completed'),
+      'failed' => (Colors.red, 'Failed'),
+      _ => (Colors.grey, status),
     };
     return Chip(
       label: Text(label, style: const TextStyle(fontSize: 10)),

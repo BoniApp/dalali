@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:dalali/models/wallet_model.dart';
 import 'package:dalali/services/admin/admin_service.dart';
 import 'package:dalali/utils/helpers.dart';
 import 'package:intl/intl.dart';
@@ -32,7 +31,7 @@ class TransactionsAdminScreen extends StatelessWidget {
             const SizedBox(height: 24),
             Card(
               elevation: 2,
-              child: StreamBuilder<List<TransactionModel>>(
+              child: StreamBuilder<List<Map<String, dynamic>>>(
                 stream: AdminService().getAllTransactions(limit: 100),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
@@ -58,15 +57,15 @@ class TransactionsAdminScreen extends StatelessWidget {
                       ],
                       rows: txs.map((tx) => DataRow(
                         cells: [
-                          DataCell(Text(tx.id.substring(0, tx.id.length > 8 ? 8 : tx.id.length), style: const TextStyle(fontFamily: 'monospace', fontSize: 12))),
-                          DataCell(Text(tx.type.name)),
-                          DataCell(_StatusChip(status: tx.status)),
-                          DataCell(Text(Helpers.formatPrice(tx.amount), style: const TextStyle(fontWeight: FontWeight.w500))),
-                          DataCell(Text(tx.payerId ?? '-', style: const TextStyle(fontSize: 12))),
-                          DataCell(Text(tx.payeeId ?? '-', style: const TextStyle(fontSize: 12))),
-                          DataCell(Text(tx.propertyTitle ?? tx.propertyId ?? '-', style: const TextStyle(fontSize: 12))),
-                          DataCell(Text(tx.selcomTransactionId ?? '-', style: const TextStyle(fontSize: 12))),
-                          DataCell(Text(DateFormat('dd MMM yyyy HH:mm').format(tx.createdAt), style: const TextStyle(fontSize: 12))),
+                          DataCell(Text((tx['id'] ?? '').substring(0, (tx['id'] ?? '').length > 8 ? 8 : (tx['id'] ?? '').length), style: const TextStyle(fontFamily: 'monospace', fontSize: 12))),
+                          DataCell(Text(tx['type'] ?? '-')),
+                          DataCell(_StatusChip(status: tx['status'] ?? 'pending')),
+                          DataCell(Text(Helpers.formatPrice((tx['amount'] as num?)?.toDouble() ?? 0.0), style: const TextStyle(fontWeight: FontWeight.w500))),
+                          DataCell(Text(tx['payer_id'] ?? '-', style: const TextStyle(fontSize: 12))),
+                          DataCell(Text(tx['payee_id'] ?? '-', style: const TextStyle(fontSize: 12))),
+                          DataCell(Text(tx['property_title'] ?? tx['property_id'] ?? '-', style: const TextStyle(fontSize: 12))),
+                          DataCell(Text(tx['selcom_transaction_id'] ?? '-', style: const TextStyle(fontSize: 12))),
+                          DataCell(Text(DateFormat('dd MMM yyyy HH:mm').format(DateTime.tryParse(tx['created_at'] ?? '') ?? DateTime.now()), style: const TextStyle(fontSize: 12))),
                         ],
                       )).toList(),
                     ),
@@ -82,19 +81,20 @@ class TransactionsAdminScreen extends StatelessWidget {
 }
 
 class _StatusChip extends StatelessWidget {
-  final TransactionStatus status;
+  final String status;
   const _StatusChip({required this.status});
 
   @override
   Widget build(BuildContext context) {
-    final (color, label) = switch (status) {
-      TransactionStatus.pending => (Colors.orange, 'Pending'),
-      TransactionStatus.processing => (Colors.blue, 'Processing'),
-      TransactionStatus.locked => (Colors.purple, 'Locked'),
-      TransactionStatus.available => (Colors.green, 'Available'),
-      TransactionStatus.completed => (Colors.teal, 'Completed'),
-      TransactionStatus.failed => (Colors.red, 'Failed'),
-      TransactionStatus.reversed => (Colors.grey, 'Reversed'),
+    final (color, label) = switch (status.toLowerCase()) {
+      'pending' => (Colors.orange, 'Pending'),
+      'processing' => (Colors.blue, 'Processing'),
+      'locked' => (Colors.purple, 'Locked'),
+      'available' => (Colors.green, 'Available'),
+      'completed' => (Colors.teal, 'Completed'),
+      'failed' => (Colors.red, 'Failed'),
+      'reversed' => (Colors.grey, 'Reversed'),
+      _ => (Colors.grey, status),
     };
     return Chip(
       label: Text(label, style: const TextStyle(fontSize: 10)),

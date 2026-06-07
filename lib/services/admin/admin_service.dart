@@ -33,9 +33,8 @@ class AdminService {
 
   // ─── USERS ──────────────────────────────────────────────────────
 
-  Future<List<Map<String, dynamic>>> getAllUsers({int limit = 100}) async {
-    final rows = await _db.from('users').select().limit(limit);
-    return rows;
+  Stream<List<Map<String, dynamic>>> getAllUsers({int limit = 100}) {
+    return _db.from('users').stream(primaryKey: ['id']).limit(limit).map((rows) => rows);
   }
 
   Future<Map<String, dynamic>?> getUserById(String userId) async {
@@ -165,9 +164,8 @@ class AdminService {
 
   // ─── WALLETS ────────────────────────────────────────────────────
 
-  Future<List<Map<String, dynamic>>> getAllWallets({int limit = 100}) async {
-    final rows = await _db.from('wallets').select().limit(limit);
-    return rows;
+  Stream<List<Map<String, dynamic>>> getAllWallets({int limit = 100}) {
+    return _db.from('wallets').stream(primaryKey: ['user_id']).limit(limit).map((rows) => rows);
   }
 
   Future<Map<String, dynamic>?> getWalletByUserId(String userId) async {
@@ -176,9 +174,8 @@ class AdminService {
 
   // ─── TRANSACTIONS ───────────────────────────────────────────────
 
-  Future<List<Map<String, dynamic>>> getAllTransactions({int limit = 200}) async {
-    final rows = await _db.from('transactions').select().order('created_at', ascending: false).limit(limit);
-    return rows;
+  Stream<List<Map<String, dynamic>>> getAllTransactions({int limit = 200}) {
+    return _db.from('transactions').stream(primaryKey: ['id']).limit(limit).map((rows) => rows);
   }
 
   Future<List<Map<String, dynamic>>> getTransactionsByStatus(String status, {int limit = 100}) async {
@@ -188,9 +185,8 @@ class AdminService {
 
   // ─── WITHDRAWALS ────────────────────────────────────────────────
 
-  Future<List<Map<String, dynamic>>> getAllWithdrawals({int limit = 200}) async {
-    final rows = await _db.from('withdrawals').select().order('created_at', ascending: false).limit(limit);
-    return rows;
+  Stream<List<Map<String, dynamic>>> getAllWithdrawals({int limit = 200}) {
+    return _db.from('withdrawals').stream(primaryKey: ['id']).limit(limit).map((rows) => rows);
   }
 
   Future<void> approveWithdrawal({
@@ -244,6 +240,42 @@ class AdminService {
   }
 
   // ─── ANALYTICS ──────────────────────────────────────────────────
+
+  Stream<int> getTotalUsersCount() {
+    return _db.from('users').stream(primaryKey: ['id']).map((rows) => rows.length);
+  }
+
+  Stream<int> getActiveUsersToday() {
+    return _db.from('users').stream(primaryKey: ['id']).map((rows) => rows.length);
+  }
+
+  Stream<int> getActiveListingsCount() {
+    return _db.from('properties').stream(primaryKey: ['id']).map((rows) => rows.where((r) => r['status'] == 'available').length);
+  }
+
+  Stream<int> getPendingListingsCount() {
+    return _db.from('properties').stream(primaryKey: ['id']).map((rows) => rows.where((r) => r['is_approved'] == false).length);
+  }
+
+  Stream<int> getCompletedTransactionsCount() {
+    return _db.from('transactions').stream(primaryKey: ['id']).map((rows) => rows.where((r) => r['status'] == 'completed').length);
+  }
+
+  Stream<int> getPendingWithdrawalsCount() {
+    return _db.from('withdrawals').stream(primaryKey: ['id']).map((rows) => rows.where((r) => r['status'] == 'pending').length);
+  }
+
+  Stream<int> getUnresolvedFraudCount() {
+    return _db.from('fraud_reports').stream(primaryKey: ['id']).map((rows) => rows.where((r) => r['status'] == 'open').length);
+  }
+
+  Stream<List<Map<String, dynamic>>> getAllFraudReports({int limit = 100}) {
+    return _db.from('fraud_reports').stream(primaryKey: ['id']).limit(limit).map((rows) => rows);
+  }
+
+  Stream<List<Map<String, dynamic>>> getAllListings({int limit = 100}) {
+    return _db.from('properties').stream(primaryKey: ['id']).limit(limit).map((rows) => rows);
+  }
 
   Future<Map<String, dynamic>> getDashboardStats() async {
     // Simple count by fetching all IDs (for small datasets)

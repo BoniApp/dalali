@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:dalali/models/wallet_model.dart';
 import 'package:dalali/services/admin/admin_service.dart';
 import 'package:dalali/utils/helpers.dart';
 
@@ -31,7 +30,7 @@ class WalletsAdminScreen extends StatelessWidget {
             const SizedBox(height: 24),
             Card(
               elevation: 2,
-              child: StreamBuilder<List<WalletModel>>(
+              child: StreamBuilder<List<Map<String, dynamic>>>(
                 stream: AdminService().getAllWallets(limit: 100),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
@@ -55,12 +54,12 @@ class WalletsAdminScreen extends StatelessWidget {
                       ],
                       rows: wallets.map((w) => DataRow(
                         cells: [
-                          DataCell(Text(w.userId, style: const TextStyle(fontSize: 12, fontFamily: 'monospace'))),
-                          DataCell(Text(Helpers.formatPrice(w.availableBalance), style: const TextStyle(fontWeight: FontWeight.w500))),
-                          DataCell(Text(Helpers.formatPrice(w.pendingBalance))),
-                          DataCell(Text(Helpers.formatPrice(w.lockedBalance))),
-                          DataCell(Text(Helpers.formatPrice(w.totalEarned))),
-                          DataCell(Text(Helpers.formatPrice(w.totalWithdrawn))),
+                          DataCell(Text(w['user_id'] ?? '', style: const TextStyle(fontSize: 12, fontFamily: 'monospace'))),
+                          DataCell(Text(Helpers.formatPrice((w['available_balance'] as num?)?.toDouble() ?? 0.0), style: const TextStyle(fontWeight: FontWeight.w500))),
+                          DataCell(Text(Helpers.formatPrice((w['pending_balance'] as num?)?.toDouble() ?? 0.0))),
+                          DataCell(Text(Helpers.formatPrice((w['locked_balance'] as num?)?.toDouble() ?? 0.0))),
+                          DataCell(Text(Helpers.formatPrice((w['total_earned'] as num?)?.toDouble() ?? 0.0))),
+                          DataCell(Text(Helpers.formatPrice((w['total_withdrawn'] as num?)?.toDouble() ?? 0.0))),
                           DataCell(Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [

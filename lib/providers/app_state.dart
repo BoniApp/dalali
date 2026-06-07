@@ -292,72 +292,72 @@ class AppState extends ChangeNotifier {
     }
 
     // Reviews
-    _subscriptions.add(_firestore.getReviews(limit: 100).listen((list) {
-      _reviews = list;
+    _subscriptions.add(_data.getReviews(limit: 100).listen((list) {
+      _reviews = list.cast<ReviewModel>();
       notifyListeners();
     }));
 
     // Move listings
-    _subscriptions.add(_firestore.getMoveListingsByUser(currentUser!.id).listen((list) {
-      _moveListings = list;
+    _subscriptions.add(_data.getMoveListingsByUser(currentUser!.id).listen((list) {
+      _moveListings = list.cast<MoveListingModel>();
       notifyListeners();
     }));
 
     // Rewards
-    _subscriptions.add(_firestore.getRewardsForUser(currentUser!.id).listen((list) {
-      _rewards = list;
+    _subscriptions.add(_data.getRewardsForUser(currentUser!.id).listen((list) {
+      _rewards = list.cast<RewardModel>();
       notifyListeners();
     }));
 
     // Neighbourhood reports
-    _subscriptions.add(_firestore.getNeighbourhoodReports(limit: 200).listen((list) {
-      _neighbourhoodReports = list;
+    _subscriptions.add(_data.getNeighbourhoodReports(limit: 200).listen((list) {
+      _neighbourhoodReports = list.cast<NeighbourhoodReportModel>();
       _recomputeSafetyScores();
       notifyListeners();
     }));
 
     // Tenancy Applications
     if (isLandlord) {
-      _subscriptions.add(_firestore.getApplicationsForLandlord(currentUser!.id).listen((list) {
-        _tenancyApplications = list;
+      _subscriptions.add(_data.getApplicationsForLandlord(currentUser!.id).listen((list) {
+        _tenancyApplications = list.cast<TenancyApplicationModel>();
         notifyListeners();
       }));
     } else {
-      _subscriptions.add(_firestore.getApplicationsForTenant(currentUser!.id).listen((list) {
-        _tenancyApplications = list;
+      _subscriptions.add(_data.getApplicationsForTenant(currentUser!.id).listen((list) {
+        _tenancyApplications = list.cast<TenancyApplicationModel>();
         notifyListeners();
       }));
     }
 
     // Tenancies
     if (isLandlord) {
-      _subscriptions.add(_firestore.getTenanciesForLandlord(currentUser!.id).listen((list) {
-        _tenancies = list;
+      _subscriptions.add(_data.getTenanciesForLandlord(currentUser!.id).listen((list) {
+        _tenancies = list.cast<TenancyModel>();
         notifyListeners();
       }));
     } else {
-      _subscriptions.add(_firestore.getTenanciesForTenant(currentUser!.id).listen((list) {
-        _tenancies = list;
+      _subscriptions.add(_data.getTenanciesForTenant(currentUser!.id).listen((list) {
+        _tenancies = list.cast<TenancyModel>();
         notifyListeners();
       }));
     }
 
     // Maintenance Requests
     if (isLandlord) {
-      _subscriptions.add(_firestore.getMaintenanceForLandlord(currentUser!.id).listen((list) {
-        _maintenanceRequests = list;
+      _subscriptions.add(_data.getMaintenanceForLandlord(currentUser!.id).listen((list) {
+        _maintenanceRequests = list.cast<MaintenanceRequestModel>();
         notifyListeners();
       }));
     } else {
-      _subscriptions.add(_firestore.getMaintenanceForTenant(currentUser!.id).listen((list) {
-        _maintenanceRequests = list;
+      _subscriptions.add(_data.getMaintenanceForTenant(currentUser!.id).listen((list) {
+        _maintenanceRequests = list.cast<MaintenanceRequestModel>();
         notifyListeners();
       }));
     }
 
     // Rent Schedules
-    _subscriptions.add(_firestore.getRentSchedulesForTenant(currentUser!.id).listen((list) {
-      _rentSchedules = list;
+    _subscriptions.add(_data.getRentSchedulesForTenant(currentUser!.id).listen((list) {
+      _rentSchedules = list.cast<RentScheduleModel>();
       notifyListeners();
     }));
   }
@@ -430,7 +430,7 @@ class AppState extends ChangeNotifier {
 
   void addReview(ReviewModel review) {
     _reviews.add(review);
-    if (_isFirebase) _firestore.addReview(review);
+    if (_isFirebase) _data.addReview(review);
     // Update property review count + average rating (simplified)
     final pIdx = _properties.indexWhere((p) => p.id == review.propertyId);
     if (pIdx >= 0) {

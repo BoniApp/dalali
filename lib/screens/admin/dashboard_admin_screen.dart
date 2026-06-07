@@ -170,8 +170,7 @@ class _RevenueCard extends StatelessWidget {
               stream: SupabaseService.client
                   .from('transactions')
                   .stream(primaryKey: ['id'])
-                  .eq('status', 'completed')
-                  .map((rows) => rows),
+                  .map((rows) => rows.where((r) => r['status'] == 'completed').toList()),
               builder: (context, snapshot) {
                 final docs = snapshot.data ?? [];
                 final totalRevenue = docs.fold<double>(0, (total, d) {
@@ -369,7 +368,7 @@ class _FraudAlertsPreview extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 16),
-            StreamBuilder(
+            StreamBuilder<List<Map<String, dynamic>>>(
               stream: AdminService().getAllFraudReports(limit: 5),
               builder: (context, snapshot) {
                 final reports = snapshot.data ?? [];
@@ -383,13 +382,13 @@ class _FraudAlertsPreview extends StatelessWidget {
                 }
                 return Column(
                   children: reports.map((r) => ListTile(
-                    leading: Icon(Icons.warning, color: _severityColor(r.severity)),
-                    title: Text(r.reason, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
-                    subtitle: Text('Severity: ${r.severity}', style: TextStyle(fontSize: 11, color: Colors.grey[600])),
+                    leading: Icon(Icons.warning, color: _severityColor(r['severity'] ?? 'medium')),
+                    title: Text(r['reason'] ?? '', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
+                    subtitle: Text('Severity: ${r['severity'] ?? 'medium'}', style: TextStyle(fontSize: 11, color: Colors.grey[600])),
                     trailing: Chip(
-                      label: Text(r.severity.toUpperCase(), style: const TextStyle(fontSize: 10)),
-                      backgroundColor: _severityColor(r.severity).withValues(alpha: 0.1),
-                      labelStyle: TextStyle(fontSize: 10, color: _severityColor(r.severity), fontWeight: FontWeight.bold),
+                      label: Text((r['severity'] ?? 'medium').toUpperCase(), style: const TextStyle(fontSize: 10)),
+                      backgroundColor: _severityColor(r['severity'] ?? 'medium').withValues(alpha: 0.1),
+                      labelStyle: TextStyle(fontSize: 10, color: _severityColor(r['severity'] ?? 'medium'), fontWeight: FontWeight.bold),
                     ),
                   )).toList(),
                 );

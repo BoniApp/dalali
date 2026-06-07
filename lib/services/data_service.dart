@@ -34,11 +34,10 @@ class DataService {
     return _db
         .from('properties')
         .stream(primaryKey: ['id'])
-        .eq('status', 'available')
-        .eq('is_approved', true)
-        .order('created_at', ascending: false)
-        .limit(limit)
-        .map((rows) => rows.map(_propertyFromJson).toList());
+        .map((rows) => rows
+            .where((r) => r['status'] == 'available' && r['is_approved'] == true)
+            .map(_propertyFromJson)
+            .toList());
   }
 
   Future<List<PropertyModel>> getPropertiesPaginated({

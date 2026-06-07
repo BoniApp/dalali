@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:dalali/models/user_model.dart';
 import 'package:dalali/services/admin/admin_service.dart';
 import 'package:intl/intl.dart';
 
@@ -21,7 +20,7 @@ class UsersAdminScreen extends StatelessWidget {
             const SizedBox(height: 24),
             Card(
               elevation: 2,
-              child: StreamBuilder<List<UserModel>>(
+              child: StreamBuilder<List<Map<String, dynamic>>>(
                 stream: AdminService().getAllUsers(limit: 100),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
@@ -45,22 +44,22 @@ class UsersAdminScreen extends StatelessWidget {
                       ],
                       rows: users.map((u) => DataRow(
                         cells: [
-                          DataCell(Text(u.fullName, style: const TextStyle(fontWeight: FontWeight.w500))),
-                          DataCell(Text(u.email)),
-                          DataCell(Text(u.phone)),
+                          DataCell(Text(u['full_name'] ?? '', style: const TextStyle(fontWeight: FontWeight.w500))),
+                          DataCell(Text(u['email'] ?? '')),
+                          DataCell(Text(u['phone'] ?? '')),
                           DataCell(Chip(
-                            label: Text(u.role.name, style: const TextStyle(fontSize: 10)),
-                            backgroundColor: _roleColor(u.role).withValues(alpha: 0.1),
-                            labelStyle: TextStyle(fontSize: 10, color: _roleColor(u.role), fontWeight: FontWeight.bold),
+                            label: Text(u['role'] ?? 'seeker', style: const TextStyle(fontSize: 10)),
+                            backgroundColor: _roleColor(u['role'] ?? 'seeker').withValues(alpha: 0.1),
+                            labelStyle: TextStyle(fontSize: 10, color: _roleColor(u['role'] ?? 'seeker'), fontWeight: FontWeight.bold),
                             padding: EdgeInsets.zero,
                             materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                           )),
                           DataCell(
-                            u.verificationStatus == VerificationStatus.verified
+                            (u['verification_status'] ?? '') == 'verified'
                                 ? const Row(mainAxisSize: MainAxisSize.min, children: [Icon(Icons.verified, color: Colors.green, size: 16), SizedBox(width: 4), Text('Verified')])
-                                : Text(u.verificationStatus.name, style: const TextStyle(color: Colors.grey)),
+                                : Text(u['verification_status'] ?? '', style: const TextStyle(color: Colors.grey)),
                           ),
-                          DataCell(Text(DateFormat('dd MMM yyyy').format(u.createdAt), style: const TextStyle(fontSize: 12))),
+                          DataCell(Text(DateFormat('dd MMM yyyy').format(DateTime.tryParse(u['created_at'] ?? '') ?? DateTime.now()), style: const TextStyle(fontSize: 12))),
                           DataCell(Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
@@ -89,11 +88,12 @@ class UsersAdminScreen extends StatelessWidget {
     );
   }
 
-  Color _roleColor(UserRole role) {
-    return switch (role) {
-      UserRole.seeker => Colors.blue,
-      UserRole.landlord => Colors.teal,
-      UserRole.agent => Colors.purple,
+  Color _roleColor(String role) {
+    return switch (role.toLowerCase()) {
+      'seeker' => Colors.blue,
+      'landlord' => Colors.teal,
+      'agent' => Colors.purple,
+      _ => Colors.grey,
     };
   }
 }

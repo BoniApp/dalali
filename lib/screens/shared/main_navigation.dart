@@ -34,7 +34,7 @@ class _MainNavigationState extends State<MainNavigation> {
 
     if (user == null) {
       // If Firebase mode but not logged in, show login
-      if (authMode == AuthMode.firebase) {
+      if (authMode == AuthMode.supabase) {
         return const LoginScreen();
       }
       // Otherwise show demo role selection

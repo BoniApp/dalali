@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:dalali/models/admin/admin_user_model.dart';
 import 'package:dalali/services/admin/admin_service.dart';
 import 'package:intl/intl.dart';
 
@@ -21,7 +20,7 @@ class FraudAdminScreen extends StatelessWidget {
             const SizedBox(height: 24),
             Card(
               elevation: 2,
-              child: StreamBuilder<List<FraudReportModel>>(
+              child: StreamBuilder<List<Map<String, dynamic>>>(
                 stream: AdminService().getAllFraudReports(limit: 100),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
@@ -45,12 +44,12 @@ class FraudAdminScreen extends StatelessWidget {
                       ],
                       rows: reports.map((r) => DataRow(
                         cells: [
-                          DataCell(Text(r.id.substring(0, r.id.length > 8 ? 8 : r.id.length), style: const TextStyle(fontFamily: 'monospace', fontSize: 12))),
-                          DataCell(Text(r.userId, style: const TextStyle(fontSize: 12))),
-                          DataCell(Text(r.propertyId ?? '-', style: const TextStyle(fontSize: 12))),
-                          DataCell(Text(r.reason)),
-                          DataCell(_SeverityChip(severity: r.severity)),
-                          DataCell(Text(DateFormat('dd MMM yyyy').format(r.createdAt), style: const TextStyle(fontSize: 12))),
+                          DataCell(Text((r['id'] ?? '').substring(0, (r['id'] ?? '').length > 8 ? 8 : (r['id'] ?? '').length), style: const TextStyle(fontFamily: 'monospace', fontSize: 12))),
+                          DataCell(Text(r['user_id'] ?? '', style: const TextStyle(fontSize: 12))),
+                          DataCell(Text(r['property_id'] ?? '-', style: const TextStyle(fontSize: 12))),
+                          DataCell(Text(r['reason'] ?? '')),
+                          DataCell(_SeverityChip(severity: r['severity'] ?? 'medium')),
+                          DataCell(Text(DateFormat('dd MMM yyyy').format(DateTime.tryParse(r['created_at'] ?? '') ?? DateTime.now()), style: const TextStyle(fontSize: 12))),
                           DataCell(
                             IconButton(
                               icon: const Icon(Icons.check_circle, color: Colors.green, size: 18),

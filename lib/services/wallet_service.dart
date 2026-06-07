@@ -35,10 +35,10 @@ class WalletService {
     return _db
         .from('transactions')
         .stream(primaryKey: ['id'])
-        .or('payer_id.eq.$userId,payee_id.eq.$userId')
-        .order('created_at', ascending: false)
-        .limit(limit)
-        .map((rows) => rows.map((r) => TransactionModel.fromJson(r, r['id'] ?? '')).toList());
+        .map((rows) => rows
+            .where((r) => r['payer_id'] == userId || r['payee_id'] == userId)
+            .map((r) => TransactionModel.fromJson(r, r['id'] ?? ''))
+            .toList());
   }
 
   Future<void> createTransaction(TransactionModel tx) async {
@@ -54,7 +54,7 @@ class WalletService {
         .eq('user_id', userId)
         .order('created_at', ascending: false)
         .limit(limit)
-        .map((rows) => rows.map((r) => WithdrawalModel.fromJson(r)).toList());
+        .map((rows) => rows.map((r) => WithdrawalModel.fromJson(r, r['id'] ?? '')).toList());
   }
 
   Future<void> createWithdrawal(WithdrawalModel wd) async {
@@ -76,5 +76,13 @@ class WalletService {
       'settlement_delay_hours': 48,
       'min_withdrawal': 5000,
     };
+  }
+
+  Future<Map<String, dynamic>> getSystemSettingsOnce() async {
+    return await getSystemSettings();
+  }
+
+  Future<void> requestWithdrawal(WithdrawalModel withdrawal) async {
+    await createWithdrawal(withdrawal);
   }
 }

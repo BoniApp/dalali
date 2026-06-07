@@ -40,10 +40,11 @@ class _WithdrawalScreenState extends State<WithdrawalScreen> {
     }
 
     final settings = await WalletService().getSystemSettingsOnce();
-    if (amount < settings.minWithdrawal) {
+    final minWithdrawal = (settings['min_withdrawal'] as num?)?.toDouble() ?? 5000.0;
+    if (amount < minWithdrawal) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Minimum withdrawal is ${Helpers.formatPrice(settings.minWithdrawal)}')),
+          SnackBar(content: Text('Minimum withdrawal is ${Helpers.formatPrice(minWithdrawal)}')),
         );
       }
       return;
