@@ -102,6 +102,9 @@ CREATE TABLE IF NOT EXISTS webhook_processed (
   processed_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+ALTER TABLE webhook_processed ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Server-only webhook processed" ON webhook_processed FOR ALL USING (false);
+
 -- ─── FRAUD REPORTS ────────────────────────────────────────────
 
 CREATE TABLE IF NOT EXISTS fraud_reports (
