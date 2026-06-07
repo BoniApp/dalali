@@ -21,7 +21,7 @@ class DisputesAdminScreen extends StatelessWidget {
             const SizedBox(height: 24),
             Card(
               elevation: 2,
-              child: StreamBuilder<List<DisputeModel>>(
+              child: StreamBuilder<List<Map<String, dynamic>>>(
                 stream: AdminService().getAllDisputes(limit: 100),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
@@ -45,14 +45,14 @@ class DisputesAdminScreen extends StatelessWidget {
                       ],
                       rows: disputes.map((d) => DataRow(
                         cells: [
-                          DataCell(Text(d.id.substring(0, d.id.length > 8 ? 8 : d.id.length), style: const TextStyle(fontFamily: 'monospace', fontSize: 12))),
-                          DataCell(Text(d.reporterId, style: const TextStyle(fontSize: 12))),
-                          DataCell(Text(d.respondentId ?? '-', style: const TextStyle(fontSize: 12))),
-                          DataCell(Text(d.subject)),
-                          DataCell(_StatusChip(status: d.status)),
-                          DataCell(Text(DateFormat('dd MMM yyyy').format(d.createdAt), style: const TextStyle(fontSize: 12))),
+                          DataCell(Text((d['id'] as String).substring(0, 8), style: const TextStyle(fontFamily: 'monospace', fontSize: 12))),
+                          DataCell(Text(d['reporter_id'] ?? '', style: const TextStyle(fontSize: 12))),
+                          DataCell(Text(d['respondent_id'] ?? '-', style: const TextStyle(fontSize: 12))),
+                          DataCell(Text(d['type'] ?? '')),
+                          DataCell(_StatusChip(status: d['status'] ?? '')),
+                          DataCell(Text(DateFormat('dd MMM yyyy').format(DateTime.tryParse(d['created_at'] ?? '') ?? DateTime.now()), style: const TextStyle(fontSize: 12))),
                           DataCell(
-                            d.status == 'open' || d.status == 'under_review'
+                            (d['status'] == 'open' || d['status'] == 'mediating')
                                 ? IconButton(
                                     icon: const Icon(Icons.gavel, color: Colors.teal, size: 18),
                                     tooltip: 'Resolve',
@@ -73,7 +73,7 @@ class DisputesAdminScreen extends StatelessWidget {
     );
   }
 
-  void _showResolveDialog(BuildContext context, DisputeModel dispute) {
+  void _showResolveDialog(BuildContext context, Map<String, dynamic> dispute) {
     final controller = TextEditingController();
     showDialog(
       context: context,
@@ -83,9 +83,9 @@ class DisputesAdminScreen extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Subject: ${dispute.subject}', style: const TextStyle(fontWeight: FontWeight.bold)),
+            Text('Type: ${dispute['type'] ?? ''}', style: const TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
-            Text('Description: ${dispute.description}'),
+            Text('Description: ${dispute['description'] ?? ''}'),
             const SizedBox(height: 16),
             TextField(
               controller: controller,
@@ -99,7 +99,7 @@ class DisputesAdminScreen extends StatelessWidget {
           ElevatedButton(
             onPressed: () async {
               await AdminService().resolveDispute(
-                dispute.id,
+                disputeId: dispute['id'] ?? '',
                 resolution: controller.text,
                 adminId: 'admin',
                 adminName: 'Admin',

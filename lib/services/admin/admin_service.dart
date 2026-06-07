@@ -258,6 +258,38 @@ class AdminService {
     };
   }
 
+  // ─── DISPUTES ───────────────────────────────────────────────────
+
+  Stream<List<Map<String, dynamic>>> getAllDisputes({int limit = 100}) {
+    return _db
+        .from('disputes')
+        .stream(primaryKey: ['id'])
+        .limit(limit)
+        .map((rows) => rows);
+  }
+
+  Future<void> resolveDispute({
+    required String disputeId,
+    required String resolution,
+    required String adminId,
+    required String adminName,
+    required AdminRole adminRole,
+  }) async {
+    await _db.from('disputes').update({
+      'status': 'resolved',
+      'resolution': resolution,
+      'resolved_at': DateTime.now().toIso8601String(),
+    }).eq('id', disputeId);
+    await _logAction(
+      adminId: adminId,
+      adminName: adminName,
+      adminRole: adminRole,
+      action: 'resolve_dispute',
+      targetCollection: 'disputes',
+      targetId: disputeId,
+    );
+  }
+
   // ─── SYSTEM SETTINGS ────────────────────────────────────────────
 
   Future<Map<String, dynamic>?> getSystemSettings() async {

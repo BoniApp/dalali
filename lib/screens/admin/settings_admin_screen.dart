@@ -32,14 +32,19 @@ class _SettingsAdminScreenState extends State<SettingsAdminScreen> {
   Future<void> _save() async {
     setState(() => _isSaving = true);
     try {
-      await AdminService().updateSystemSettings({
-        'agencyFee': double.parse(_agencyFeeController.text),
-        'agentShare': double.parse(_agentShareController.text),
-        'platformShare': double.parse(_platformShareController.text),
-        'settlementDelayHours': int.parse(_settlementDelayController.text),
-        'minWithdrawal': double.parse(_minWithdrawalController.text),
-        'updatedAt': DateTime.now().toIso8601String(),
-      }, adminId: 'admin', adminName: 'Admin', adminRole: AdminRole.superAdmin);
+      await AdminService().updateSystemSettings(
+        adminId: 'admin',
+        adminName: 'Admin',
+        adminRole: AdminRole.superAdmin,
+        settings: {
+          'agency_fee': double.parse(_agencyFeeController.text),
+          'agent_share': double.parse(_agentShareController.text),
+          'platform_share': double.parse(_platformShareController.text),
+          'settlement_delay_hours': int.parse(_settlementDelayController.text),
+          'min_withdrawal': double.parse(_minWithdrawalController.text),
+          'updated_at': DateTime.now().toIso8601String(),
+        },
+      );
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Settings saved')));
