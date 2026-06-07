@@ -55,7 +55,9 @@ class DataService {
   }
 
   Future<void> addProperty(PropertyModel property) async {
-    await _db.from('properties').insert(_propertyToJson(property));
+    final json = _propertyToJson(property);
+    json.remove('id'); // Let Supabase auto-generate UUID
+    await _db.from('properties').insert(json);
   }
 
   Future<void> updateProperty(PropertyModel property) async {
@@ -116,7 +118,9 @@ class DataService {
   }
 
   Future<void> addAppointment(AppointmentModel appointment) async {
-    await _db.from('appointments').insert(_appointmentToJson(appointment));
+    final json = _appointmentToJson(appointment);
+    json.remove('id');
+    await _db.from('appointments').insert(json);
   }
 
   Future<void> updateAppointmentStatus(String id, AppointmentStatus status) async {
@@ -138,7 +142,9 @@ class DataService {
   }
 
   Future<void> addInquiry(InquiryModel inquiry) async {
-    await _db.from('inquiries').insert(_inquiryToJson(inquiry));
+    final json = _inquiryToJson(inquiry);
+    json.remove('id');
+    await _db.from('inquiries').insert(json);
   }
 
   Future<void> markInquiryRead(String id) async {

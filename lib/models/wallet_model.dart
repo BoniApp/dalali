@@ -63,7 +63,7 @@ class WalletModel {
 
   factory WalletModel.fromJson(Map<String, dynamic> json) {
     return WalletModel(
-      userId: json['userId'] ?? '',
+      userId: json['user_id'] ?? '',
       availableBalance: (json['availableBalance'] as num?)?.toDouble() ?? 0,
       pendingBalance: (json['pendingBalance'] as num?)?.toDouble() ?? 0,
       lockedBalance: (json['lockedBalance'] as num?)?.toDouble() ?? 0,
@@ -148,18 +148,18 @@ class TransactionModel {
     'status': status.name,
     'amount': amount,
     'currency': currency,
-    'payerId': payerId,
-    'payeeId': payeeId,
-    'propertyId': propertyId,
-    'propertyTitle': propertyTitle,
-    'paymentMethod': paymentMethod,
+    'payer_id': payerId,
+    'payee_id': payeeId,
+    'property_id': propertyId,
+    'property_title': propertyTitle,
+    'payment_method': paymentMethod,
     'split': split,
-    'selcomTransactionId': selcomTransactionId,
-    'idempotencyKey': idempotencyKey,
-    'failureReason': failureReason,
-    'createdAt': createdAt.toIso8601String(),
-    'settledAt': settledAt?.toIso8601String(),
-    'reversedAt': reversedAt?.toIso8601String(),
+    'selcom_transaction_id': selcomTransactionId,
+    'idempotency_key': idempotencyKey,
+    'failure_reason': failureReason,
+    'created_at': createdAt.toIso8601String(),
+    'settled_at': settledAt?.toIso8601String(),
+    'reversed_at': reversedAt?.toIso8601String(),
   };
 
   factory TransactionModel.fromJson(Map<String, dynamic> json, String id) {
@@ -175,11 +175,11 @@ class TransactionModel {
       ),
       amount: (json['amount'] as num?)?.toDouble() ?? 0,
       currency: json['currency'] ?? 'TZS',
-      payerId: json['payerId'],
-      payeeId: json['payeeId'],
-      propertyId: json['propertyId'],
-      propertyTitle: json['propertyTitle'],
-      paymentMethod: json['paymentMethod'] ?? 'selcom',
+      payerId: json['payer_id'],
+      payeeId: json['payee_id'],
+      propertyId: json['property_id'],
+      propertyTitle: json['property_title'],
+      paymentMethod: json['payment_method'] ?? 'selcom',
       split: json['split'] != null
           ? Map<String, double>.from(
               (json['split'] as Map<String, dynamic>).map(
@@ -187,15 +187,15 @@ class TransactionModel {
               ),
             )
           : null,
-      selcomTransactionId: json['selcomTransactionId'],
-      idempotencyKey: json['idempotencyKey'],
-      failureReason: json['failureReason'],
-      createdAt: DateTime.tryParse(json['createdAt'] ?? '') ?? DateTime.now(),
-      settledAt: json['settledAt'] != null
-          ? DateTime.tryParse(json['settledAt'])
+      selcomTransactionId: json['selcom_transaction_id'],
+      idempotencyKey: json['idempotency_key'],
+      failureReason: json['failure_reason'],
+      createdAt: DateTime.tryParse(json['created_at'] ?? '') ?? DateTime.now(),
+      settledAt: json['settled_at'] != null
+          ? DateTime.tryParse(json['settled_at'])
           : null,
-      reversedAt: json['reversedAt'] != null
-          ? DateTime.tryParse(json['reversedAt'])
+      reversedAt: json['reversed_at'] != null
+          ? DateTime.tryParse(json['reversed_at'])
           : null,
     );
   }
@@ -248,15 +248,15 @@ class WithdrawalModel {
   }
 
   Map<String, dynamic> toJson() => {
-    'userId': userId,
+    'user_id': userId,
     'amount': amount,
     'phone': phone,
     'provider': provider.name,
     'status': status.name,
-    'selcomPayoutId': selcomPayoutId,
-    'failureReason': failureReason,
-    'createdAt': createdAt.toIso8601String(),
-    'processedAt': processedAt?.toIso8601String(),
+    'selcom_payout_id': selcomPayoutId,
+    'failure_reason': failureReason,
+    'created_at': createdAt.toIso8601String(),
+    'processed_at': processedAt?.toIso8601String(),
   };
 
   factory WithdrawalModel.fromJson(Map<String, dynamic> json, String id) {
