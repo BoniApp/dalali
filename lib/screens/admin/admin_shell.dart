@@ -10,6 +10,7 @@ import 'package:dalali/screens/admin/fraud_admin_screen.dart';
 import 'package:dalali/screens/admin/analytics_admin_screen.dart';
 import 'package:dalali/screens/admin/settings_admin_screen.dart';
 import 'package:dalali/screens/admin/disputes_admin_screen.dart';
+import 'package:dalali/screens/admin/login_admin_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class AdminShell extends StatefulWidget {
@@ -74,7 +75,10 @@ class _AdminShellState extends State<AdminShell> {
   Future<void> _logout() async {
     await FirebaseAuth.instance.signOut();
     if (mounted) {
-      Navigator.of(context).pushReplacementNamed('/admin/login');
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const LoginAdminScreen()),
+        (route) => false,
+      );
     }
   }
 

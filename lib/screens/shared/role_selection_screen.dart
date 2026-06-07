@@ -3,10 +3,38 @@ import 'package:dalali/l10n/app_localizations.dart';
 import 'package:dalali/models/user_model.dart';
 import 'package:dalali/providers/app_state.dart';
 import 'package:dalali/screens/auth/login_screen.dart';
+import 'package:dalali/screens/admin/login_admin_screen.dart';
 import 'package:provider/provider.dart';
 
-class RoleSelectionScreen extends StatelessWidget {
+class RoleSelectionScreen extends StatefulWidget {
   const RoleSelectionScreen({super.key});
+
+  @override
+  State<RoleSelectionScreen> createState() => _RoleSelectionScreenState();
+}
+
+class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
+  int _logoTapCount = 0;
+  DateTime? _firstTapTime;
+
+  void _onLogoTap(BuildContext context) {
+    final now = DateTime.now();
+    if (_firstTapTime == null || now.difference(_firstTapTime!) > const Duration(seconds: 3)) {
+      _logoTapCount = 1;
+      _firstTapTime = now;
+    } else {
+      _logoTapCount++;
+    }
+
+    if (_logoTapCount >= 5) {
+      _logoTapCount = 0;
+      _firstTapTime = null;
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const LoginAdminScreen()),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -22,15 +50,18 @@ class RoleSelectionScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   const SizedBox(height: 20),
-                  Center(
-                    child: Container(
-                      width: 80,
-                      height: 80,
-                      decoration: BoxDecoration(
-                        color: Colors.teal.shade50,
-                        borderRadius: BorderRadius.circular(20),
+                  GestureDetector(
+                    onTap: () => _onLogoTap(context),
+                    child: Center(
+                      child: Container(
+                        width: 80,
+                        height: 80,
+                        decoration: BoxDecoration(
+                          color: Colors.teal.shade50,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: const Icon(Icons.home_work, size: 40, color: Colors.teal),
                       ),
-                      child: const Icon(Icons.home_work, size: 40, color: Colors.teal),
                     ),
                   ),
                   const SizedBox(height: 20),
