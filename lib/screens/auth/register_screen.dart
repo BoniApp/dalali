@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:dalali/models/user_model.dart';
-import 'package:dalali/services/firebase_auth_service.dart';
+import 'package:dalali/services/auth_service.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -16,7 +16,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-  final _authService = FirebaseAuthService();
+  final _authService = AuthService();
 
   bool _isLoading = false;
   bool _obscurePassword = true;

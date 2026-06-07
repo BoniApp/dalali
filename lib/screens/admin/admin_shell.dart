@@ -11,7 +11,7 @@ import 'package:dalali/screens/admin/analytics_admin_screen.dart';
 import 'package:dalali/screens/admin/settings_admin_screen.dart';
 import 'package:dalali/screens/admin/disputes_admin_screen.dart';
 import 'package:dalali/screens/admin/login_admin_screen.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:dalali/services/supabase_service.dart';
 
 class AdminShell extends StatefulWidget {
   final String adminId;
@@ -73,7 +73,7 @@ class _AdminShellState extends State<AdminShell> {
   }
 
   Future<void> _logout() async {
-    await FirebaseAuth.instance.signOut();
+    await SupabaseService.client.auth.signOut();
     if (mounted) {
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(builder: (_) => const LoginAdminScreen()),

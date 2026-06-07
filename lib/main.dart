@@ -1,28 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:dalali/l10n/app_localizations.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-import 'package:dalali/firebase_options.dart';
+import 'package:dalali/services/supabase_service.dart';
 import 'package:dalali/providers/app_state.dart';
 import 'package:dalali/providers/theme_provider.dart';
 import 'package:dalali/providers/language_provider.dart';
 import 'package:dalali/screens/auth/login_screen.dart';
 import 'package:dalali/screens/shared/main_navigation.dart';
 import 'package:dalali/screens/shared/role_selection_screen.dart';
-import 'package:dalali/services/firebase_auth_service.dart';
+import 'package:dalali/services/auth_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Firebase
+  // Initialize Supabase
   try {
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
+    await SupabaseService.initialize();
   } catch (e) {
-    debugPrint('Firebase initialization error: $e');
+    debugPrint('Supabase initialization error: $e');
   }
 
   runApp(const MyApp());
@@ -85,11 +83,10 @@ class AuthWrapper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final authService = FirebaseAuthService();
     final appState = context.watch<AppState>();
 
-    return StreamBuilder(
-      stream: authService.authStateChanges,
+    return StreamBuilder<AuthState>(
+      stream: AuthService().authStateChanges,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting && appState.currentUser == null) {
           return const Scaffold(
@@ -97,12 +94,14 @@ class AuthWrapper extends StatelessWidget {
           );
         }
 
-        // Logged in via Firebase OR demo mode
-        if ((snapshot.hasData && snapshot.data != null) || appState.currentUser != null) {
+        final session = snapshot.data?.session;
+
+        // Logged in via Supabase OR demo mode
+        if ((session != null && session.user != null) || appState.currentUser != null) {
           return const MainNavigation();
         }
 
-        // Otherwise show role selection (demo mode) which has Firebase login option
+        // Otherwise show role selection (demo mode) which has login option
         return const RoleSelectionScreen();
       },
     );

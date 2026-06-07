@@ -1,14 +1,21 @@
 import 'dart:io';
-import 'package:firebase_storage/firebase_storage.dart';
+import 'package:dalali/services/supabase_service.dart';
 
+/// ═══════════════════════════════════════════════════════════════
+/// STORAGE SERVICE — Supabase Storage
+///
+/// Handles image uploads for properties and user profiles.
+/// ═══════════════════════════════════════════════════════════════
 class StorageService {
-  final FirebaseStorage _storage = FirebaseStorage.instance;
+  static final _storage = SupabaseService.client.storage;
+  static const String _propertiesBucket = 'properties';
+  static const String _avatarsBucket = 'avatars';
 
   Future<String?> uploadPropertyImage(File file, String propertyId, int index) async {
     try {
-      final ref = _storage.ref().child('properties/$propertyId/image_$index.jpg');
-      final uploadTask = await ref.putFile(file);
-      return await uploadTask.ref.getDownloadURL();
+      final path = '$propertyId/image_$index.jpg';
+      await _storage.from(_propertiesBucket).upload(path, file);
+      return _storage.from(_propertiesBucket).getPublicUrl(path);
     } catch (e) {
       return null;
     }
@@ -16,9 +23,9 @@ class StorageService {
 
   Future<String?> uploadProfileImage(File file, String userId) async {
     try {
-      final ref = _storage.ref().child('users/$userId/profile.jpg');
-      final uploadTask = await ref.putFile(file);
-      return await uploadTask.ref.getDownloadURL();
+      final path = '$userId/profile.jpg';
+      await _storage.from(_avatarsBucket).upload(path, file);
+      return _storage.from(_avatarsBucket).getPublicUrl(path);
     } catch (e) {
       return null;
     }
@@ -26,9 +33,9 @@ class StorageService {
 
   Future<void> deletePropertyImages(String propertyId) async {
     try {
-      final listResult = await _storage.ref().child('properties/$propertyId').listAll();
-      for (var item in listResult.items) {
-        await item.delete();
+      final files = await _storage.from(_propertiesBucket).list(path: propertyId);
+      for (final file in files) {
+        await _storage.from(_propertiesBucket).remove(['$propertyId/${file.name}']);
       }
     } catch (e) {
       // Ignore errors

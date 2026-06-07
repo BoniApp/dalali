@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dalali/models/user_preferences_model.dart';
+import 'package:dalali/services/supabase_service.dart';
 
 extension AppThemeModeX on AppThemeMode {
   ThemeMode get flutterThemeMode => switch (this) {
@@ -57,37 +57,37 @@ class ThemeProvider extends ChangeNotifier {
     }
 
     if (userId != null) {
-      await _syncToFirestore(userId, mode);
+      await _syncToDatabase(userId, mode);
     }
   }
 
-  Future<void> loadFromFirestore(String userId) async {
+  Future<void> loadFromDatabase(String userId) async {
     try {
-      final doc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(userId)
-          .get();
-      final data = doc.data()?['preferences'] as Map<String, dynamic>?;
-      if (data != null && data['theme'] != null) {
+      final data = await SupabaseService.client
+          .from('users')
+          .select('preferences_theme')
+          .eq('id', userId)
+          .maybeSingle();
+      if (data != null && data['preferences_theme'] != null) {
         final mode = AppThemeMode.values.firstWhere(
-          (e) => e.name == data['theme'],
+          (e) => e.name == data['preferences_theme'],
           orElse: () => AppThemeMode.system,
         );
         await setThemeMode(mode);
       }
     } catch (e) {
-      debugPrint('ThemeProvider: Firestore load failed: $e');
+      debugPrint('ThemeProvider: database load failed: $e');
     }
   }
 
-  Future<void> _syncToFirestore(String userId, AppThemeMode mode) async {
+  Future<void> _syncToDatabase(String userId, AppThemeMode mode) async {
     try {
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(userId)
-          .update({_firestoreField: mode.name});
+      await SupabaseService.client
+          .from('users')
+          .update({'preferences_theme': mode.name})
+          .eq('id', userId);
     } catch (e) {
-      debugPrint('ThemeProvider: Firestore sync failed: $e');
+      debugPrint('ThemeProvider: database sync failed: $e');
     }
   }
 

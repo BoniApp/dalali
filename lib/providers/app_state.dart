@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:dalali/models/user_model.dart';
 import 'package:dalali/models/property_model.dart';
 import 'package:dalali/models/favorite_model.dart';
@@ -17,10 +17,10 @@ import 'package:dalali/models/maintenance_request_model.dart';
 import 'package:dalali/models/rent_schedule_model.dart';
 import 'package:dalali/services/mock_data_service.dart';
 import 'package:dalali/services/firestore_service.dart';
-import 'package:dalali/services/firebase_auth_service.dart';
+import 'package:dalali/services/auth_service.dart';
 import 'package:dalali/services/safety_engine.dart';
 
-enum AuthMode { demo, firebase }
+enum AuthMode { demo, supabase }
 
 class AppState extends ChangeNotifier {
   AuthMode _authMode = AuthMode.demo;
@@ -39,7 +39,7 @@ class AppState extends ChangeNotifier {
   List<MaintenanceRequestModel> _maintenanceRequests = [];
   List<RentScheduleModel> _rentSchedules = [];
 
-  final FirebaseAuthService _authService = FirebaseAuthService();
+  final AuthService _authService = AuthService();
   final FirestoreService _firestore = FirestoreService();
 
   // Firestore stream subscriptions (cancelled on logout)
@@ -63,19 +63,20 @@ class AppState extends ChangeNotifier {
     _rentSchedules = List.from(MockDataService.rentSchedules);
     _recomputeSafetyScores();
 
-    _authService.authStateChanges.listen((User? user) async {
+    _authService.authStateChanges.listen((AuthState state) async {
+      final user = state.session?.user;
       if (user != null) {
-        _authMode = AuthMode.firebase;
-        // Load user profile from Firestore
-        final userDoc = await _firestore.getUserById(user.uid);
+        _authMode = AuthMode.supabase;
+        // Load user profile from database
+        final userDoc = await _firestore.getUserById(user.id);
         if (userDoc != null) {
           currentUser = userDoc;
         } else {
           currentUser = UserModel(
-            id: user.uid,
-            fullName: user.displayName ?? 'User',
+            id: user.id,
+            fullName: user.userMetadata?['full_name'] ?? 'User',
             email: user.email ?? '',
-            phone: user.phoneNumber ?? '',
+            phone: user.phone ?? '',
             role: UserRole.seeker,
             createdAt: DateTime.now(),
           );
@@ -242,7 +243,7 @@ class AppState extends ChangeNotifier {
   }
 
   void logout() {
-    if (_authMode == AuthMode.firebase) {
+    if (_authMode == AuthMode.supabase) {
       _authService.signOut();
     }
     _unsubscribeFromFirestore();
@@ -368,7 +369,7 @@ class AppState extends ChangeNotifier {
     _subscriptions.clear();
   }
 
-  bool get _isFirebase => _authMode == AuthMode.firebase;
+  bool get _isFirebase => _authMode == AuthMode.supabase;
 
   // ─── Move Engine (Demo Mode) ────────────────────────────────
 

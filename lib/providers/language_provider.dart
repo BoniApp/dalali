@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:dalali/services/supabase_service.dart';
 
 class LanguageProvider extends ChangeNotifier {
   Locale _locale = const Locale('en');
@@ -47,36 +47,36 @@ class LanguageProvider extends ChangeNotifier {
     }
 
     if (userId != null) {
-      await _syncToFirestore(userId, languageCode);
+      await _syncToDatabase(userId, languageCode);
     }
   }
 
-  Future<void> loadFromFirestore(String userId) async {
+  Future<void> loadFromDatabase(String userId) async {
     try {
-      final doc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(userId)
-          .get();
-      final data = doc.data()?['preferences'] as Map<String, dynamic>?;
-      if (data != null && data['language'] != null) {
-        final lang = data['language'] as String;
+      final data = await SupabaseService.client
+          .from('users')
+          .select('preferences_language')
+          .eq('id', userId)
+          .maybeSingle();
+      if (data != null && data['preferences_language'] != null) {
+        final lang = data['preferences_language'] as String;
         if (_isSupported(lang)) {
           await setLocale(lang);
         }
       }
     } catch (e) {
-      debugPrint('LanguageProvider: Firestore load failed: $e');
+      debugPrint('LanguageProvider: database load failed: $e');
     }
   }
 
-  Future<void> _syncToFirestore(String userId, String languageCode) async {
+  Future<void> _syncToDatabase(String userId, String languageCode) async {
     try {
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(userId)
-          .update({'preferences.language': languageCode});
+      await SupabaseService.client
+          .from('users')
+          .update({'preferences_language': languageCode})
+          .eq('id', userId);
     } catch (e) {
-      debugPrint('LanguageProvider: Firestore sync failed: $e');
+      debugPrint('LanguageProvider: database sync failed: $e');
     }
   }
 

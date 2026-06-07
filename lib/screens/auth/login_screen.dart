@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:dalali/l10n/app_localizations.dart';
-import 'package:dalali/services/firebase_auth_service.dart';
+import 'package:dalali/services/auth_service.dart';
 import 'package:dalali/screens/auth/register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -14,7 +14,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _authService = FirebaseAuthService();
+  final _authService = AuthService();
 
   bool _isLoading = false;
   bool _obscurePassword = true;

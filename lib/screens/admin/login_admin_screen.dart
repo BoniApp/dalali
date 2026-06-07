@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:dalali/models/admin/admin_user_model.dart';
 import 'package:dalali/screens/admin/admin_shell.dart';
+import 'package:dalali/services/supabase_service.dart';
 
 class LoginAdminScreen extends StatefulWidget {
   const LoginAdminScreen({super.key});
@@ -31,29 +31,33 @@ class _LoginAdminScreenState extends State<LoginAdminScreen> {
     });
 
     try {
-      final cred = await FirebaseAuth.instance.signInWithEmailAndPassword(
+      final result = await SupabaseService.client.auth.signInWithPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text,
       );
 
-      final user = cred.user;
+      final user = result.user;
       if (user == null) throw Exception('Login failed');
 
-      // Check admin role in Firestore
-      final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
-      final data = doc.data();
+      // Check admin role in database
+      final data = await SupabaseService.client
+          .from('users')
+          .select()
+          .eq('id', user.id)
+          .maybeSingle();
+
       if (data == null) throw Exception('User not found');
 
       final roleName = data['role'] as String?;
-      final isAdmin = data['isAdmin'] == true || roleName == 'admin';
+      final isAdmin = data['is_admin'] == true || roleName == 'admin';
 
       if (!isAdmin) {
-        await FirebaseAuth.instance.signOut();
+        await SupabaseService.client.auth.signOut();
         throw Exception('You do not have admin privileges');
       }
 
       final adminRole = AdminRole.values.firstWhere(
-        (e) => e.name == (data['adminRole'] ?? 'superAdmin'),
+        (e) => e.name == (data['admin_role'] ?? 'superAdmin'),
         orElse: () => AdminRole.superAdmin,
       );
 
@@ -61,15 +65,15 @@ class _LoginAdminScreenState extends State<LoginAdminScreen> {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
             builder: (_) => AdminShell(
-              adminId: user.uid,
-              adminName: data['fullName'] ?? 'Admin',
+              adminId: user.id,
+              adminName: data['full_name'] ?? 'Admin',
               adminRole: adminRole,
             ),
           ),
         );
       }
-    } on FirebaseAuthException catch (e) {
-      setState(() => _error = e.message ?? 'Authentication failed');
+    } on AuthException catch (e) {
+      setState(() => _error = e.message);
     } catch (e) {
       setState(() => _error = e.toString());
     } finally {
