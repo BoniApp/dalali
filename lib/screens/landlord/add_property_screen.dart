@@ -9,8 +9,11 @@ import 'package:dalali/models/user_model.dart';
 import 'package:dalali/providers/app_state.dart';
 import 'package:dalali/services/storage_service.dart';
 import 'package:dalali/services/app_settings.dart';
+import 'package:dalali/services/property_registry_service.dart';
 import 'package:dalali/utils/helpers.dart';
+import 'package:dalali/l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
+import 'package:dalali/screens/claims/claim_property_screen.dart';
 
 /// Built-in coordinates for common Tanzanian areas.
 /// Users only type the location name; we resolve lat/lng automatically.
@@ -632,6 +635,65 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
     }
 
     final rent = double.parse(_priceController.text);
+
+    // ═══ Duplicate Detection & Registry ═══════════════════════
+    final registryService = PropertyRegistryService();
+    final existingRegistry = await registryService.checkDuplicate(
+      latitude: _pin.latitude,
+      longitude: _pin.longitude,
+      landlordPhone: user.phone,
+      propertyType: _propertyType,
+      rooms: _bedrooms,
+    );
+
+    if (existingRegistry != null && mounted) {
+      setState(() => _isUploading = false);
+      final shouldClaim = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text(AppLocalizations.of(context)!.duplicateDetected),
+          content: Text(AppLocalizations.of(context)!.propertyAlreadyExists),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(AppLocalizations.of(context)!.cancelListing),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(ctx, true);
+              },
+              child: Text(AppLocalizations.of(context)!.requestOwnershipClaim),
+            ),
+          ],
+        ),
+      );
+
+      if (shouldClaim == true && mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ClaimPropertyScreen(
+              propertyId: existingRegistry.registryId,
+              claimantId: user.id,
+              claimantRole: user.role.name,
+            ),
+          ),
+        );
+      }
+      return;
+    }
+
+    // Create registry entry
+    final registry = await registryService.createRegistry(
+      latitude: _pin.latitude,
+      longitude: _pin.longitude,
+      landlordPhone: user.phone,
+      landlordName: user.fullName,
+      propertyType: _propertyType,
+      rooms: _bedrooms,
+      address: _locationController.text,
+    );
+
     final property = PropertyModel(
       id: propertyId,
       title: _titleController.text,
@@ -661,6 +723,10 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
       minimumAcceptedTerm: _minimumAcceptedTerm,
       depositRequired: _depositRequired,
       depositAmount: _depositRequired ? (double.tryParse(_depositController.text) ?? 0) : 0,
+      listingCreatorId: user.id,
+      listingCreatorRole: user.role.name,
+      registryId: registry.registryId,
+      listingStatus: ListingStatus.active,
     );
 
     setState(() => _isUploading = false);

@@ -19,7 +19,6 @@ class UserModel {
   final int? subscriptionTier; // 0 = Basic, 1 = Premium
 
   // ═══ Scaling fields ════════════════════════════════════════
-  final bool isVerifiedLandlord;
   final DateTime? lastActive;
   final List<String> savedSearches;
   final List<String> preferredLocations;
@@ -29,6 +28,13 @@ class UserModel {
   final String? activeMoveListingId;
   final int totalRewardPoints;
   final UserPreferencesModel preferences;
+
+  // ═══ Trust & Verification Badges ═══════════════════════════
+  final bool isVerifiedLandlord;
+  final bool isVerifiedAgent;
+  final bool isVerifiedProperty;
+  final bool isVerifiedListingCreator;
+  final double totalEarnings;
 
   UserModel({
     required this.id,
@@ -43,7 +49,6 @@ class UserModel {
     this.nationalId,
     this.agentLicense,
     this.subscriptionTier = 0,
-    this.isVerifiedLandlord = false,
     this.lastActive,
     this.savedSearches = const [],
     this.preferredLocations = const [],
@@ -51,6 +56,11 @@ class UserModel {
     this.activeMoveListingId,
     this.totalRewardPoints = 0,
     this.preferences = const UserPreferencesModel(),
+    this.isVerifiedLandlord = false,
+    this.isVerifiedAgent = false,
+    this.isVerifiedProperty = false,
+    this.isVerifiedListingCreator = false,
+    this.totalEarnings = 0,
   });
 
   bool get isMoving => moveMode != MoveMode.none;
@@ -69,7 +79,6 @@ class UserModel {
     String? nationalId,
     String? agentLicense,
     int? subscriptionTier,
-    bool? isVerifiedLandlord,
     DateTime? lastActive,
     List<String>? savedSearches,
     List<String>? preferredLocations,
@@ -77,6 +86,11 @@ class UserModel {
     String? activeMoveListingId,
     int? totalRewardPoints,
     UserPreferencesModel? preferences,
+    bool? isVerifiedLandlord,
+    bool? isVerifiedAgent,
+    bool? isVerifiedProperty,
+    bool? isVerifiedListingCreator,
+    double? totalEarnings,
   }) {
     return UserModel(
       id: id ?? this.id,
@@ -91,7 +105,6 @@ class UserModel {
       nationalId: nationalId ?? this.nationalId,
       agentLicense: agentLicense ?? this.agentLicense,
       subscriptionTier: subscriptionTier ?? this.subscriptionTier,
-      isVerifiedLandlord: isVerifiedLandlord ?? this.isVerifiedLandlord,
       lastActive: lastActive ?? this.lastActive,
       savedSearches: savedSearches ?? this.savedSearches,
       preferredLocations: preferredLocations ?? this.preferredLocations,
@@ -99,6 +112,11 @@ class UserModel {
       activeMoveListingId: activeMoveListingId ?? this.activeMoveListingId,
       totalRewardPoints: totalRewardPoints ?? this.totalRewardPoints,
       preferences: preferences ?? this.preferences,
+      isVerifiedLandlord: isVerifiedLandlord ?? this.isVerifiedLandlord,
+      isVerifiedAgent: isVerifiedAgent ?? this.isVerifiedAgent,
+      isVerifiedProperty: isVerifiedProperty ?? this.isVerifiedProperty,
+      isVerifiedListingCreator: isVerifiedListingCreator ?? this.isVerifiedListingCreator,
+      totalEarnings: totalEarnings ?? this.totalEarnings,
     );
   }
 }

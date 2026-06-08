@@ -366,4 +366,109 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get verificationSubmitted => 'Verification request submitted!';
+
+  @override
+  String get opportunities => 'Opportunities';
+
+  @override
+  String get earnings => 'Earnings';
+
+  @override
+  String get totalEarned => 'Total Earned';
+
+  @override
+  String get pendingEarnings => 'Pending Earnings';
+
+  @override
+  String get withdrawableBalance => 'Withdrawable Balance';
+
+  @override
+  String get successfulListings => 'Successful Listings';
+
+  @override
+  String get agencyFeeHistory => 'Agency Fee History';
+
+  @override
+  String get noEarningsYet => 'No earnings yet. List a property to start earning!';
+
+  @override
+  String get opportunityFeed => 'Opportunity Feed';
+
+  @override
+  String get highDemandAreas => 'High Demand Areas';
+
+  @override
+  String get recentlyListed => 'Recently Listed';
+
+  @override
+  String get fastMoving => 'Fast Moving';
+
+  @override
+  String get nearbyVacancies => 'Nearby Vacancies';
+
+  @override
+  String get dealTracking => 'Deal Tracking';
+
+  @override
+  String get dealStatus => 'Deal Status';
+
+  @override
+  String get viewingScheduled => 'Viewing Scheduled';
+
+  @override
+  String get viewingCompleted => 'Viewing Completed';
+
+  @override
+  String get negotiating => 'Negotiating';
+
+  @override
+  String get tenancyConfirmed => 'Tenancy Confirmed';
+
+  @override
+  String get agencyFeePending => 'Agency Fee Pending';
+
+  @override
+  String get agencyFeePaid => 'Agency Fee Paid';
+
+  @override
+  String get confirmTenancy => 'Confirm Tenancy';
+
+  @override
+  String get tenantConfirmation => 'I have successfully secured this property.';
+
+  @override
+  String get landlordConfirmation => 'This tenant has moved into my property.';
+
+  @override
+  String get claimProperty => 'Claim Property';
+
+  @override
+  String get propertyAlreadyExists => 'This property already exists in Dalali.';
+
+  @override
+  String get requestOwnershipClaim => 'Request Ownership Claim';
+
+  @override
+  String get contactSupport => 'Contact Support';
+
+  @override
+  String get cancelListing => 'Cancel Listing';
+
+  @override
+  String get duplicateDetected => 'Duplicate Detected';
+
+  @override
+  String get claimSubmitted => 'Claim submitted for review.';
+
+  @override
+  String get trustBadgeVerifiedLandlord => 'Verified Landlord';
+
+  @override
+  String get trustBadgeVerifiedAgent => 'Verified Agent';
+
+  @override
+  String get trustBadgeVerifiedProperty => 'Verified Property';
+
+  @override
+  String get trustBadgeVerifiedCreator => 'Verified Listing Creator';
 }

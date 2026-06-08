@@ -1,12 +1,15 @@
 import 'dart:async';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:dalali/services/supabase_service.dart';
 import 'package:dalali/models/user_model.dart';
 import 'package:dalali/models/property_model.dart';
 import 'package:dalali/models/appointment_model.dart';
 import 'package:dalali/models/inquiry_model.dart';
-import 'package:dalali/models/favorite_model.dart';
 import 'package:dalali/models/notification_model.dart';
+import 'package:dalali/models/property_registry_model.dart';
+import 'package:dalali/models/property_claim_model.dart';
+import 'package:dalali/models/deal_model.dart';
+import 'package:dalali/models/agency_fee_model.dart';
+import 'package:dalali/models/earnings_model.dart';
 
 /// ═══════════════════════════════════════════════════════════════
 /// DATA SERVICE — Supabase PostgreSQL wrapper
@@ -204,6 +207,124 @@ class DataService {
   }
 
   // ═══════════════════════════════════════════════════════════════
+  //  PROPERTY REGISTRY
+  // ═══════════════════════════════════════════════════════════════
+
+  Future<PropertyRegistryModel?> getRegistryByHash(String propertyHash) async {
+    final data = await _db.from('property_registry').select().eq('property_hash', propertyHash).maybeSingle();
+    if (data == null) return null;
+    return PropertyRegistryModel.fromJson(data);
+  }
+
+  Future<PropertyRegistryModel?> getRegistryById(String registryId) async {
+    final data = await _db.from('property_registry').select().eq('registry_id', registryId).maybeSingle();
+    if (data == null) return null;
+    return PropertyRegistryModel.fromJson(data);
+  }
+
+  Future<void> addRegistry(PropertyRegistryModel registry) async {
+    await _db.from('property_registry').insert(registry.toJson());
+  }
+
+  Stream<List<PropertyRegistryModel>> getPropertyRegistry({int limit = 100}) {
+    return _db.from('property_registry').stream(primaryKey: ['registry_id'])
+        .limit(limit)
+        .map((rows) => rows.map(PropertyRegistryModel.fromJson).toList());
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  //  PROPERTY CLAIMS
+  // ═══════════════════════════════════════════════════════════════
+
+  Future<void> addPropertyClaim(PropertyClaimModel claim) async {
+    await _db.from('property_claims').insert(claim.toJson());
+  }
+
+  Future<void> updatePropertyClaim(PropertyClaimModel claim) async {
+    await _db.from('property_claims').update(claim.toJson()).eq('claim_id', claim.claimId);
+  }
+
+  Stream<List<PropertyClaimModel>> getPropertyClaims({String? propertyId, ClaimStatus? status}) {
+    dynamic builder = _db.from('property_claims').stream(primaryKey: ['claim_id']);
+    if (propertyId != null) builder = builder.eq('property_id', propertyId);
+    if (status != null) builder = builder.eq('status', status.name);
+    return builder.map((rows) => rows.map(PropertyClaimModel.fromJson).toList());
+  }
+
+  Stream<List<PropertyClaimModel>> getClaimsForUser(String userId) {
+    return _db.from('property_claims').stream(primaryKey: ['claim_id'])
+        .eq('claimant_id', userId)
+        .map((rows) => rows.map(PropertyClaimModel.fromJson).toList());
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  //  DEALS
+  // ═══════════════════════════════════════════════════════════════
+
+  Future<void> addDeal(DealModel deal) async {
+    await _db.from('deals').insert(deal.toJson());
+  }
+
+  Future<void> updateDeal(DealModel deal) async {
+    await _db.from('deals').update(deal.toJson()).eq('deal_id', deal.dealId);
+  }
+
+  Stream<List<DealModel>> getDealsForUser(String userId) {
+    return _db.from('deals').stream(primaryKey: ['deal_id'])
+        .eq('listing_creator_id', userId)
+        .map((rows) => rows.map(DealModel.fromJson).toList());
+  }
+
+  Stream<List<DealModel>> getDealsForProperty(String propertyId) {
+    return _db.from('deals').stream(primaryKey: ['deal_id'])
+        .eq('property_id', propertyId)
+        .map((rows) => rows.map(DealModel.fromJson).toList());
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  //  AGENCY FEES
+  // ═══════════════════════════════════════════════════════════════
+
+  Future<void> addAgencyFee(AgencyFeeModel fee) async {
+    await _db.from('agency_fees').insert(fee.toJson());
+  }
+
+  Future<void> updateAgencyFee(AgencyFeeModel fee) async {
+    await _db.from('agency_fees').update(fee.toJson()).eq('fee_id', fee.feeId);
+  }
+
+  Stream<List<AgencyFeeModel>> getAgencyFeesForUser(String userId) {
+    return _db.from('agency_fees').stream(primaryKey: ['fee_id'])
+        .eq('listing_creator_id', userId)
+        .map((rows) => rows.map(AgencyFeeModel.fromJson).toList());
+  }
+
+  Stream<List<AgencyFeeModel>> getPendingAgencyFees() {
+    return _db.from('agency_fees').stream(primaryKey: ['fee_id'])
+        .eq('status', AgencyFeeStatus.pending.name)
+        .map((rows) => rows.map(AgencyFeeModel.fromJson).toList());
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  //  EARNINGS
+  // ═══════════════════════════════════════════════════════════════
+
+  Future<void> addEarningsEntry(EarningsEntryModel entry) async {
+    await _db.from('earnings').insert(entry.toJson());
+  }
+
+  Future<void> updateEarningsEntry(EarningsEntryModel entry) async {
+    await _db.from('earnings').update(entry.toJson()).eq('entry_id', entry.entryId);
+  }
+
+  Stream<List<EarningsEntryModel>> getEarningsForUser(String userId) {
+    return _db.from('earnings').stream(primaryKey: ['entry_id'])
+        .eq('user_id', userId)
+        .order('created_at', ascending: false)
+        .map((rows) => rows.map(EarningsEntryModel.fromJson).toList());
+  }
+
+  // ═══════════════════════════════════════════════════════════════
   //  STUBS — Phase 3 & 4 (Reviews, Reports, Tenancy, etc.)
   // ═══════════════════════════════════════════════════════════════
 
@@ -310,6 +431,15 @@ class DataService {
       landlordName: json['landlord_name'] ?? '',
       landlordPhone: json['landlord_phone'] ?? '',
       isLandlordVerified: json['is_landlord_verified'] ?? false,
+      listingCreatorId: json['listing_creator_id'] ?? '',
+      listingCreatorRole: json['listing_creator_role'] ?? '',
+      registryId: json['registry_id'],
+      agencyFeeEligible: json['agency_fee_eligible'] ?? false,
+      tenancyConfirmed: json['tenancy_confirmed'] ?? false,
+      listingStatus: ListingStatus.values.firstWhere(
+        (e) => e.name == json['listing_status'],
+        orElse: () => ListingStatus.draft,
+      ),
       createdAt: DateTime.tryParse(json['created_at'] ?? '') ?? DateTime.now(),
       updatedAt: json['updated_at'] != null
           ? DateTime.tryParse(json['updated_at'])
@@ -371,6 +501,12 @@ class DataService {
       'landlord_name': p.landlordName,
       'landlord_phone': p.landlordPhone,
       'is_landlord_verified': p.isLandlordVerified,
+      'listing_creator_id': p.listingCreatorId,
+      'listing_creator_role': p.listingCreatorRole,
+      'registry_id': p.registryId,
+      'agency_fee_eligible': p.agencyFeeEligible,
+      'tenancy_confirmed': p.tenancyConfirmed,
+      'listing_status': p.listingStatus.name,
       'created_at': p.createdAt.toIso8601String(),
       'view_count': p.viewCount,
       'inquiry_count': p.inquiryCount,

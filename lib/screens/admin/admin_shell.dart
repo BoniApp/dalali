@@ -10,6 +10,9 @@ import 'package:dalali/screens/admin/fraud_admin_screen.dart';
 import 'package:dalali/screens/admin/analytics_admin_screen.dart';
 import 'package:dalali/screens/admin/settings_admin_screen.dart';
 import 'package:dalali/screens/admin/disputes_admin_screen.dart';
+import 'package:dalali/screens/admin/property_registry_admin_screen.dart';
+import 'package:dalali/screens/admin/property_claims_admin_screen.dart';
+import 'package:dalali/screens/admin/agency_fees_admin_screen.dart';
 import 'package:dalali/screens/admin/login_admin_screen.dart';
 import 'package:dalali/services/supabase_service.dart';
 
@@ -67,6 +70,21 @@ class _AdminShellState extends State<AdminShell> {
       adminName: widget.adminName,
       adminRole: widget.adminRole,
     )),
+    _NavItem(icon: Icons.app_registration, label: 'Registry', screenBuilder: () => PropertyRegistryAdminScreen(
+      adminId: widget.adminId,
+      adminName: widget.adminName,
+      adminRole: widget.adminRole,
+    )),
+    _NavItem(icon: Icons.gavel, label: 'Claims', screenBuilder: () => PropertyClaimsAdminScreen(
+      adminId: widget.adminId,
+      adminName: widget.adminName,
+      adminRole: widget.adminRole,
+    )),
+    _NavItem(icon: Icons.paid, label: 'Agency Fees', screenBuilder: () => AgencyFeesAdminScreen(
+      adminId: widget.adminId,
+      adminName: widget.adminName,
+      adminRole: widget.adminRole,
+    )),
   ];
 
   List<_NavItem> get _visibleItems {
@@ -90,6 +108,12 @@ class _AdminShellState extends State<AdminShell> {
           return AdminPermissions.canViewAnalytics(widget.adminRole);
         case 'Settings':
           return AdminPermissions.canManageSettings(widget.adminRole);
+        case 'Registry':
+          return AdminPermissions.canManageListings(widget.adminRole);
+        case 'Claims':
+          return AdminPermissions.canManageDisputes(widget.adminRole);
+        case 'Agency Fees':
+          return AdminPermissions.canManageWallets(widget.adminRole);
         default:
           return true;
       }

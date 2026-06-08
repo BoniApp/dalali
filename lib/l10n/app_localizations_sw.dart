@@ -366,4 +366,109 @@ class AppLocalizationsSw extends AppLocalizations {
 
   @override
   String get verificationSubmitted => 'Ombi la uthibitisho limewasilishwa!';
+
+  @override
+  String get opportunities => 'Fursa';
+
+  @override
+  String get earnings => 'Mapato';
+
+  @override
+  String get totalEarned => 'Jumla ya Mapato';
+
+  @override
+  String get pendingEarnings => 'Mapato Yanayosubiri';
+
+  @override
+  String get withdrawableBalance => 'Salio la Kutoa';
+
+  @override
+  String get successfulListings => 'Orodha Zilizofanikiwa';
+
+  @override
+  String get agencyFeeHistory => 'Historia ya Ada ya Wakala';
+
+  @override
+  String get noEarningsYet => 'Hakuna mapato bado. Orodhesha mali kuanza kupata!';
+
+  @override
+  String get opportunityFeed => 'Lishe ya Fursa';
+
+  @override
+  String get highDemandAreas => 'Maeneo ya Mahitaji Makubwa';
+
+  @override
+  String get recentlyListed => 'Zilizoingia Hivi Karibuni';
+
+  @override
+  String get fastMoving => 'Zinazosonga Haraka';
+
+  @override
+  String get nearbyVacancies => 'Nafasi za Karibu';
+
+  @override
+  String get dealTracking => 'Ufuatiliaji wa Makubaliano';
+
+  @override
+  String get dealStatus => 'Hali ya Makubaliano';
+
+  @override
+  String get viewingScheduled => 'Ziara Imepangwa';
+
+  @override
+  String get viewingCompleted => 'Ziara Imekamilika';
+
+  @override
+  String get negotiating => 'Inajadiliwa';
+
+  @override
+  String get tenancyConfirmed => 'Kukodishwa Kimethibitishwa';
+
+  @override
+  String get agencyFeePending => 'Ada ya Wakala Inasubiri';
+
+  @override
+  String get agencyFeePaid => 'Ada ya Wakala Imelipwa';
+
+  @override
+  String get confirmTenancy => 'Thibitisha Kukodishwa';
+
+  @override
+  String get tenantConfirmation => 'Nimepata mali hii kwa mafanikio.';
+
+  @override
+  String get landlordConfirmation => 'Mpangaji huyu amehama kwenye mali yangu.';
+
+  @override
+  String get claimProperty => 'Dai Mali';
+
+  @override
+  String get propertyAlreadyExists => 'Mali hii tayari ipo Dalali.';
+
+  @override
+  String get requestOwnershipClaim => 'Omba Dai la Umiliki';
+
+  @override
+  String get contactSupport => 'Wasiliana na Msaada';
+
+  @override
+  String get cancelListing => 'Ghairi Orodha';
+
+  @override
+  String get duplicateDetected => 'Nakala Imegundulika';
+
+  @override
+  String get claimSubmitted => 'Dai limewasilishwa kwa ukaguzi.';
+
+  @override
+  String get trustBadgeVerifiedLandlord => 'Mwenye Nyumba Aliyethibitishwa';
+
+  @override
+  String get trustBadgeVerifiedAgent => 'Wakala Aliyethibitishwa';
+
+  @override
+  String get trustBadgeVerifiedProperty => 'Mali Iliyothibitishwa';
+
+  @override
+  String get trustBadgeVerifiedCreator => 'Muumba wa Orodha Aliyethibitishwa';
 }

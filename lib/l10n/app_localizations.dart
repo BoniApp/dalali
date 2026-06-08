@@ -796,6 +796,216 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Verification request submitted!'**
   String get verificationSubmitted;
+
+  /// No description provided for @opportunities.
+  ///
+  /// In en, this message translates to:
+  /// **'Opportunities'**
+  String get opportunities;
+
+  /// No description provided for @earnings.
+  ///
+  /// In en, this message translates to:
+  /// **'Earnings'**
+  String get earnings;
+
+  /// No description provided for @totalEarned.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Earned'**
+  String get totalEarned;
+
+  /// No description provided for @pendingEarnings.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending Earnings'**
+  String get pendingEarnings;
+
+  /// No description provided for @withdrawableBalance.
+  ///
+  /// In en, this message translates to:
+  /// **'Withdrawable Balance'**
+  String get withdrawableBalance;
+
+  /// No description provided for @successfulListings.
+  ///
+  /// In en, this message translates to:
+  /// **'Successful Listings'**
+  String get successfulListings;
+
+  /// No description provided for @agencyFeeHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'Agency Fee History'**
+  String get agencyFeeHistory;
+
+  /// No description provided for @noEarningsYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No earnings yet. List a property to start earning!'**
+  String get noEarningsYet;
+
+  /// No description provided for @opportunityFeed.
+  ///
+  /// In en, this message translates to:
+  /// **'Opportunity Feed'**
+  String get opportunityFeed;
+
+  /// No description provided for @highDemandAreas.
+  ///
+  /// In en, this message translates to:
+  /// **'High Demand Areas'**
+  String get highDemandAreas;
+
+  /// No description provided for @recentlyListed.
+  ///
+  /// In en, this message translates to:
+  /// **'Recently Listed'**
+  String get recentlyListed;
+
+  /// No description provided for @fastMoving.
+  ///
+  /// In en, this message translates to:
+  /// **'Fast Moving'**
+  String get fastMoving;
+
+  /// No description provided for @nearbyVacancies.
+  ///
+  /// In en, this message translates to:
+  /// **'Nearby Vacancies'**
+  String get nearbyVacancies;
+
+  /// No description provided for @dealTracking.
+  ///
+  /// In en, this message translates to:
+  /// **'Deal Tracking'**
+  String get dealTracking;
+
+  /// No description provided for @dealStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Deal Status'**
+  String get dealStatus;
+
+  /// No description provided for @viewingScheduled.
+  ///
+  /// In en, this message translates to:
+  /// **'Viewing Scheduled'**
+  String get viewingScheduled;
+
+  /// No description provided for @viewingCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Viewing Completed'**
+  String get viewingCompleted;
+
+  /// No description provided for @negotiating.
+  ///
+  /// In en, this message translates to:
+  /// **'Negotiating'**
+  String get negotiating;
+
+  /// No description provided for @tenancyConfirmed.
+  ///
+  /// In en, this message translates to:
+  /// **'Tenancy Confirmed'**
+  String get tenancyConfirmed;
+
+  /// No description provided for @agencyFeePending.
+  ///
+  /// In en, this message translates to:
+  /// **'Agency Fee Pending'**
+  String get agencyFeePending;
+
+  /// No description provided for @agencyFeePaid.
+  ///
+  /// In en, this message translates to:
+  /// **'Agency Fee Paid'**
+  String get agencyFeePaid;
+
+  /// No description provided for @confirmTenancy.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm Tenancy'**
+  String get confirmTenancy;
+
+  /// No description provided for @tenantConfirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'I have successfully secured this property.'**
+  String get tenantConfirmation;
+
+  /// No description provided for @landlordConfirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'This tenant has moved into my property.'**
+  String get landlordConfirmation;
+
+  /// No description provided for @claimProperty.
+  ///
+  /// In en, this message translates to:
+  /// **'Claim Property'**
+  String get claimProperty;
+
+  /// No description provided for @propertyAlreadyExists.
+  ///
+  /// In en, this message translates to:
+  /// **'This property already exists in Dalali.'**
+  String get propertyAlreadyExists;
+
+  /// No description provided for @requestOwnershipClaim.
+  ///
+  /// In en, this message translates to:
+  /// **'Request Ownership Claim'**
+  String get requestOwnershipClaim;
+
+  /// No description provided for @contactSupport.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact Support'**
+  String get contactSupport;
+
+  /// No description provided for @cancelListing.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel Listing'**
+  String get cancelListing;
+
+  /// No description provided for @duplicateDetected.
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicate Detected'**
+  String get duplicateDetected;
+
+  /// No description provided for @claimSubmitted.
+  ///
+  /// In en, this message translates to:
+  /// **'Claim submitted for review.'**
+  String get claimSubmitted;
+
+  /// No description provided for @trustBadgeVerifiedLandlord.
+  ///
+  /// In en, this message translates to:
+  /// **'Verified Landlord'**
+  String get trustBadgeVerifiedLandlord;
+
+  /// No description provided for @trustBadgeVerifiedAgent.
+  ///
+  /// In en, this message translates to:
+  /// **'Verified Agent'**
+  String get trustBadgeVerifiedAgent;
+
+  /// No description provided for @trustBadgeVerifiedProperty.
+  ///
+  /// In en, this message translates to:
+  /// **'Verified Property'**
+  String get trustBadgeVerifiedProperty;
+
+  /// No description provided for @trustBadgeVerifiedCreator.
+  ///
+  /// In en, this message translates to:
+  /// **'Verified Listing Creator'**
+  String get trustBadgeVerifiedCreator;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

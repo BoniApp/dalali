@@ -5,16 +5,14 @@ import 'package:dalali/providers/app_state.dart';
 import 'package:provider/provider.dart';
 
 import 'package:dalali/screens/seeker/seeker_home_screen.dart';
-import 'package:dalali/screens/seeker/favorites_screen.dart';
-import 'package:dalali/screens/seeker/appointments_screen.dart';
 import 'package:dalali/screens/landlord/landlord_dashboard_screen.dart';
 import 'package:dalali/screens/landlord/add_property_screen.dart';
-import 'package:dalali/screens/landlord/inquiries_screen.dart';
 import 'package:dalali/screens/agent/agent_dashboard_screen.dart';
 import 'package:dalali/screens/shared/profile_screen.dart';
 import 'package:dalali/screens/move/move_dashboard_screen.dart';
-import 'package:dalali/screens/shared/messages_screen.dart';
 import 'package:dalali/screens/auth/login_screen.dart';
+import 'package:dalali/screens/earnings/earnings_screen.dart';
+import 'package:dalali/screens/opportunity/opportunity_feed_screen.dart';
 
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
@@ -52,25 +50,25 @@ class _MainNavigationState extends State<MainNavigation> {
       case UserRole.seeker:
         return const [
           SeekerHomeScreen(),
+          OpportunityFeedScreen(),
+          EarningsScreen(),
           MoveDashboardScreen(),
-          FavoritesScreen(),
-          AppointmentsScreen(),
           ProfileScreen(),
         ];
       case UserRole.landlord:
         return const [
           LandlordDashboardScreen(),
           AddPropertyScreen(),
-          InquiriesScreen(),
-          MessagesScreen(),
+          OpportunityFeedScreen(),
+          EarningsScreen(),
           ProfileScreen(),
         ];
       case UserRole.agent:
         return const [
           AgentDashboardScreen(),
           AddPropertyScreen(),
-          InquiriesScreen(),
-          MessagesScreen(),
+          OpportunityFeedScreen(),
+          EarningsScreen(),
           ProfileScreen(),
         ];
     }
@@ -82,25 +80,25 @@ class _MainNavigationState extends State<MainNavigation> {
       case UserRole.seeker:
         return [
           NavigationDestination(icon: const Icon(Icons.home), label: l10n.home),
+          NavigationDestination(icon: const Icon(Icons.trending_up), label: l10n.opportunities),
+          NavigationDestination(icon: const Icon(Icons.account_balance_wallet), label: l10n.earnings),
           NavigationDestination(icon: const Icon(Icons.local_shipping), label: l10n.myMove),
-          NavigationDestination(icon: const Icon(Icons.favorite), label: l10n.saved),
-          NavigationDestination(icon: const Icon(Icons.calendar_today), label: l10n.visits),
           NavigationDestination(icon: const Icon(Icons.person), label: l10n.profile),
         ];
       case UserRole.landlord:
         return [
           NavigationDestination(icon: const Icon(Icons.dashboard), label: l10n.dashboard),
           NavigationDestination(icon: const Icon(Icons.add_home), label: l10n.add),
-          NavigationDestination(icon: const Icon(Icons.notifications), label: l10n.inquiries),
-          NavigationDestination(icon: const Icon(Icons.message), label: l10n.messages),
+          NavigationDestination(icon: const Icon(Icons.trending_up), label: l10n.opportunities),
+          NavigationDestination(icon: const Icon(Icons.account_balance_wallet), label: l10n.earnings),
           NavigationDestination(icon: const Icon(Icons.person), label: l10n.profile),
         ];
       case UserRole.agent:
         return [
           NavigationDestination(icon: const Icon(Icons.dashboard), label: l10n.dashboard),
           NavigationDestination(icon: const Icon(Icons.add_home), label: l10n.add),
-          NavigationDestination(icon: const Icon(Icons.notifications), label: l10n.inquiries),
-          NavigationDestination(icon: const Icon(Icons.message), label: l10n.messages),
+          NavigationDestination(icon: const Icon(Icons.trending_up), label: l10n.opportunities),
+          NavigationDestination(icon: const Icon(Icons.account_balance_wallet), label: l10n.earnings),
           NavigationDestination(icon: const Icon(Icons.person), label: l10n.profile),
         ];
     }

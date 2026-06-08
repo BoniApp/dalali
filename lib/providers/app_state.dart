@@ -16,10 +16,16 @@ import 'package:dalali/models/move_checklist_model.dart';
 import 'package:dalali/models/maintenance_request_model.dart';
 import 'package:dalali/models/rent_schedule_model.dart';
 import 'package:dalali/models/notification_model.dart';
+import 'package:dalali/models/property_registry_model.dart';
+import 'package:dalali/models/property_claim_model.dart';
+import 'package:dalali/models/deal_model.dart';
+import 'package:dalali/models/agency_fee_model.dart';
+import 'package:dalali/models/earnings_model.dart';
 import 'package:dalali/services/data_service.dart';
 import 'package:dalali/services/auth_service.dart';
 import 'package:dalali/services/notification_service.dart';
 import 'package:dalali/services/safety_engine.dart';
+import 'package:dalali/services/earnings_service.dart';
 
 enum AuthMode { supabase }
 
@@ -41,6 +47,13 @@ class AppState extends ChangeNotifier {
   List<MaintenanceRequestModel> _maintenanceRequests = [];
   List<RentScheduleModel> _rentSchedules = [];
   List<NotificationModel> _notifications = [];
+
+  // ═══ New Architecture Fields ═══════════════════════════════
+  List<PropertyRegistryModel> _propertyRegistry = [];
+  List<PropertyClaimModel> _myClaims = [];
+  List<DealModel> _myDeals = [];
+  List<AgencyFeeModel> _myAgencyFees = [];
+  List<EarningsEntryModel> _myEarnings = [];
 
   final AuthService _authService = AuthService();
   final DataService _data = DataService();
@@ -89,6 +102,16 @@ class AppState extends ChangeNotifier {
   List<MaintenanceRequestModel> get maintenanceRequests => _maintenanceRequests;
   List<RentScheduleModel> get rentSchedules => _rentSchedules;
   List<NotificationModel> get notifications => _notifications;
+
+  // ═══ New Architecture Getters ══════════════════════════════
+  List<PropertyRegistryModel> get propertyRegistry => _propertyRegistry;
+  List<PropertyClaimModel> get myClaims => _myClaims;
+  List<DealModel> get myDeals => _myDeals;
+  List<AgencyFeeModel> get myAgencyFees => _myAgencyFees;
+  List<EarningsEntryModel> get myEarnings => _myEarnings;
+
+  EarningsSummaryModel get earningsSummary =>
+      EarningsService().computeSummary(_myEarnings);
 
   int get unreadNotificationCount {
     return _notifications.where((n) => !n.isRead).length;
@@ -367,6 +390,32 @@ class AppState extends ChangeNotifier {
       _notifications = list;
       notifyListeners();
     }));
+
+    // ═══ New Architecture Subscriptions ═══════════════════════
+
+    // Deals (for listing creators)
+    _subscriptions.add(_data.getDealsForUser(currentUser!.id).listen((list) {
+      _myDeals = list.cast<DealModel>();
+      notifyListeners();
+    }));
+
+    // Agency Fees
+    _subscriptions.add(_data.getAgencyFeesForUser(currentUser!.id).listen((list) {
+      _myAgencyFees = list.cast<AgencyFeeModel>();
+      notifyListeners();
+    }));
+
+    // Earnings
+    _subscriptions.add(_data.getEarningsForUser(currentUser!.id).listen((list) {
+      _myEarnings = list.cast<EarningsEntryModel>();
+      notifyListeners();
+    }));
+
+    // Property Claims
+    _subscriptions.add(_data.getClaimsForUser(currentUser!.id).listen((list) {
+      _myClaims = list.cast<PropertyClaimModel>();
+      notifyListeners();
+    }));
   }
 
   void _unsubscribeFromDatabase() {
@@ -375,6 +424,10 @@ class AppState extends ChangeNotifier {
     }
     _subscriptions.clear();
     _myProperties = [];
+    _myDeals = [];
+    _myAgencyFees = [];
+    _myEarnings = [];
+    _myClaims = [];
   }
 
   bool get _isFirebase => _authMode == AuthMode.supabase;

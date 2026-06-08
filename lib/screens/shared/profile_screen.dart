@@ -93,6 +93,22 @@ class ProfileScreen extends StatelessWidget {
                   labelStyle: TextStyle(color: Colors.orange.shade800, fontSize: 12),
                 ),
               ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              alignment: WrapAlignment.center,
+              children: [
+                if (user.isVerifiedLandlord)
+                  _TrustBadge(icon: Icons.verified_user, label: l10n.trustBadgeVerifiedLandlord, color: Colors.green),
+                if (user.isVerifiedAgent)
+                  _TrustBadge(icon: Icons.support_agent, label: l10n.trustBadgeVerifiedAgent, color: Colors.purple),
+                if (user.isVerifiedProperty)
+                  _TrustBadge(icon: Icons.home_work, label: l10n.trustBadgeVerifiedProperty, color: Colors.blue),
+                if (user.isVerifiedListingCreator)
+                  _TrustBadge(icon: Icons.add_home, label: l10n.trustBadgeVerifiedCreator, color: Colors.teal),
+              ],
+            ),
             const SizedBox(height: 16),
             // Wallet Card
             Card(
@@ -291,6 +307,24 @@ class ProfileScreen extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _TrustBadge extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+
+  const _TrustBadge({required this.icon, required this.label, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Chip(
+      avatar: Icon(icon, size: 16, color: color),
+      label: Text(label, style: TextStyle(fontSize: 11, color: color)),
+      backgroundColor: color.withAlpha(30),
+      side: BorderSide(color: color.withAlpha(60)),
     );
   }
 }

@@ -2,6 +2,7 @@ enum PropertyType { apartment, house, villa, bedsitter, office, shop, room, self
 enum PropertyStatus { available, occupied, pending }
 enum ListingType { basic, featured }
 enum ListingSource { landlordListing, userMoveListing, agentListing }
+enum ListingStatus { draft, active, viewing, negotiating, tenancyConfirmed, closed }
 
 // ─── Rental Payment Terms Enums ───────────────────────────
 enum PaymentTerm { monthly, threeMonths, sixMonths, twelveMonths, negotiable }
@@ -109,6 +110,14 @@ class PropertyModel {
   final int inquiryCount;
   final bool isApproved;
 
+  // ═══ Listing Ownership & Registry ═══════════════════════════
+  final String listingCreatorId;
+  final String listingCreatorRole;
+  final String? registryId;
+  final bool agencyFeeEligible;
+  final bool tenancyConfirmed;
+  final ListingStatus listingStatus;
+
   // ═══ Scaling / ranking fields ══════════════════════════════
   final double rating;
   final int reviewCount;
@@ -161,6 +170,12 @@ class PropertyModel {
     this.viewCount = 0,
     this.inquiryCount = 0,
     this.isApproved = true,
+    this.listingCreatorId = '',
+    this.listingCreatorRole = '',
+    this.registryId,
+    this.agencyFeeEligible = false,
+    this.tenancyConfirmed = false,
+    this.listingStatus = ListingStatus.draft,
     this.rating = 0.0,
     this.reviewCount = 0,
     this.isBoosted = false,
@@ -207,6 +222,12 @@ class PropertyModel {
     int? viewCount,
     int? inquiryCount,
     bool? isApproved,
+    String? listingCreatorId,
+    String? listingCreatorRole,
+    String? registryId,
+    bool? agencyFeeEligible,
+    bool? tenancyConfirmed,
+    ListingStatus? listingStatus,
     double? rating,
     int? reviewCount,
     bool? isBoosted,
@@ -252,6 +273,12 @@ class PropertyModel {
       viewCount: viewCount ?? this.viewCount,
       inquiryCount: inquiryCount ?? this.inquiryCount,
       isApproved: isApproved ?? this.isApproved,
+      listingCreatorId: listingCreatorId ?? this.listingCreatorId,
+      listingCreatorRole: listingCreatorRole ?? this.listingCreatorRole,
+      registryId: registryId ?? this.registryId,
+      agencyFeeEligible: agencyFeeEligible ?? this.agencyFeeEligible,
+      tenancyConfirmed: tenancyConfirmed ?? this.tenancyConfirmed,
+      listingStatus: listingStatus ?? this.listingStatus,
       rating: rating ?? this.rating,
       reviewCount: reviewCount ?? this.reviewCount,
       isBoosted: isBoosted ?? this.isBoosted,
