@@ -5,7 +5,7 @@ class UserPreferencesModel {
   final String languageCode;
 
   const UserPreferencesModel({
-    this.themeMode = AppThemeMode.system,
+    this.themeMode = AppThemeMode.light,
     this.languageCode = 'en',
   });
 
