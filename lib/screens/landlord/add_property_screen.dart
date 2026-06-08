@@ -660,17 +660,23 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
     setState(() => _isUploading = false);
 
     if (mounted) {
-      context.read<AppState>().addProperty(property);
+      try {
+        context.read<AppState>().addProperty(property);
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(imageUrls.length > 1
-              ? 'Property with ${imageUrls.length} photos submitted for approval!'
-              : 'Property submitted for approval!'),
-        ),
-      );
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(imageUrls.length > 1
+                ? 'Property with ${imageUrls.length} photos submitted for approval!'
+                : 'Property submitted for approval!'),
+          ),
+        );
 
-      Navigator.pop(context);
+        Navigator.pop(context);
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        );
+      }
     }
   }
 }

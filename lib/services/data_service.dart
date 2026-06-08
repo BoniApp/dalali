@@ -56,8 +56,12 @@ class DataService {
 
   Future<void> addProperty(PropertyModel property) async {
     final json = _propertyToJson(property);
-    json.remove('id'); // Let Supabase auto-generate UUID
-    await _db.from('properties').insert(json);
+    try {
+      await _db.from('properties').insert(json);
+    } catch (e) {
+      debugPrint('addProperty error: $e');
+      rethrow;
+    }
   }
 
   Future<void> updateProperty(PropertyModel property) async {
@@ -295,8 +299,7 @@ class DataService {
   }
 
   Map<String, dynamic> _propertyToJson(PropertyModel p) {
-    return {
-      'id': p.id,
+    final json = <String, dynamic>{
       'title': p.title,
       'description': p.description,
       'location': p.location,
@@ -313,7 +316,6 @@ class DataService {
       'shared_compound': p.sharedCompound,
       'has_borehole': p.hasBorehole,
       'images': p.images,
-      'video_url': p.videoUrl,
       'status': p.status.name,
       'listing_type': p.listingType.name,
       'source_type': p.sourceType.name,
@@ -322,24 +324,29 @@ class DataService {
       'landlord_phone': p.landlordPhone,
       'is_landlord_verified': p.isLandlordVerified,
       'created_at': p.createdAt.toIso8601String(),
-      'updated_at': p.updatedAt?.toIso8601String(),
       'view_count': p.viewCount,
       'inquiry_count': p.inquiryCount,
       'is_approved': p.isApproved,
       'rating': p.rating,
       'review_count': p.reviewCount,
       'is_boosted': p.isBoosted,
-      'boost_expires_at': p.boostExpiresAt?.toIso8601String(),
       'tags': p.tags,
       'utilities': p.utilities.toJson(),
       'safety_score': p.safetyScore,
       'incident_count': p.incidentCount,
       'rent_amount': p.rentAmount,
       'payment_options': p.paymentOptions.map((e) => e.name).toList(),
-      'minimum_accepted_term': p.minimumAcceptedTerm?.name,
       'deposit_required': p.depositRequired,
       'deposit_amount': p.depositAmount,
     };
+
+    // Only add nullable fields if they have values
+    if (p.videoUrl != null) json['video_url'] = p.videoUrl;
+    if (p.updatedAt != null) json['updated_at'] = p.updatedAt!.toIso8601String();
+    if (p.boostExpiresAt != null) json['boost_expires_at'] = p.boostExpiresAt!.toIso8601String();
+    if (p.minimumAcceptedTerm != null) json['minimum_accepted_term'] = p.minimumAcceptedTerm!.name;
+
+    return json;
   }
 
   PropertyUtilities _utilitiesFromJson(dynamic json) {
