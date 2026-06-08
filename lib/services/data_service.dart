@@ -84,9 +84,13 @@ class DataService {
     await _db.from('properties').delete().eq('id', id);
   }
 
+  Future<void> incrementPropertyView(String propertyId, int currentViews) async {
+    await _db.from('properties').update({'view_count': currentViews + 1}).eq('id', propertyId);
+  }
+
   // ═══════════════════════════════════════════════════════════════
   //  FAVORITES
-  // ═══════════════════════════════════════════════════════════════
+  // ═════════════════════════════════════════════════════════════==
 
   Stream<List<String>> getFavoritePropertyIds(String userId) {
     return _db

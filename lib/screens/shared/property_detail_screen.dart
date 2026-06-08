@@ -12,6 +12,7 @@ import 'package:dalali/screens/safety/neighbourhood_safety_screen.dart';
 import 'package:dalali/screens/safety/report_incident_screen.dart';
 import 'package:dalali/screens/wallet/payment_screen.dart';
 import 'package:dalali/screens/landlord/edit_property_screen.dart';
+import 'package:dalali/services/data_service.dart';
 import 'package:dalali/services/app_settings.dart';
 import 'package:dalali/widgets/safety_badge.dart';
 import 'package:provider/provider.dart';
@@ -31,10 +32,32 @@ class PropertyDetailScreen extends StatefulWidget {
 
 class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
   int _currentImage = 0;
+  late PropertyModel _property;
+
+  @override
+  void initState() {
+    super.initState();
+    _property = widget.property;
+    _incrementView();
+  }
+
+  Future<void> _incrementView() async {
+    try {
+      await DataService().incrementPropertyView(_property.id, _property.viewCount);
+      if (mounted) {
+        setState(() {
+          _property = _property.copyWith(viewCount: _property.viewCount + 1);
+        });
+      }
+    } catch (e) {
+      // Silently fail — views are best-effort
+      debugPrint('incrementPropertyView error: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final p = widget.property;
+    final p = _property;
     final isFav = context.watch<AppState>().isFavorite(p.id);
     final user = context.watch<AppState>().currentUser;
 
