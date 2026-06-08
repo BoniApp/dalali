@@ -45,11 +45,18 @@ class AuthService {
       final result = await _auth.signUp(
         email: email,
         password: password,
-        data: {'full_name': fullName},
+        data: {'full_name': fullName, 'role': role.name},
       );
 
       if (result.user != null) {
-        final userModel = UserModel(
+        // Trigger auto-created the user row; update it with full data
+        await _db.from('users').update({
+          'full_name': fullName,
+          'phone': phone,
+          'role': role.name,
+        }).eq('id', result.user!.id);
+
+        return UserModel(
           id: result.user!.id,
           fullName: fullName,
           email: email,
@@ -57,9 +64,6 @@ class AuthService {
           role: role,
           createdAt: DateTime.now(),
         );
-
-        await _db.from('users').insert(_userToJson(userModel));
-        return userModel;
       }
     } on AuthException catch (e) {
       throw _handleAuthError(e);
