@@ -26,6 +26,7 @@ class AppState extends ChangeNotifier {
   AuthMode _authMode = AuthMode.demo;
   UserModel? currentUser;
   List<PropertyModel> _properties = [];
+  List<PropertyModel> _myProperties = [];
   List<FavoriteModel> _favorites = [];
   List<AppointmentModel> _appointments = [];
   List<InquiryModel> _inquiries = [];
@@ -153,8 +154,7 @@ class AppState extends ChangeNotifier {
       _properties.where((p) => p.listingType == ListingType.featured && p.status == PropertyStatus.available).toList();
 
   List<PropertyModel> get landlordProperties {
-    if (currentUser == null) return [];
-    return _properties.where((p) => p.landlordId == currentUser!.id).toList();
+    return _myProperties;
   }
 
   List<PropertyModel> get favoriteProperties {
@@ -223,7 +223,11 @@ class AppState extends ChangeNotifier {
     );
     if (existing >= 0) {
       _favorites.removeAt(existing);
-      if (_isFirebase) _data.removeFavorite(currentUser!.id, propertyId);
+      if (_isFirebase) {
+        _data.removeFavorite(currentUser!.id, propertyId).catchError((e) {
+          print('removeFavorite error: $e');
+        });
+      }
     } else {
       _favorites.add(FavoriteModel(
         id: 'f${DateTime.now().millisecondsSinceEpoch}',
@@ -231,7 +235,11 @@ class AppState extends ChangeNotifier {
         propertyId: propertyId,
         createdAt: DateTime.now(),
       ));
-      if (_isFirebase) _data.addFavorite(currentUser!.id, propertyId);
+      if (_isFirebase) {
+        _data.addFavorite(currentUser!.id, propertyId).catchError((e) {
+          print('addFavorite error: $e');
+        });
+      }
     }
     notifyListeners();
   }
@@ -257,13 +265,22 @@ class AppState extends ChangeNotifier {
   void _subscribeToDatabase() {
     if (currentUser == null) return;
     _unsubscribeFromDatabase();
+    final isLandlord = currentUser!.role == UserRole.landlord || currentUser!.role == UserRole.agent;
 
-    // Properties
+    // Properties (public feed: approved + available only)
     _subscriptions.add(_data.getProperties(limit: 100).listen((list) {
       _properties = list;
       _recomputeSafetyScores();
       notifyListeners();
     }));
+
+    // Landlord's own properties (all statuses, approval states)
+    if (isLandlord) {
+      _subscriptions.add(_data.getMyProperties(currentUser!.id, limit: 100).listen((list) {
+        _myProperties = list;
+        notifyListeners();
+      }));
+    }
 
     // Favorites
     _subscriptions.add(_data.getFavoritePropertyIds(currentUser!.id).listen((ids) {
@@ -277,7 +294,6 @@ class AppState extends ChangeNotifier {
     }));
 
     // Appointments
-    final isLandlord = currentUser!.role == UserRole.landlord || currentUser!.role == UserRole.agent;
     _subscriptions.add(_data.getAppointments(currentUser!.id, isLandlord: isLandlord).listen((list) {
       _appointments = list;
       notifyListeners();
@@ -367,6 +383,7 @@ class AppState extends ChangeNotifier {
       sub.cancel();
     }
     _subscriptions.clear();
+    _myProperties = [];
   }
 
   bool get _isFirebase => _authMode == AuthMode.supabase;
@@ -430,7 +447,11 @@ class AppState extends ChangeNotifier {
 
   void addReview(ReviewModel review) {
     _reviews.add(review);
-    if (_isFirebase) _data.addReview(review);
+    if (_isFirebase) {
+      _data.addReview(review).catchError((e) {
+        print('addReview error: $e');
+      });
+    }
     // Update property review count + average rating (simplified)
     final pIdx = _properties.indexWhere((p) => p.id == review.propertyId);
     if (pIdx >= 0) {
@@ -441,7 +462,11 @@ class AppState extends ChangeNotifier {
         reviewCount: newCount,
         rating: newRating,
       );
-      if (_isFirebase) _data.updateProperty(_properties[pIdx]);
+      if (_isFirebase) {
+        _data.updateProperty(_properties[pIdx]).catchError((e) {
+          print('updateProperty error: $e');
+        });
+      }
     }
     notifyListeners();
   }
@@ -450,7 +475,11 @@ class AppState extends ChangeNotifier {
 
   void addNeighbourhoodReport(NeighbourhoodReportModel report) {
     _neighbourhoodReports.add(report);
-    if (_isFirebase) _data.addNeighbourhoodReport(report);
+    if (_isFirebase) {
+      _data.addNeighbourhoodReport(report).catchError((e) {
+        print('addNeighbourhoodReport error: $e');
+      });
+    }
     // Recompute safety scores for nearby properties
     _recomputeSafetyScores();
     notifyListeners();
@@ -490,7 +519,11 @@ class AppState extends ChangeNotifier {
 
   void applyForTenancy(TenancyApplicationModel application) {
     _tenancyApplications.add(application);
-    if (_isFirebase) _data.addTenancyApplication(application);
+    if (_isFirebase) {
+      _data.addTenancyApplication(application).catchError((e) {
+        print('addTenancyApplication error: $e');
+      });
+    }
     notifyListeners();
   }
 
@@ -502,7 +535,11 @@ class AppState extends ChangeNotifier {
         status: ApplicationStatus.approved,
         resolvedAt: DateTime.now(),
       );
-      if (_isFirebase) _data.updateApplicationStatus(applicationId, ApplicationStatus.approved);
+      if (_isFirebase) {
+        _data.updateApplicationStatus(applicationId, ApplicationStatus.approved).catchError((e) {
+          print('updateApplicationStatus error: $e');
+        });
+      }
       // Create tenancy record
       final property = _properties.firstWhere((p) => p.id == app.propertyId);
       final tenancy = TenancyModel(
@@ -522,12 +559,20 @@ class AppState extends ChangeNotifier {
         createdAt: DateTime.now(),
       );
       _tenancies.add(tenancy);
-      if (_isFirebase) _data.addTenancy(tenancy);
+      if (_isFirebase) {
+        _data.addTenancy(tenancy).catchError((e) {
+          print('addTenancy error: $e');
+        });
+      }
       // Mark property reserved
       final pIdx = _properties.indexWhere((p) => p.id == app.propertyId);
       if (pIdx >= 0) {
         _properties[pIdx] = property.copyWith(status: PropertyStatus.pending);
-        if (_isFirebase) _data.updateProperty(_properties[pIdx]);
+        if (_isFirebase) {
+          _data.updateProperty(_properties[pIdx]).catchError((e) {
+            print('updateProperty error: $e');
+          });
+        }
       }
       notifyListeners();
     }
@@ -541,7 +586,11 @@ class AppState extends ChangeNotifier {
         resolvedAt: DateTime.now(),
         notes: reason,
       );
-      if (_isFirebase) _data.updateApplicationStatus(applicationId, ApplicationStatus.rejected);
+      if (_isFirebase) {
+        _data.updateApplicationStatus(applicationId, ApplicationStatus.rejected).catchError((e) {
+          print('updateApplicationStatus error: $e');
+        });
+      }
       notifyListeners();
     }
   }
@@ -554,12 +603,20 @@ class AppState extends ChangeNotifier {
         status: TenancyStatus.active,
         activatedAt: DateTime.now(),
       );
-      if (_isFirebase) _data.updateTenancyStatus(tenancyId, TenancyStatus.active);
+      if (_isFirebase) {
+        _data.updateTenancyStatus(tenancyId, TenancyStatus.active).catchError((e) {
+          print('updateTenancyStatus error: $e');
+        });
+      }
       // Mark property occupied
       final pIdx = _properties.indexWhere((p) => p.id == t.propertyId);
       if (pIdx >= 0) {
         _properties[pIdx] = _properties[pIdx].copyWith(status: PropertyStatus.occupied);
-        if (_isFirebase) _data.updateProperty(_properties[pIdx]);
+        if (_isFirebase) {
+          _data.updateProperty(_properties[pIdx]).catchError((e) {
+            print('updateProperty error: $e');
+          });
+        }
       }
       notifyListeners();
     }
@@ -573,12 +630,20 @@ class AppState extends ChangeNotifier {
         status: TenancyStatus.completed,
         completedAt: DateTime.now(),
       );
-      if (_isFirebase) _data.updateTenancyStatus(tenancyId, TenancyStatus.completed);
+      if (_isFirebase) {
+        _data.updateTenancyStatus(tenancyId, TenancyStatus.completed).catchError((e) {
+          print('updateTenancyStatus error: $e');
+        });
+      }
       // Mark property available again
       final pIdx = _properties.indexWhere((p) => p.id == t.propertyId);
       if (pIdx >= 0) {
         _properties[pIdx] = _properties[pIdx].copyWith(status: PropertyStatus.available);
-        if (_isFirebase) _data.updateProperty(_properties[pIdx]);
+        if (_isFirebase) {
+          _data.updateProperty(_properties[pIdx]).catchError((e) {
+            print('updateProperty error: $e');
+          });
+        }
       }
       notifyListeners();
     }
@@ -586,7 +651,11 @@ class AppState extends ChangeNotifier {
 
   void addMaintenanceRequest(MaintenanceRequestModel request) {
     _maintenanceRequests.add(request);
-    if (_isFirebase) _data.addMaintenanceRequest(request);
+    if (_isFirebase) {
+      _data.addMaintenanceRequest(request).catchError((e) {
+        print('addMaintenanceRequest error: $e');
+      });
+    }
     notifyListeners();
   }
 
@@ -598,7 +667,11 @@ class AppState extends ChangeNotifier {
         resolvedAt: status == MaintenanceStatus.resolved ? DateTime.now() : null,
         resolutionNotes: resolutionNotes,
       );
-      if (_isFirebase) _data.updateMaintenanceStatus(requestId, status, resolutionNotes: resolutionNotes);
+      if (_isFirebase) {
+        _data.updateMaintenanceStatus(requestId, status, resolutionNotes: resolutionNotes).catchError((e) {
+          print('updateMaintenanceStatus error: $e');
+        });
+      }
       notifyListeners();
     }
   }
@@ -616,7 +689,11 @@ class AppState extends ChangeNotifier {
         status: PaymentStatus.paid,
         paidAt: DateTime.now(),
       );
-      if (_isFirebase) _data.markRentPaid(scheduleId);
+      if (_isFirebase) {
+        _data.markRentPaid(scheduleId).catchError((e) {
+          print('markRentPaid error: $e');
+        });
+      }
       notifyListeners();
     }
   }
@@ -661,24 +738,32 @@ class AppState extends ChangeNotifier {
 
   // ─── Legacy property/appointment/inquiry ────────────────────
 
-  void addProperty(PropertyModel property) {
+  Future<void> addProperty(PropertyModel property) async {
+    if (_isFirebase) {
+      await _data.addProperty(property);
+    }
     _properties.add(property);
-    if (_isFirebase) _data.addProperty(property);
     notifyListeners();
   }
 
-  void updateProperty(PropertyModel property) {
+  Future<void> updateProperty(PropertyModel property) async {
     final index = _properties.indexWhere((p) => p.id == property.id);
     if (index >= 0) {
+      if (_isFirebase) {
+        await _data.updateProperty(property);
+      }
       _properties[index] = property;
-      if (_isFirebase) _data.updateProperty(property);
       notifyListeners();
     }
   }
 
   void addAppointment(AppointmentModel appointment) {
     _appointments.add(appointment);
-    if (_isFirebase) _data.addAppointment(appointment);
+    if (_isFirebase) {
+      _data.addAppointment(appointment).catchError((e) {
+        print('addAppointment error: $e');
+      });
+    }
     notifyListeners();
   }
 
@@ -699,14 +784,22 @@ class AppState extends ChangeNotifier {
         status: status,
         createdAt: old.createdAt,
       );
-      if (_isFirebase) _data.updateAppointmentStatus(id, status);
+      if (_isFirebase) {
+        _data.updateAppointmentStatus(id, status).catchError((e) {
+          print('updateAppointmentStatus error: $e');
+        });
+      }
       notifyListeners();
     }
   }
 
   void addInquiry(InquiryModel inquiry) {
     _inquiries.add(inquiry);
-    if (_isFirebase) _data.addInquiry(inquiry);
+    if (_isFirebase) {
+      _data.addInquiry(inquiry).catchError((e) {
+        print('addInquiry error: $e');
+      });
+    }
     notifyListeners();
   }
 
@@ -725,7 +818,11 @@ class AppState extends ChangeNotifier {
         createdAt: old.createdAt,
         isRead: true,
       );
-      if (_isFirebase) _data.markInquiryRead(id);
+      if (_isFirebase) {
+        _data.markInquiryRead(id).catchError((e) {
+          print('markInquiryRead error: $e');
+        });
+      }
       notifyListeners();
     }
   }

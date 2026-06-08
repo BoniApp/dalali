@@ -605,20 +605,26 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
     final user = context.read<AppState>().currentUser!;
     final propertyId = 'p${DateTime.now().millisecondsSinceEpoch}';
 
-    // Upload photos to Firebase Storage
+    // ─── Upload photos to Supabase Storage ──────────────────────
     List<String> imageUrls = [];
+    String? uploadError;
     if (_pickedImages.isNotEmpty) {
       for (var i = 0; i < _pickedImages.length; i++) {
-        final url = await _storage.uploadPropertyImage(
-          File(_pickedImages[i].path),
-          propertyId,
-          i,
-        );
-        if (url != null) imageUrls.add(url);
+        try {
+          final url = await _storage.uploadPropertyImage(
+            File(_pickedImages[i].path),
+            propertyId,
+            i,
+          );
+          imageUrls.add(url);
+        } catch (e) {
+          uploadError ??= 'Photo ${i + 1} failed: $e';
+          print('Image upload failed for index $i: $e');
+        }
       }
     }
 
-    // Fallback if upload failed or no images picked
+    // Fallback if no images were uploaded
     if (imageUrls.isEmpty) {
       imageUrls = [
         'https://upload.wikimedia.org/wikipedia/commons/4/40/Buildings_in_Mikocheni%2C_Kinondoni_MC.jpg',
@@ -661,20 +667,36 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
 
     if (mounted) {
       try {
-        context.read<AppState>().addProperty(property);
+        await context.read<AppState>().addProperty(property);
+
+        final uploadedCount = imageUrls.where(
+          (u) => !u.contains('wikipedia.org'),
+        ).length;
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(imageUrls.length > 1
-                ? 'Property with ${imageUrls.length} photos submitted for approval!'
-                : 'Property submitted for approval!'),
+            content: Text(uploadedCount > 0
+                ? 'Property with $uploadedCount photo${uploadedCount > 1 ? 's' : ''} submitted for approval!'
+                : 'Property submitted for approval (photos could not be uploaded).'),
+            backgroundColor: uploadedCount > 0 ? null : Colors.orange,
           ),
         );
+
+        // Warn user if uploads failed
+        if (uploadError != null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Photo upload issue: $uploadError. You can add photos later by editing the property.'),
+              backgroundColor: Colors.orange.shade800,
+              duration: const Duration(seconds: 6),
+            ),
+          );
+        }
 
         Navigator.pop(context);
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+          SnackBar(content: Text('Error saving property: $e'), backgroundColor: Colors.red),
         );
       }
     }

@@ -40,6 +40,15 @@ class DataService {
             .toList());
   }
 
+  Stream<List<PropertyModel>> getMyProperties(String landlordId, {int limit = 100}) {
+    return _db
+        .from('properties')
+        .stream(primaryKey: ['id'])
+        .eq('landlord_id', landlordId)
+        .limit(limit)
+        .map((rows) => rows.map(_propertyFromJson).toList());
+  }
+
   Future<List<PropertyModel>> getPropertiesPaginated({
     int limit = 20,
     int offset = 0,

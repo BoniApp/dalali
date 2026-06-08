@@ -32,17 +32,41 @@ class AdminShell extends StatefulWidget {
 class _AdminShellState extends State<AdminShell> {
   int _selectedIndex = 0;
 
-  final List<_NavItem> _allItems = [
+  List<_NavItem> get _allItems => [
     _NavItem(icon: Icons.dashboard, label: 'Dashboard', screenBuilder: () => const DashboardAdminScreen()),
     _NavItem(icon: Icons.account_balance_wallet, label: 'Wallets', screenBuilder: () => const WalletsAdminScreen()),
     _NavItem(icon: Icons.receipt_long, label: 'Transactions', screenBuilder: () => const TransactionsAdminScreen()),
-    _NavItem(icon: Icons.home_work, label: 'Listings', screenBuilder: () => const ListingsAdminScreen()),
-    _NavItem(icon: Icons.people, label: 'Users', screenBuilder: () => const UsersAdminScreen()),
-    _NavItem(icon: Icons.account_balance, label: 'Withdrawals', screenBuilder: () => const WithdrawalsAdminScreen()),
-    _NavItem(icon: Icons.warning_amber, label: 'Fraud Alerts', screenBuilder: () => const FraudAdminScreen()),
-    _NavItem(icon: Icons.gavel, label: 'Disputes', screenBuilder: () => const DisputesAdminScreen()),
+    _NavItem(icon: Icons.home_work, label: 'Listings', screenBuilder: () => ListingsAdminScreen(
+      adminId: widget.adminId,
+      adminName: widget.adminName,
+      adminRole: widget.adminRole,
+    )),
+    _NavItem(icon: Icons.people, label: 'Users', screenBuilder: () => UsersAdminScreen(
+      adminId: widget.adminId,
+      adminName: widget.adminName,
+      adminRole: widget.adminRole,
+    )),
+    _NavItem(icon: Icons.account_balance, label: 'Withdrawals', screenBuilder: () => WithdrawalsAdminScreen(
+      adminId: widget.adminId,
+      adminName: widget.adminName,
+      adminRole: widget.adminRole,
+    )),
+    _NavItem(icon: Icons.warning_amber, label: 'Fraud Alerts', screenBuilder: () => FraudAdminScreen(
+      adminId: widget.adminId,
+      adminName: widget.adminName,
+      adminRole: widget.adminRole,
+    )),
+    _NavItem(icon: Icons.gavel, label: 'Disputes', screenBuilder: () => DisputesAdminScreen(
+      adminId: widget.adminId,
+      adminName: widget.adminName,
+      adminRole: widget.adminRole,
+    )),
     _NavItem(icon: Icons.analytics, label: 'Analytics', screenBuilder: () => const AnalyticsAdminScreen()),
-    _NavItem(icon: Icons.settings, label: 'Settings', screenBuilder: () => const SettingsAdminScreen()),
+    _NavItem(icon: Icons.settings, label: 'Settings', screenBuilder: () => SettingsAdminScreen(
+      adminId: widget.adminId,
+      adminName: widget.adminName,
+      adminRole: widget.adminRole,
+    )),
   ];
 
   List<_NavItem> get _visibleItems {

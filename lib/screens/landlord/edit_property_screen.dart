@@ -608,17 +608,23 @@ class _EditPropertyScreenState extends State<EditPropertyScreen> {
 
     final propertyId = widget.property.id;
 
-    // Upload any new photos to Firebase Storage
+    // Upload any new photos to Supabase Storage
     List<String> imageUrls = List<String>.from(_existingImages);
+    String? uploadError;
     if (_pickedImages.isNotEmpty) {
       final startIndex = _existingImages.length;
       for (var i = 0; i < _pickedImages.length; i++) {
-        final url = await _storage.uploadPropertyImage(
-          File(_pickedImages[i].path),
-          propertyId,
-          startIndex + i,
-        );
-        if (url != null) imageUrls.add(url);
+        try {
+          final url = await _storage.uploadPropertyImage(
+            File(_pickedImages[i].path),
+            propertyId,
+            startIndex + i,
+          );
+          imageUrls.add(url);
+        } catch (e) {
+          uploadError ??= 'Photo ${i + 1} failed: $e';
+          print('Image upload failed for index ${startIndex + i}: $e');
+        }
       }
     }
 
@@ -658,17 +664,37 @@ class _EditPropertyScreenState extends State<EditPropertyScreen> {
     setState(() => _isUploading = false);
 
     if (mounted) {
-      context.read<AppState>().updateProperty(updatedProperty);
+      try {
+        await context.read<AppState>().updateProperty(updatedProperty);
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(imageUrls.length > 1
-              ? 'Property updated with ${imageUrls.length} photos!'
-              : 'Property updated successfully!'),
-        ),
-      );
+        final uploadedCount = imageUrls.where(
+          (u) => !u.contains('wikipedia.org'),
+        ).length;
 
-      Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(uploadedCount > 0
+                ? 'Property updated with $uploadedCount photo${uploadedCount > 1 ? 's' : ''}!'
+                : 'Property updated successfully!'),
+          ),
+        );
+
+        if (uploadError != null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Photo upload issue: $uploadError'),
+              backgroundColor: Colors.orange.shade800,
+              duration: const Duration(seconds: 6),
+            ),
+          );
+        }
+
+        Navigator.pop(context);
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error saving property: $e'), backgroundColor: Colors.red),
+        );
+      }
     }
   }
 }

@@ -1,9 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:dalali/models/admin/admin_user_model.dart';
 import 'package:dalali/services/admin/admin_service.dart';
 import 'package:intl/intl.dart';
 
 class UsersAdminScreen extends StatelessWidget {
-  const UsersAdminScreen({super.key});
+  final String adminId;
+  final String adminName;
+  final AdminRole adminRole;
+
+  const UsersAdminScreen({
+    super.key,
+    required this.adminId,
+    required this.adminName,
+    required this.adminRole,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -42,41 +52,84 @@ class UsersAdminScreen extends StatelessWidget {
                         DataColumn(label: Text('Joined')),
                         DataColumn(label: Text('Actions')),
                       ],
-                      rows: users.map((u) => DataRow(
-                        cells: [
-                          DataCell(Text(u['full_name'] ?? '', style: const TextStyle(fontWeight: FontWeight.w500))),
-                          DataCell(Text(u['email'] ?? '')),
-                          DataCell(Text(u['phone'] ?? '')),
-                          DataCell(Chip(
-                            label: Text(u['role'] ?? 'seeker', style: const TextStyle(fontSize: 10)),
-                            backgroundColor: _roleColor(u['role'] ?? 'seeker').withValues(alpha: 0.1),
-                            labelStyle: TextStyle(fontSize: 10, color: _roleColor(u['role'] ?? 'seeker'), fontWeight: FontWeight.bold),
-                            padding: EdgeInsets.zero,
-                            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          )),
-                          DataCell(
-                            (u['verification_status'] ?? '') == 'verified'
-                                ? const Row(mainAxisSize: MainAxisSize.min, children: [Icon(Icons.verified, color: Colors.green, size: 16), SizedBox(width: 4), Text('Verified')])
-                                : Text(u['verification_status'] ?? '', style: const TextStyle(color: Colors.grey)),
-                          ),
-                          DataCell(Text(DateFormat('dd MMM yyyy').format(DateTime.tryParse(u['created_at'] ?? '') ?? DateTime.now()), style: const TextStyle(fontSize: 12))),
-                          DataCell(Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              IconButton(
-                                icon: const Icon(Icons.verified_user, size: 18),
-                                tooltip: 'Verify',
-                                onPressed: () {},
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.block, color: Colors.red, size: 18),
-                                tooltip: 'Suspend',
-                                onPressed: () {},
-                              ),
-                            ],
-                          )),
-                        ],
-                      )).toList(),
+                      rows: users.map((u) {
+                        final userId = u['id'] ?? '';
+                        return DataRow(
+                          cells: [
+                            DataCell(Text(u['full_name'] ?? '', style: const TextStyle(fontWeight: FontWeight.w500))),
+                            DataCell(Text(u['email'] ?? '')),
+                            DataCell(Text(u['phone'] ?? '')),
+                            DataCell(Chip(
+                              label: Text(u['role'] ?? 'seeker', style: const TextStyle(fontSize: 10)),
+                              backgroundColor: _roleColor(u['role'] ?? 'seeker').withValues(alpha: 0.1),
+                              labelStyle: TextStyle(fontSize: 10, color: _roleColor(u['role'] ?? 'seeker'), fontWeight: FontWeight.bold),
+                              padding: EdgeInsets.zero,
+                              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            )),
+                            DataCell(
+                              (u['verification_status'] ?? '') == 'verified'
+                                  ? const Row(mainAxisSize: MainAxisSize.min, children: [Icon(Icons.verified, color: Colors.green, size: 16), SizedBox(width: 4), Text('Verified')])
+                                  : Text(u['verification_status'] ?? '', style: const TextStyle(color: Colors.grey)),
+                            ),
+                            DataCell(Text(DateFormat('dd MMM yyyy').format(DateTime.tryParse(u['created_at'] ?? '') ?? DateTime.now()), style: const TextStyle(fontSize: 12))),
+                            DataCell(Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  icon: const Icon(Icons.verified_user, size: 18),
+                                  tooltip: 'Verify Landlord',
+                                  onPressed: () async {
+                                    try {
+                                      await AdminService().verifyLandlord(
+                                        adminId: adminId,
+                                        adminName: adminName,
+                                        adminRole: adminRole,
+                                        userId: userId,
+                                      );
+                                      if (context.mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(content: Text('User verified')),
+                                        );
+                                      }
+                                    } catch (e) {
+                                      if (context.mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+                                        );
+                                      }
+                                    }
+                                  },
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.block, color: Colors.red, size: 18),
+                                  tooltip: 'Suspend',
+                                  onPressed: () async {
+                                    try {
+                                      await AdminService().banUser(
+                                        adminId: adminId,
+                                        adminName: adminName,
+                                        adminRole: adminRole,
+                                        userId: userId,
+                                      );
+                                      if (context.mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(content: Text('User suspended')),
+                                        );
+                                      }
+                                    } catch (e) {
+                                      if (context.mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+                                        );
+                                      }
+                                    }
+                                  },
+                                ),
+                              ],
+                            )),
+                          ],
+                        );
+                      }).toList(),
                     ),
                   );
                 },

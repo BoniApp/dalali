@@ -1,9 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:dalali/models/admin/admin_user_model.dart';
 import 'package:dalali/services/admin/admin_service.dart';
 import 'package:dalali/utils/helpers.dart';
 
 class ListingsAdminScreen extends StatelessWidget {
-  const ListingsAdminScreen({super.key});
+  final String adminId;
+  final String adminName;
+  final AdminRole adminRole;
+
+  const ListingsAdminScreen({
+    super.key,
+    required this.adminId,
+    required this.adminName,
+    required this.adminRole,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -46,7 +56,8 @@ class ListingsAdminScreen extends StatelessWidget {
                       rows: listings.map((p) {
                         final images = List<String>.from(p['images'] ?? []);
                         final status = p['status'] ?? '';
-                        final isApproved = p['is_approved'] ?? false;
+                        final isApproved = p['is_approved'] == true;
+                        final propertyId = p['id']?.toString() ?? '';
                         return DataRow(
                           cells: [
                             DataCell(
@@ -73,21 +84,13 @@ class ListingsAdminScreen extends StatelessWidget {
                                   ? const Icon(Icons.check_circle, color: Colors.green, size: 20)
                                   : const Icon(Icons.pending, color: Colors.orange, size: 20),
                             ),
-                            DataCell(Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                if (!isApproved)
-                                  IconButton(
-                                    icon: const Icon(Icons.check_circle, color: Colors.green, size: 18),
-                                    tooltip: 'Approve',
-                                    onPressed: () {},
-                                  ),
-                                IconButton(
-                                  icon: const Icon(Icons.block, color: Colors.red, size: 18),
-                                  tooltip: 'Remove',
-                                  onPressed: () {},
-                                ),
-                              ],
+                            DataCell(_ActionCell(
+                              propertyId: propertyId,
+                              isApproved: isApproved,
+                              title: p['title'] ?? 'this property',
+                              adminId: adminId,
+                              adminName: adminName,
+                              adminRole: adminRole,
                             )),
                           ],
                         );
@@ -100,6 +103,143 @@ class ListingsAdminScreen extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _ActionCell extends StatefulWidget {
+  final String propertyId;
+  final bool isApproved;
+  final String title;
+  final String adminId;
+  final String adminName;
+  final AdminRole adminRole;
+
+  const _ActionCell({
+    required this.propertyId,
+    required this.isApproved,
+    required this.title,
+    required this.adminId,
+    required this.adminName,
+    required this.adminRole,
+  });
+
+  @override
+  State<_ActionCell> createState() => _ActionCellState();
+}
+
+class _ActionCellState extends State<_ActionCell> {
+  bool _isLoading = false;
+
+  Future<void> _handleApprove() async {
+    if (widget.propertyId.isEmpty) {
+      _showError('Property ID is empty. Cannot approve.');
+      return;
+    }
+    final confirmed = await _showConfirmDialog('Approve', 'Approve "${widget.title}"?');
+    if (!confirmed) return;
+    _setLoading(true);
+    try {
+      await AdminService().approveProperty(
+        adminId: widget.adminId,
+        adminName: widget.adminName,
+        adminRole: widget.adminRole,
+        propertyId: widget.propertyId,
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Property approved')),
+        );
+      }
+    } catch (e) {
+      if (mounted) _showError('Approve failed: $e');
+    } finally {
+      if (mounted) _setLoading(false);
+    }
+  }
+
+  Future<void> _handleReject() async {
+    if (widget.propertyId.isEmpty) {
+      _showError('Property ID is empty. Cannot reject.');
+      return;
+    }
+    final confirmed = await _showConfirmDialog('Reject', 'Reject "${widget.title}"?');
+    if (!confirmed) return;
+    _setLoading(true);
+    try {
+      await AdminService().rejectProperty(
+        adminId: widget.adminId,
+        adminName: widget.adminName,
+        adminRole: widget.adminRole,
+        propertyId: widget.propertyId,
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Property rejected')),
+        );
+      }
+    } catch (e) {
+      if (mounted) _showError('Reject failed: $e');
+    } finally {
+      if (mounted) _setLoading(false);
+    }
+  }
+
+  void _setLoading(bool v) => setState(() => _isLoading = v);
+
+  void _showError(String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(msg), backgroundColor: Colors.red),
+    );
+  }
+
+  Future<bool> _showConfirmDialog(String action, String message) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('$action Property'),
+        content: Text(message),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(action)),
+        ],
+      ),
+    );
+    return result == true;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const SizedBox(width: 80, height: 36, child: Center(child: SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))));
+    }
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (!widget.isApproved)
+          Tooltip(
+            message: 'Approve',
+            child: InkWell(
+              onTap: _handleApprove,
+              borderRadius: BorderRadius.circular(20),
+              child: Padding(
+                padding: const EdgeInsets.all(8),
+                child: Icon(Icons.check_circle, color: Colors.green, size: 20),
+              ),
+            ),
+          ),
+        Tooltip(
+          message: 'Reject',
+          child: InkWell(
+            onTap: _handleReject,
+            borderRadius: BorderRadius.circular(20),
+            child: Padding(
+              padding: const EdgeInsets.all(8),
+              child: Icon(Icons.block, color: Colors.red, size: 20),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

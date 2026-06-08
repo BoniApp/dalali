@@ -4,7 +4,16 @@ import 'package:dalali/services/admin/admin_service.dart';
 import 'package:intl/intl.dart';
 
 class DisputesAdminScreen extends StatelessWidget {
-  const DisputesAdminScreen({super.key});
+  final String adminId;
+  final String adminName;
+  final AdminRole adminRole;
+
+  const DisputesAdminScreen({
+    super.key,
+    required this.adminId,
+    required this.adminName,
+    required this.adminRole,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -15,9 +24,9 @@ class DisputesAdminScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Dispute Management', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+            const Text('Dispute Resolution', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
             const SizedBox(height: 4),
-            Text('Handle tenant-landlord and payment disputes', style: TextStyle(fontSize: 14, color: Colors.grey[600])),
+            Text('Handle booking and payment disputes', style: TextStyle(fontSize: 14, color: Colors.grey[600])),
             const SizedBox(height: 24),
             Card(
               elevation: 2,
@@ -29,7 +38,7 @@ class DisputesAdminScreen extends StatelessWidget {
                   }
                   final disputes = snapshot.data ?? [];
                   if (disputes.isEmpty) {
-                    return const Center(child: Padding(padding: EdgeInsets.all(40), child: Text('No disputes found')));
+                    return const Center(child: Padding(padding: EdgeInsets.all(40), child: Text('No active disputes')));
                   }
                   return SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
@@ -37,31 +46,85 @@ class DisputesAdminScreen extends StatelessWidget {
                       columns: const [
                         DataColumn(label: Text('ID')),
                         DataColumn(label: Text('Reporter')),
-                        DataColumn(label: Text('Respondent')),
-                        DataColumn(label: Text('Subject')),
+                        DataColumn(label: Text('Property')),
+                        DataColumn(label: Text('Reason')),
                         DataColumn(label: Text('Status')),
                         DataColumn(label: Text('Date')),
                         DataColumn(label: Text('Actions')),
                       ],
-                      rows: disputes.map((d) => DataRow(
-                        cells: [
-                          DataCell(Text((d['id'] as String).substring(0, 8), style: const TextStyle(fontFamily: 'monospace', fontSize: 12))),
-                          DataCell(Text(d['reporter_id'] ?? '', style: const TextStyle(fontSize: 12))),
-                          DataCell(Text(d['respondent_id'] ?? '-', style: const TextStyle(fontSize: 12))),
-                          DataCell(Text(d['type'] ?? '')),
-                          DataCell(_StatusChip(status: d['status'] ?? '')),
-                          DataCell(Text(DateFormat('dd MMM yyyy').format(DateTime.tryParse(d['created_at'] ?? '') ?? DateTime.now()), style: const TextStyle(fontSize: 12))),
-                          DataCell(
-                            (d['status'] == 'open' || d['status'] == 'mediating')
-                                ? IconButton(
-                                    icon: const Icon(Icons.gavel, color: Colors.teal, size: 18),
-                                    tooltip: 'Resolve',
-                                    onPressed: () => _showResolveDialog(context, d),
-                                  )
-                                : const Icon(Icons.check_circle, color: Colors.green, size: 18),
-                          ),
-                        ],
-                      )).toList(),
+                      rows: disputes.map((d) {
+                        final disputeId = d['id'] ?? '';
+                        final status = d['status'] ?? 'pending';
+                        return DataRow(
+                          cells: [
+                            DataCell(Text(disputeId.toString().substring(0, 8), style: const TextStyle(fontFamily: 'monospace', fontSize: 12))),
+                            DataCell(Text(d['reporter_id']?.toString().substring(0, 8) ?? '', style: const TextStyle(fontFamily: 'monospace', fontSize: 12))),
+                            DataCell(Text(d['property_id']?.toString().substring(0, 8) ?? '', style: const TextStyle(fontFamily: 'monospace', fontSize: 12))),
+                            DataCell(Text(d['reason'] ?? '', style: const TextStyle(fontSize: 12))),
+                            DataCell(_StatusChip(status: status)),
+                            DataCell(Text(DateFormat('dd MMM yyyy').format(DateTime.tryParse(d['created_at'] ?? '') ?? DateTime.now()), style: const TextStyle(fontSize: 12))),
+                            DataCell(Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                if (status == 'pending')
+                                  IconButton(
+                                    icon: const Icon(Icons.check_circle, color: Colors.green, size: 18),
+                                    tooltip: 'Resolve in favor of reporter',
+                                    onPressed: () async {
+                                      try {
+                                        await AdminService().resolveDispute(
+                                          adminId: adminId,
+                                          adminName: adminName,
+                                          adminRole: adminRole,
+                                          disputeId: disputeId,
+                                          resolution: 'resolved_in_favor',
+                                        );
+                                        if (context.mounted) {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            const SnackBar(content: Text('Dispute resolved in favor of reporter')),
+                                          );
+                                        }
+                                      } catch (e) {
+                                        if (context.mounted) {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+                                          );
+                                        }
+                                      }
+                                    },
+                                  ),
+                                if (status == 'pending')
+                                  IconButton(
+                                    icon: const Icon(Icons.cancel, color: Colors.red, size: 18),
+                                    tooltip: 'Reject dispute',
+                                    onPressed: () async {
+                                      try {
+                                        await AdminService().resolveDispute(
+                                          adminId: adminId,
+                                          adminName: adminName,
+                                          adminRole: adminRole,
+                                          disputeId: disputeId,
+                                          resolution: 'rejected',
+                                        );
+                                        if (context.mounted) {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            const SnackBar(content: Text('Dispute rejected')),
+                                          );
+                                        }
+                                      } catch (e) {
+                                        if (context.mounted) {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+                                          );
+                                        }
+                                      }
+                                    },
+                                  ),
+                              ],
+                            )),
+                          ],
+                        );
+                      }).toList(),
                     ),
                   );
                 },
@@ -69,48 +132,6 @@ class DisputesAdminScreen extends StatelessWidget {
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  void _showResolveDialog(BuildContext context, Map<String, dynamic> dispute) {
-    final controller = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Resolve Dispute'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Type: ${dispute['type'] ?? ''}', style: const TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            Text('Description: ${dispute['description'] ?? ''}'),
-            const SizedBox(height: 16),
-            TextField(
-              controller: controller,
-              decoration: const InputDecoration(labelText: 'Resolution', border: OutlineInputBorder()),
-              maxLines: 3,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-          ElevatedButton(
-            onPressed: () async {
-              await AdminService().resolveDispute(
-                disputeId: dispute['id'] ?? '',
-                resolution: controller.text,
-                adminId: 'admin',
-                adminName: 'Admin',
-                adminRole: AdminRole.superAdmin,
-              );
-              if (ctx.mounted) Navigator.pop(ctx);
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.teal, foregroundColor: Colors.white),
-            child: const Text('Resolve'),
-          ),
-        ],
       ),
     );
   }
@@ -123,10 +144,10 @@ class _StatusChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = switch (status) {
-      'open' => Colors.orange,
-      'under_review' => Colors.blue,
-      'resolved' => Colors.green,
-      'closed' => Colors.grey,
+      'pending' => Colors.orange,
+      'resolved_in_favor' => Colors.green,
+      'resolved_against' => Colors.blue,
+      'rejected' => Colors.red,
       _ => Colors.grey,
     };
     return Chip(

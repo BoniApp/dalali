@@ -1,6 +1,4 @@
 import 'package:dalali/models/admin/admin_user_model.dart';
-import 'package:dalali/models/wallet_model.dart';
-import 'package:dalali/models/user_model.dart';
 import 'package:dalali/services/supabase_service.dart';
 
 /// Centralized admin service for dashboard operations.
@@ -49,7 +47,13 @@ class AdminService {
     required String newRole,
   }) async {
     final before = await getUserById(userId);
-    await _db.from('users').update({'role': newRole}).eq('id', userId);
+    final result = await _db.from('users').update({'role': newRole}).eq('id', userId).select();
+    if (result.isEmpty) {
+      throw Exception(
+        'Update user role failed: RLS blocked the update. '
+        'Ensure your user has is_admin=true in the users table.',
+      );
+    }
     await _logAction(
       adminId: adminId,
       adminName: adminName,
@@ -68,10 +72,16 @@ class AdminService {
     required AdminRole adminRole,
     required String userId,
   }) async {
-    await _db.from('users').update({
+    final result = await _db.from('users').update({
       'is_verified_landlord': true,
       'verification_status': 'verified',
-    }).eq('id', userId);
+    }).eq('id', userId).select();
+    if (result.isEmpty) {
+      throw Exception(
+        'Verify landlord failed: RLS blocked the update. '
+        'Ensure your user has is_admin=true in the users table.',
+      );
+    }
     await _logAction(
       adminId: adminId,
       adminName: adminName,
@@ -88,7 +98,13 @@ class AdminService {
     required AdminRole adminRole,
     required String userId,
   }) async {
-    await _db.from('users').update({'is_approved': false}).eq('id', userId);
+    final result = await _db.from('users').update({'is_approved': false}).eq('id', userId).select();
+    if (result.isEmpty) {
+      throw Exception(
+        'Ban user failed: RLS blocked the update. '
+        'Ensure your user has is_admin=true in the users table.',
+      );
+    }
     await _logAction(
       adminId: adminId,
       adminName: adminName,
@@ -112,7 +128,13 @@ class AdminService {
     required AdminRole adminRole,
     required String propertyId,
   }) async {
-    await _db.from('properties').update({'is_approved': true}).eq('id', propertyId);
+    final result = await _db.from('properties').update({'is_approved': true}).eq('id', propertyId).select();
+    if (result.isEmpty) {
+      throw Exception(
+        'Approve failed: RLS blocked the update. '
+        'Ensure the "Admins can update any property" policy exists and your user has is_admin=true.',
+      );
+    }
     await _logAction(
       adminId: adminId,
       adminName: adminName,
@@ -130,7 +152,13 @@ class AdminService {
     required String propertyId,
     String? reason,
   }) async {
-    await _db.from('properties').update({'is_approved': false}).eq('id', propertyId);
+    final result = await _db.from('properties').update({'is_approved': false}).eq('id', propertyId).select();
+    if (result.isEmpty) {
+      throw Exception(
+        'Reject failed: RLS blocked the update. '
+        'Ensure the "Admins can update any property" policy exists and your user has is_admin=true.',
+      );
+    }
     await _logAction(
       adminId: adminId,
       adminName: adminName,
@@ -195,7 +223,13 @@ class AdminService {
     required AdminRole adminRole,
     required String withdrawalId,
   }) async {
-    await _db.from('withdrawals').update({'status': 'processing'}).eq('id', withdrawalId);
+    final result = await _db.from('withdrawals').update({'status': 'processing'}).eq('id', withdrawalId).select();
+    if (result.isEmpty) {
+      throw Exception(
+        'Approve withdrawal failed: RLS blocked the update. '
+        'Ensure the "Admins can update withdrawals" policy exists.',
+      );
+    }
     await _logAction(
       adminId: adminId,
       adminName: adminName,
@@ -213,10 +247,16 @@ class AdminService {
     required String withdrawalId,
     String? reason,
   }) async {
-    await _db.from('withdrawals').update({
+    final result = await _db.from('withdrawals').update({
       'status': 'failed',
       'failure_reason': reason,
-    }).eq('id', withdrawalId);
+    }).eq('id', withdrawalId).select();
+    if (result.isEmpty) {
+      throw Exception(
+        'Reject withdrawal failed: RLS blocked the update. '
+        'Ensure the "Admins can update withdrawals" policy exists.',
+      );
+    }
     await _logAction(
       adminId: adminId,
       adminName: adminName,
@@ -232,6 +272,32 @@ class AdminService {
   Future<List<Map<String, dynamic>>> getFraudReports({int limit = 100}) async {
     final rows = await _db.from('fraud_reports').select().limit(limit);
     return rows;
+  }
+
+  Future<void> resolveFraudReport({
+    required String adminId,
+    required String adminName,
+    required AdminRole adminRole,
+    required String reportId,
+  }) async {
+    final result = await _db.from('fraud_reports').update({
+      'status': 'resolved',
+      'resolved_at': DateTime.now().toIso8601String(),
+    }).eq('id', reportId).select();
+    if (result.isEmpty) {
+      throw Exception(
+        'Resolve fraud report failed: no rows updated. '
+        'Check if the report ID exists and you have admin permissions.',
+      );
+    }
+    await _logAction(
+      adminId: adminId,
+      adminName: adminName,
+      adminRole: adminRole,
+      action: 'resolve_fraud_report',
+      targetCollection: 'fraud_reports',
+      targetId: reportId,
+    );
   }
 
   Future<List<Map<String, dynamic>>> getDisputes({int limit = 100}) async {
@@ -307,11 +373,17 @@ class AdminService {
     required String adminName,
     required AdminRole adminRole,
   }) async {
-    await _db.from('disputes').update({
+    final result = await _db.from('disputes').update({
       'status': 'resolved',
       'resolution': resolution,
       'resolved_at': DateTime.now().toIso8601String(),
-    }).eq('id', disputeId);
+    }).eq('id', disputeId).select();
+    if (result.isEmpty) {
+      throw Exception(
+        'Resolve dispute failed: no rows updated. '
+        'Check if the dispute ID exists and you have admin permissions.',
+      );
+    }
     await _logAction(
       adminId: adminId,
       adminName: adminName,
@@ -334,7 +406,13 @@ class AdminService {
     required AdminRole adminRole,
     required Map<String, dynamic> settings,
   }) async {
-    await _db.from('system_settings').update(settings).eq('id', 'default');
+    final result = await _db.from('system_settings').update(settings).eq('id', 'default').select();
+    if (result.isEmpty) {
+      throw Exception(
+        'Update system settings failed: no rows updated. '
+        'Check if the default settings row exists and you have admin permissions.',
+      );
+    }
     await _logAction(
       adminId: adminId,
       adminName: adminName,
@@ -342,5 +420,21 @@ class AdminService {
       action: 'update_system_settings',
       targetCollection: 'system_settings',
     );
+  }
+
+  // ─── DIAGNOSTIC ───────────────────────────────────────────────
+
+  /// Check if the current user has admin privileges in the database.
+  /// Returns a map with 'is_admin', 'role', 'admin_role' values.
+  Future<Map<String, dynamic>> checkAdminStatus() async {
+    final userId = _db.auth.currentUser?.id;
+    if (userId == null) {
+      throw Exception('Not authenticated');
+    }
+    final data = await _db.from('users').select('is_admin, role, admin_role, full_name').eq('id', userId).maybeSingle();
+    if (data == null) {
+      throw Exception('User not found in database');
+    }
+    return data;
   }
 }
