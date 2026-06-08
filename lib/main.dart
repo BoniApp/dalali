@@ -96,12 +96,12 @@ class AuthWrapper extends StatelessWidget {
 
         final session = snapshot.data?.session;
 
-        // Logged in via Supabase OR demo mode
-        if ((session != null && session.user != null) || appState.currentUser != null) {
+        // Logged in via Supabase
+        if (session != null || appState.currentUser != null) {
           return const MainNavigation();
         }
 
-        // Otherwise show role selection (demo mode) which has login option
+        // Otherwise show role selection screen
         return const RoleSelectionScreen();
       },
     );

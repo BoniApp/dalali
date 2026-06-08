@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:dalali/l10n/app_localizations.dart';
-import 'package:dalali/models/user_model.dart';
-import 'package:dalali/providers/app_state.dart';
 import 'package:dalali/screens/auth/login_screen.dart';
+import 'package:dalali/screens/auth/register_screen.dart';
 import 'package:dalali/screens/admin/login_admin_screen.dart';
-import 'package:provider/provider.dart';
 
 class RoleSelectionScreen extends StatefulWidget {
   const RoleSelectionScreen({super.key});
@@ -88,7 +86,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                     title: l10n.houseSeeker,
                     subtitle: l10n.findYourHome,
                     color: Colors.blue,
-                    onTap: () => _loginDemo(context, UserRole.seeker),
+                    onTap: () => _goToSignIn(context),
                   ),
                   const SizedBox(height: 12),
                   _RoleCard(
@@ -96,7 +94,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                     title: l10n.landlord,
                     subtitle: l10n.listAndManage,
                     color: Colors.green,
-                    onTap: () => _loginDemo(context, UserRole.landlord),
+                    onTap: () => _goToSignIn(context),
                   ),
                   const SizedBox(height: 12),
                   _RoleCard(
@@ -104,7 +102,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                     title: l10n.agent,
                     subtitle: l10n.manageClients,
                     color: Colors.purple,
-                    onTap: () => _loginDemo(context, UserRole.agent),
+                    onTap: () => _goToSignIn(context),
                   ),
                   const SizedBox(height: 32),
                   const Divider(),
@@ -123,6 +121,16 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                     },
                     child: Text(l10n.signInWithEmail),
                   ),
+                  const SizedBox(height: 8),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const RegisterScreen()),
+                      );
+                    },
+                    child: const Text('Create Account'),
+                  ),
                   const SizedBox(height: 16),
                 ],
               ),
@@ -133,8 +141,11 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
     );
   }
 
-  void _loginDemo(BuildContext context, UserRole role) {
-    context.read<AppState>().login(role);
+  void _goToSignIn(BuildContext context) {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
+    );
   }
 }
 

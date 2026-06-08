@@ -15,15 +15,14 @@ import 'package:dalali/models/tenancy_model.dart';
 import 'package:dalali/models/move_checklist_model.dart';
 import 'package:dalali/models/maintenance_request_model.dart';
 import 'package:dalali/models/rent_schedule_model.dart';
-import 'package:dalali/services/mock_data_service.dart';
 import 'package:dalali/services/data_service.dart';
 import 'package:dalali/services/auth_service.dart';
 import 'package:dalali/services/safety_engine.dart';
 
-enum AuthMode { demo, supabase }
+enum AuthMode { supabase }
 
 class AppState extends ChangeNotifier {
-  AuthMode _authMode = AuthMode.demo;
+  AuthMode _authMode = AuthMode.supabase;
   UserModel? currentUser;
   List<PropertyModel> _properties = [];
   List<PropertyModel> _myProperties = [];
@@ -43,27 +42,12 @@ class AppState extends ChangeNotifier {
   final AuthService _authService = AuthService();
   final DataService _data = DataService();
 
-  // Firestore stream subscriptions (cancelled on logout)
+  // Database stream subscriptions (cancelled on logout)
   final List<StreamSubscription> _subscriptions = [];
 
   AuthMode get authMode => _authMode;
 
   AppState() {
-    _properties = List.from(MockDataService.properties);
-    _favorites = List.from(MockDataService.favorites);
-    _appointments = List.from(MockDataService.appointments);
-    _inquiries = List.from(MockDataService.inquiries);
-    _moveListings = List.from(MockDataService.moveListings);
-    _reviews = List.from(MockDataService.reviews);
-    _rewards = List.from(MockDataService.rewards);
-    _neighbourhoodReports = List.from(MockDataService.neighbourhoodReports);
-    _tenancyApplications = List.from(MockDataService.tenancyApplications);
-    _tenancies = List.from(MockDataService.tenancies);
-    _moveChecklists = List.from(MockDataService.moveChecklists);
-    _maintenanceRequests = List.from(MockDataService.maintenanceRequests);
-    _rentSchedules = List.from(MockDataService.rentSchedules);
-    _recomputeSafetyScores();
-
     _authService.authStateChanges.listen((AuthState state) async {
       final user = state.session?.user;
       if (user != null) {
@@ -241,19 +225,10 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  void login(UserRole role) {
-    _authMode = AuthMode.demo;
-    currentUser = MockDataService.users.firstWhere((u) => u.role == role);
-    notifyListeners();
-  }
-
   void logout() {
-    if (_authMode == AuthMode.supabase) {
-      _authService.signOut();
-    }
+    _authService.signOut();
     _unsubscribeFromDatabase();
     currentUser = null;
-    _authMode = AuthMode.demo;
     notifyListeners();
   }
 

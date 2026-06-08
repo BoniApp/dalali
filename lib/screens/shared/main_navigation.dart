@@ -14,7 +14,6 @@ import 'package:dalali/screens/agent/agent_dashboard_screen.dart';
 import 'package:dalali/screens/shared/profile_screen.dart';
 import 'package:dalali/screens/move/move_dashboard_screen.dart';
 import 'package:dalali/screens/shared/messages_screen.dart';
-import 'package:dalali/screens/shared/role_selection_screen.dart';
 import 'package:dalali/screens/auth/login_screen.dart';
 
 class MainNavigation extends StatefulWidget {
@@ -30,15 +29,9 @@ class _MainNavigationState extends State<MainNavigation> {
   @override
   Widget build(BuildContext context) {
     final user = context.watch<AppState>().currentUser;
-    final authMode = context.watch<AppState>().authMode;
 
     if (user == null) {
-      // If Firebase mode but not logged in, show login
-      if (authMode == AuthMode.supabase) {
-        return const LoginScreen();
-      }
-      // Otherwise show demo role selection
-      return const RoleSelectionScreen();
+      return const LoginScreen();
     }
 
     final screens = _getScreens(user.role);
