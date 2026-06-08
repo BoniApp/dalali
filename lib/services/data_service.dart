@@ -59,7 +59,7 @@ class DataService {
     try {
       await _db.from('properties').insert(json);
     } catch (e) {
-      debugPrint('addProperty error: $e');
+      print('addProperty error: $e');
       rethrow;
     }
   }
