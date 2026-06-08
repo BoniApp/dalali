@@ -155,6 +155,15 @@ class DataService {
     return _db
         .from('inquiries')
         .stream(primaryKey: ['id'])
+        .eq('landlord_id', landlordId)
+        .map((rows) => rows.map(_inquiryFromJson).toList());
+  }
+
+  Stream<List<InquiryModel>> getInquiriesForSeeker(String seekerId) {
+    return _db
+        .from('inquiries')
+        .stream(primaryKey: ['id'])
+        .eq('seeker_id', seekerId)
         .map((rows) => rows.map(_inquiryFromJson).toList());
   }
 
@@ -166,6 +175,10 @@ class DataService {
 
   Future<void> markInquiryRead(String id) async {
     await _db.from('inquiries').update({'is_read': true}).eq('id', id);
+  }
+
+  Future<void> incrementPropertyInquiryCount(String propertyId, int currentCount) async {
+    await _db.from('properties').update({'inquiry_count': currentCount + 1}).eq('id', propertyId);
   }
 
   // ═══════════════════════════════════════════════════════════════
@@ -436,6 +449,7 @@ class DataService {
       seekerId: json['seeker_id'] ?? '',
       seekerName: json['seeker_name'] ?? '',
       seekerPhone: json['seeker_phone'] ?? '',
+      landlordId: json['landlord_id'] ?? '',
       message: json['message'] ?? '',
       createdAt: DateTime.tryParse(json['created_at'] ?? '') ?? DateTime.now(),
       isRead: json['is_read'] ?? false,
@@ -450,6 +464,7 @@ class DataService {
       'seeker_id': i.seekerId,
       'seeker_name': i.seekerName,
       'seeker_phone': i.seekerPhone,
+      'landlord_id': i.landlordId,
       'message': i.message,
       'created_at': i.createdAt.toIso8601String(),
       'is_read': i.isRead,

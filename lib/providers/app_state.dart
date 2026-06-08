@@ -176,10 +176,7 @@ class AppState extends ChangeNotifier {
 
   List<InquiryModel> get landlordInquiries {
     if (currentUser == null) return [];
-    return _inquiries.where((i) {
-      final property = _properties.firstWhere((p) => p.id == i.propertyId);
-      return property.landlordId == currentUser!.id;
-    }).toList();
+    return _inquiries.where((i) => i.landlordId == currentUser!.id).toList();
   }
 
   List<MoveListingModel> get activeMoveListings =>
@@ -299,9 +296,14 @@ class AppState extends ChangeNotifier {
       notifyListeners();
     }));
 
-    // Inquiries (landlord sees all for their properties)
+    // Inquiries (landlord sees enquiries for their properties; seeker sees their own)
     if (isLandlord) {
       _subscriptions.add(_data.getInquiriesForLandlord(currentUser!.id).listen((list) {
+        _inquiries = list;
+        notifyListeners();
+      }));
+    } else {
+      _subscriptions.add(_data.getInquiriesForSeeker(currentUser!.id).listen((list) {
         _inquiries = list;
         notifyListeners();
       }));
@@ -795,10 +797,25 @@ class AppState extends ChangeNotifier {
 
   void addInquiry(InquiryModel inquiry) {
     _inquiries.add(inquiry);
+
+    // Increment property inquiry count locally
+    final pIdx = _properties.indexWhere((p) => p.id == inquiry.propertyId);
+    if (pIdx >= 0) {
+      _properties[pIdx] = _properties[pIdx].copyWith(
+        inquiryCount: _properties[pIdx].inquiryCount + 1,
+      );
+    }
+
     if (_isFirebase) {
       _data.addInquiry(inquiry).catchError((e) {
-        print('addInquiry error: $e');
+        debugPrint('addInquiry error: $e');
       });
+      // Also sync inquiry count to DB
+      if (pIdx >= 0) {
+        _data.incrementPropertyInquiryCount(inquiry.propertyId, _properties[pIdx].inquiryCount - 1).catchError((e) {
+          debugPrint('incrementPropertyInquiryCount error: $e');
+        });
+      }
     }
     notifyListeners();
   }
@@ -814,6 +831,7 @@ class AppState extends ChangeNotifier {
         seekerId: old.seekerId,
         seekerName: old.seekerName,
         seekerPhone: old.seekerPhone,
+        landlordId: old.landlordId,
         message: old.message,
         createdAt: old.createdAt,
         isRead: true,

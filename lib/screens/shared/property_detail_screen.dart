@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:dalali/models/property_model.dart';
 import 'package:dalali/models/user_model.dart';
 import 'package:dalali/models/appointment_model.dart';
+import 'package:dalali/models/inquiry_model.dart';
 import 'package:dalali/providers/app_state.dart';
 import 'package:dalali/utils/helpers.dart';
 import 'package:dalali/widgets/verification_badge.dart';
@@ -345,6 +346,15 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton.icon(
+                      onPressed: () => _showInquiryDialog(context, p),
+                      icon: const Icon(Icons.message, color: Colors.teal),
+                      label: const Text('Send Inquiry'),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
                       onPressed: () => _reportListing(context),
                       icon: const Icon(Icons.report, color: Colors.red),
                       label: const Text('Report Fake Listing', style: TextStyle(color: Colors.red)),
@@ -535,6 +545,53 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
               );
             },
             child: const Text('Schedule'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showInquiryDialog(BuildContext context, PropertyModel property) {
+    final messageController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Send Inquiry'),
+        content: TextField(
+          controller: messageController,
+          decoration: const InputDecoration(
+            labelText: 'Your message',
+            hintText: 'e.g. Is the price negotiable?',
+          ),
+          maxLines: 4,
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () {
+              final text = messageController.text.trim();
+              if (text.isEmpty) return;
+              final user = context.read<AppState>().currentUser;
+              if (user != null) {
+                context.read<AppState>().addInquiry(InquiryModel(
+                  id: 'iq${DateTime.now().millisecondsSinceEpoch}',
+                  propertyId: property.id,
+                  propertyTitle: property.title,
+                  seekerId: user.id,
+                  seekerName: user.fullName,
+                  seekerPhone: user.phone,
+                  landlordId: property.landlordId,
+                  message: text,
+                  createdAt: DateTime.now(),
+                ));
+              }
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Inquiry sent successfully!')),
+              );
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.teal, foregroundColor: Colors.white),
+            child: const Text('Send'),
           ),
         ],
       ),
