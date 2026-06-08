@@ -372,6 +372,12 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
 
   Widget _buildPaymentTermsSection({required PropertyModel p}) {
     final rentDisplay = p.rentAmount > 0 ? p.rentAmount : p.rentPrice;
+    final minTerm = p.minimumAcceptedTerm;
+    final minMonths = minTerm != null && minTerm != PaymentTerm.negotiable
+        ? Helpers.paymentTermMonths(minTerm)
+        : 1;
+    final upfrontRent = rentDisplay * minMonths;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -394,7 +400,7 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
         const SizedBox(height: 8),
         _DetailItem(
           icon: Icons.timer,
-          label: 'Minimum Accepted: ${p.minimumAcceptedTerm != null ? Helpers.paymentTermLabel(p.minimumAcceptedTerm!) : 'Not specified'}',
+          label: 'Minimum Accepted: ${minTerm != null ? Helpers.paymentTermLabel(minTerm) : 'Not specified'}',
         ),
         const SizedBox(height: 8),
         _DetailItem(
@@ -421,14 +427,17 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                 ),
                 const SizedBox(height: 8),
-                _CostRow(label: 'First Month Rent', amount: rentDisplay),
+                _CostRow(
+                  label: minMonths == 1 ? 'First Month Rent' : '$minMonths Months Rent',
+                  amount: upfrontRent,
+                ),
                 if (p.depositRequired && p.depositAmount > 0)
                   _CostRow(label: 'Deposit', amount: p.depositAmount),
                 _CostRow(label: 'Agency Fee', amount: AppSettings.agencyFee),
                 const Divider(),
                 _CostRow(
                   label: 'Total',
-                  amount: rentDisplay + (p.depositRequired ? p.depositAmount : 0) + AppSettings.agencyFee,
+                  amount: upfrontRent + (p.depositRequired ? p.depositAmount : 0) + AppSettings.agencyFee,
                   isTotal: true,
                 ),
               ],

@@ -112,6 +112,21 @@ class Helpers {
     }
   }
 
+  static int paymentTermMonths(PaymentTerm term) {
+    switch (term) {
+      case PaymentTerm.monthly:
+        return 1;
+      case PaymentTerm.threeMonths:
+        return 3;
+      case PaymentTerm.sixMonths:
+        return 6;
+      case PaymentTerm.twelveMonths:
+        return 12;
+      case PaymentTerm.negotiable:
+        return 1;
+    }
+  }
+
   static PaymentTerm? paymentTermFromString(String? value) {
     if (value == null) return null;
     return PaymentTerm.values.firstWhere(
