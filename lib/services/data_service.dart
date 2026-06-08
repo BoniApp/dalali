@@ -6,6 +6,7 @@ import 'package:dalali/models/property_model.dart';
 import 'package:dalali/models/appointment_model.dart';
 import 'package:dalali/models/inquiry_model.dart';
 import 'package:dalali/models/favorite_model.dart';
+import 'package:dalali/models/notification_model.dart';
 
 /// ═══════════════════════════════════════════════════════════════
 /// DATA SERVICE — Supabase PostgreSQL wrapper
@@ -179,6 +180,27 @@ class DataService {
 
   Future<void> incrementPropertyInquiryCount(String propertyId, int currentCount) async {
     await _db.from('properties').update({'inquiry_count': currentCount + 1}).eq('id', propertyId);
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  //  NOTIFICATIONS
+  // ═══════════════════════════════════════════════════════════════
+
+  Stream<List<NotificationModel>> getNotificationsForUser(String userId) {
+    return _db
+        .from('notifications')
+        .stream(primaryKey: ['id'])
+        .eq('user_id', userId)
+        .order('created_at', ascending: false)
+        .map((rows) => rows.map(_notificationFromJson).toList());
+  }
+
+  Future<void> markNotificationRead(String id) async {
+    await _db.from('notifications').update({'is_read': true}).eq('id', id);
+  }
+
+  Future<void> markAllNotificationsRead(String userId) async {
+    await _db.from('notifications').update({'is_read': true}).eq('user_id', userId).eq('is_read', false);
   }
 
   // ═══════════════════════════════════════════════════════════════
@@ -469,5 +491,24 @@ class DataService {
       'created_at': i.createdAt.toIso8601String(),
       'is_read': i.isRead,
     };
+  }
+
+  // ─── Notification ────────────────────────────────────────────
+
+  NotificationModel _notificationFromJson(Map<String, dynamic> json) {
+    return NotificationModel(
+      id: json['id'] ?? '',
+      userId: json['user_id'] ?? '',
+      type: NotificationType.values.firstWhere(
+        (e) => e.name == json['type'],
+        orElse: () => NotificationType.system,
+      ),
+      title: json['title'] ?? '',
+      body: json['body'] ?? '',
+      targetId: json['target_id'],
+      targetCollection: json['target_collection'],
+      isRead: json['is_read'] ?? false,
+      createdAt: DateTime.tryParse(json['created_at'] ?? '') ?? DateTime.now(),
+    );
   }
 }

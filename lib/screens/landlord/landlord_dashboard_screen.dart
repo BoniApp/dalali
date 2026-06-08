@@ -5,6 +5,7 @@ import 'package:dalali/utils/helpers.dart';
 import 'package:dalali/screens/shared/property_detail_screen.dart';
 import 'package:dalali/screens/landlord/add_property_screen.dart';
 import 'package:dalali/screens/landlord/edit_property_screen.dart';
+import 'package:dalali/widgets/notification_bell.dart';
 import 'package:provider/provider.dart';
 
 class LandlordDashboardScreen extends StatelessWidget {
@@ -22,6 +23,7 @@ class LandlordDashboardScreen extends StatelessWidget {
         title: const Text('My Dashboard'),
         backgroundColor: Colors.teal,
         foregroundColor: Colors.white,
+        actions: const [NotificationBell(iconColor: Colors.white)],
       ),
       body: SingleChildScrollView(
         child: Padding(

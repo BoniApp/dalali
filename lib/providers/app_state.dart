@@ -15,8 +15,10 @@ import 'package:dalali/models/tenancy_model.dart';
 import 'package:dalali/models/move_checklist_model.dart';
 import 'package:dalali/models/maintenance_request_model.dart';
 import 'package:dalali/models/rent_schedule_model.dart';
+import 'package:dalali/models/notification_model.dart';
 import 'package:dalali/services/data_service.dart';
 import 'package:dalali/services/auth_service.dart';
+import 'package:dalali/services/notification_service.dart';
 import 'package:dalali/services/safety_engine.dart';
 
 enum AuthMode { supabase }
@@ -38,6 +40,7 @@ class AppState extends ChangeNotifier {
   List<MoveChecklistModel> _moveChecklists = [];
   List<MaintenanceRequestModel> _maintenanceRequests = [];
   List<RentScheduleModel> _rentSchedules = [];
+  List<NotificationModel> _notifications = [];
 
   final AuthService _authService = AuthService();
   final DataService _data = DataService();
@@ -85,6 +88,11 @@ class AppState extends ChangeNotifier {
   List<MoveChecklistModel> get moveChecklists => _moveChecklists;
   List<MaintenanceRequestModel> get maintenanceRequests => _maintenanceRequests;
   List<RentScheduleModel> get rentSchedules => _rentSchedules;
+  List<NotificationModel> get notifications => _notifications;
+
+  int get unreadNotificationCount {
+    return _notifications.where((n) => !n.isRead).length;
+  }
 
   // ─── Tenancy Lifecycle Getters ──────────────────────────────
 
@@ -353,6 +361,12 @@ class AppState extends ChangeNotifier {
       _rentSchedules = list.cast<RentScheduleModel>();
       notifyListeners();
     }));
+
+    // Notifications
+    _subscriptions.add(_data.getNotificationsForUser(currentUser!.id).listen((list) {
+      _notifications = list;
+      notifyListeners();
+    }));
   }
 
   void _unsubscribeFromDatabase() {
@@ -500,6 +514,15 @@ class AppState extends ChangeNotifier {
       _data.addTenancyApplication(application).catchError((e) {
         print('addTenancyApplication error: $e');
       });
+      // Notify landlord
+      NotificationService.notifyUser(
+        userId: application.landlordId,
+        type: NotificationType.tenancyApplication,
+        title: 'New Tenancy Application',
+        body: '${application.tenantName} applied for ${application.propertyTitle}',
+        targetId: application.id,
+        targetCollection: 'tenancy_applications',
+      ).catchError((e) => debugPrint('notifyUser error: $e'));
     }
     notifyListeners();
   }
@@ -516,6 +539,15 @@ class AppState extends ChangeNotifier {
         _data.updateApplicationStatus(applicationId, ApplicationStatus.approved).catchError((e) {
           print('updateApplicationStatus error: $e');
         });
+        // Notify tenant
+        NotificationService.notifyUser(
+          userId: app.tenantId,
+          type: NotificationType.tenancyApproved,
+          title: 'Application Approved',
+          body: 'Your application for ${app.propertyTitle} was approved!',
+          targetId: app.id,
+          targetCollection: 'tenancy_applications',
+        ).catchError((e) => debugPrint('notifyUser error: $e'));
       }
       // Create tenancy record
       final property = _properties.firstWhere((p) => p.id == app.propertyId);
@@ -558,7 +590,8 @@ class AppState extends ChangeNotifier {
   void rejectApplication(String applicationId, {String? reason}) {
     final idx = _tenancyApplications.indexWhere((a) => a.id == applicationId);
     if (idx >= 0) {
-      _tenancyApplications[idx] = _tenancyApplications[idx].copyWith(
+      final app = _tenancyApplications[idx];
+      _tenancyApplications[idx] = app.copyWith(
         status: ApplicationStatus.rejected,
         resolvedAt: DateTime.now(),
         notes: reason,
@@ -567,6 +600,15 @@ class AppState extends ChangeNotifier {
         _data.updateApplicationStatus(applicationId, ApplicationStatus.rejected).catchError((e) {
           print('updateApplicationStatus error: $e');
         });
+        // Notify tenant
+        NotificationService.notifyUser(
+          userId: app.tenantId,
+          type: NotificationType.system,
+          title: 'Application Rejected',
+          body: 'Your application for ${app.propertyTitle} was not approved.',
+          targetId: app.id,
+          targetCollection: 'tenancy_applications',
+        ).catchError((e) => debugPrint('notifyUser error: $e'));
       }
       notifyListeners();
     }
@@ -632,6 +674,15 @@ class AppState extends ChangeNotifier {
       _data.addMaintenanceRequest(request).catchError((e) {
         print('addMaintenanceRequest error: $e');
       });
+      // Notify landlord
+      NotificationService.notifyUser(
+        userId: request.landlordId,
+        type: NotificationType.maintenanceUpdate,
+        title: 'New Maintenance Request',
+        body: '${request.tenantName} reported: ${request.description}',
+        targetId: request.id,
+        targetCollection: 'maintenance_requests',
+      ).catchError((e) => debugPrint('notifyUser error: $e'));
     }
     notifyListeners();
   }
@@ -639,7 +690,8 @@ class AppState extends ChangeNotifier {
   void updateMaintenanceStatus(String requestId, MaintenanceStatus status, {String? resolutionNotes}) {
     final idx = _maintenanceRequests.indexWhere((r) => r.id == requestId);
     if (idx >= 0) {
-      _maintenanceRequests[idx] = _maintenanceRequests[idx].copyWith(
+      final request = _maintenanceRequests[idx];
+      _maintenanceRequests[idx] = request.copyWith(
         status: status,
         resolvedAt: status == MaintenanceStatus.resolved ? DateTime.now() : null,
         resolutionNotes: resolutionNotes,
@@ -648,6 +700,16 @@ class AppState extends ChangeNotifier {
         _data.updateMaintenanceStatus(requestId, status, resolutionNotes: resolutionNotes).catchError((e) {
           print('updateMaintenanceStatus error: $e');
         });
+        if (status == MaintenanceStatus.resolved) {
+          NotificationService.notifyUser(
+            userId: request.tenantId,
+            type: NotificationType.maintenanceUpdate,
+            title: 'Maintenance Resolved',
+            body: 'Your request for ${request.propertyTitle} has been resolved.',
+            targetId: request.id,
+            targetCollection: 'maintenance_requests',
+          ).catchError((e) => debugPrint('notifyUser error: $e'));
+        }
       }
       notifyListeners();
     }
@@ -740,6 +802,15 @@ class AppState extends ChangeNotifier {
       _data.addAppointment(appointment).catchError((e) {
         print('addAppointment error: $e');
       });
+      // Notify landlord
+      NotificationService.notifyUser(
+        userId: appointment.landlordId,
+        type: NotificationType.appointment,
+        title: 'New Viewing Request',
+        body: '${appointment.seekerName} wants to view ${appointment.propertyTitle}',
+        targetId: appointment.id,
+        targetCollection: 'appointments',
+      ).catchError((e) => debugPrint('notifyUser error: $e'));
     }
     notifyListeners();
   }
@@ -791,7 +862,40 @@ class AppState extends ChangeNotifier {
           debugPrint('incrementPropertyInquiryCount error: $e');
         });
       }
+      // Notify landlord
+      NotificationService.notifyUser(
+        userId: inquiry.landlordId,
+        type: NotificationType.inquiry,
+        title: 'New Inquiry',
+        body: '${inquiry.seekerName}: ${inquiry.message}',
+        targetId: inquiry.propertyId,
+        targetCollection: 'properties',
+      ).catchError((e) => debugPrint('notifyUser error: $e'));
     }
+    notifyListeners();
+  }
+
+  void markNotificationRead(String id) {
+    final index = _notifications.indexWhere((n) => n.id == id);
+    if (index >= 0) {
+      _notifications[index] = _notifications[index].copyWith(isRead: true);
+      _data.markNotificationRead(id).catchError((e) {
+        debugPrint('markNotificationRead error: $e');
+      });
+      notifyListeners();
+    }
+  }
+
+  void markAllNotificationsRead() {
+    if (currentUser == null) return;
+    for (var i = 0; i < _notifications.length; i++) {
+      if (!_notifications[i].isRead) {
+        _notifications[i] = _notifications[i].copyWith(isRead: true);
+      }
+    }
+    _data.markAllNotificationsRead(currentUser!.id).catchError((e) {
+      debugPrint('markAllNotificationsRead error: $e');
+    });
     notifyListeners();
   }
 

@@ -8,6 +8,7 @@ import 'package:dalali/screens/move/start_move_screen.dart';
 import 'package:dalali/screens/move/move_dashboard_screen.dart';
 import 'package:dalali/screens/safety/neighbourhood_safety_screen.dart';
 import 'package:dalali/models/move_listing_model.dart';
+import 'package:dalali/widgets/notification_bell.dart';
 import 'package:provider/provider.dart';
 
 class SeekerHomeScreen extends StatefulWidget {
@@ -67,6 +68,7 @@ class _SeekerHomeScreenState extends State<SeekerHomeScreen> {
         backgroundColor: Colors.teal,
         foregroundColor: Colors.white,
         actions: [
+          const NotificationBell(iconColor: Colors.white),
           IconButton(
             icon: const Icon(Icons.filter_list),
             onPressed: () {
@@ -453,3 +455,5 @@ class _PeopleMovingSection extends StatelessWidget {
     );
   }
 }
+
+

@@ -12,6 +12,7 @@ import 'package:dalali/screens/auth/login_screen.dart';
 import 'package:dalali/screens/shared/main_navigation.dart';
 import 'package:dalali/screens/shared/role_selection_screen.dart';
 import 'package:dalali/services/auth_service.dart';
+import 'package:dalali/services/notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -22,6 +23,9 @@ void main() async {
   } catch (e) {
     debugPrint('Supabase initialization error: $e');
   }
+
+  // Initialize local notifications
+  await NotificationService.initialize();
 
   runApp(const MyApp());
 }
