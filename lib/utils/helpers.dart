@@ -32,9 +32,17 @@ class Helpers {
       case PropertyType.bedsitter:
         return 'Bedsitter';
       case PropertyType.office:
-        return 'Office';
+        return 'Office Space';
       case PropertyType.shop:
         return 'Shop';
+      case PropertyType.room:
+        return 'Room';
+      case PropertyType.selfContainedRoom:
+        return 'Self-Contained Room';
+      case PropertyType.plot:
+        return 'Plot';
+      case PropertyType.frame:
+        return 'Frame';
     }
   }
 
@@ -78,6 +86,14 @@ class Helpers {
         return Icons.business;
       case PropertyType.shop:
         return Icons.store;
+      case PropertyType.room:
+        return Icons.meeting_room;
+      case PropertyType.selfContainedRoom:
+        return Icons.bedroom_child;
+      case PropertyType.plot:
+        return Icons.terrain;
+      case PropertyType.frame:
+        return Icons.construction;
     }
   }
 

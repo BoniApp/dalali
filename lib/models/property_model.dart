@@ -1,4 +1,4 @@
-enum PropertyType { apartment, house, villa, bedsitter, office, shop }
+enum PropertyType { apartment, house, villa, bedsitter, office, shop, room, selfContainedRoom, plot, frame }
 enum PropertyStatus { available, occupied, pending }
 enum ListingType { basic, featured }
 enum ListingSource { landlordListing, userMoveListing, agentListing }
