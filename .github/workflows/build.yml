@@ -21,6 +21,14 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
+      - name: Add swap space
+        run: |
+          sudo fallocate -l 8G /swapfile
+          sudo chmod 600 /swapfile
+          sudo mkswap /swapfile
+          sudo swapon /swapfile
+          sudo swapon --show
+
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
@@ -84,7 +92,11 @@ jobs:
           fi
 
       - name: Build APK
-        run: flutter build apk --release --no-tree-shake-icons
+        env:
+          GRADLE_OPTS: -Xmx4096m -Dorg.gradle.daemon=false -Dorg.gradle.parallel=false -Dorg.gradle.workers.max=2
+        run: |
+          export _JAVA_OPTIONS="-Xmx2048m"
+          flutter build apk --release --no-tree-shake-icons
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
