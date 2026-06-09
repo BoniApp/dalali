@@ -40,9 +40,11 @@ CREATE TABLE IF NOT EXISTS property_registry (
 
 ALTER TABLE property_registry ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Registry public read" ON property_registry;
 CREATE POLICY "Registry public read"
   ON property_registry FOR SELECT USING (true);
 
+DROP POLICY IF EXISTS "Registry admin write" ON property_registry;
 CREATE POLICY "Registry admin write"
   ON property_registry FOR ALL USING (
     EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND is_admin = true)
@@ -70,17 +72,21 @@ CREATE TABLE IF NOT EXISTS property_claims (
 
 ALTER TABLE property_claims ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Claims read own" ON property_claims;
 CREATE POLICY "Claims read own"
   ON property_claims FOR SELECT USING (claimant_id = auth.uid());
 
+DROP POLICY IF EXISTS "Claims read admin" ON property_claims;
 CREATE POLICY "Claims read admin"
   ON property_claims FOR SELECT USING (
     EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND is_admin = true)
   );
 
+DROP POLICY IF EXISTS "Claims insert own" ON property_claims;
 CREATE POLICY "Claims insert own"
   ON property_claims FOR INSERT WITH CHECK (claimant_id = auth.uid());
 
+DROP POLICY IF EXISTS "Claims update admin" ON property_claims;
 CREATE POLICY "Claims update admin"
   ON property_claims FOR UPDATE USING (
     EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND is_admin = true)
@@ -111,12 +117,15 @@ CREATE TABLE IF NOT EXISTS deals (
 
 ALTER TABLE deals ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Deals read participants" ON deals;
 CREATE POLICY "Deals read participants"
   ON deals FOR SELECT USING (listing_creator_id = auth.uid() OR seeker_id = auth.uid());
 
+DROP POLICY IF EXISTS "Deals insert" ON deals;
 CREATE POLICY "Deals insert"
   ON deals FOR INSERT WITH CHECK (true);
 
+DROP POLICY IF EXISTS "Deals update participants" ON deals;
 CREATE POLICY "Deals update participants"
   ON deals FOR UPDATE USING (listing_creator_id = auth.uid() OR seeker_id = auth.uid());
 
@@ -144,14 +153,17 @@ CREATE TABLE IF NOT EXISTS agency_fees (
 
 ALTER TABLE agency_fees ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Fees read own" ON agency_fees;
 CREATE POLICY "Fees read own"
   ON agency_fees FOR SELECT USING (listing_creator_id = auth.uid());
 
+DROP POLICY IF EXISTS "Fees read admin" ON agency_fees;
 CREATE POLICY "Fees read admin"
   ON agency_fees FOR SELECT USING (
     EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND is_admin = true)
   );
 
+DROP POLICY IF EXISTS "Fees update admin" ON agency_fees;
 CREATE POLICY "Fees update admin"
   ON agency_fees FOR UPDATE USING (
     EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND is_admin = true)
@@ -181,17 +193,21 @@ CREATE TABLE IF NOT EXISTS earnings (
 
 ALTER TABLE earnings ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Earnings read own" ON earnings;
 CREATE POLICY "Earnings read own"
   ON earnings FOR SELECT USING (user_id = auth.uid());
 
+DROP POLICY IF EXISTS "Earnings read admin" ON earnings;
 CREATE POLICY "Earnings read admin"
   ON earnings FOR SELECT USING (
     EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND is_admin = true)
   );
 
+DROP POLICY IF EXISTS "Earnings insert system" ON earnings;
 CREATE POLICY "Earnings insert system"
   ON earnings FOR INSERT WITH CHECK (true);
 
+DROP POLICY IF EXISTS "Earnings update admin" ON earnings;
 CREATE POLICY "Earnings update admin"
   ON earnings FOR UPDATE USING (
     EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND is_admin = true)
@@ -227,20 +243,25 @@ CREATE TABLE IF NOT EXISTS kyc_sessions (
 
 ALTER TABLE kyc_sessions ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "KYC read own" ON kyc_sessions;
 CREATE POLICY "KYC read own"
   ON kyc_sessions FOR SELECT USING (user_id = auth.uid());
 
+DROP POLICY IF EXISTS "KYC insert own" ON kyc_sessions;
 CREATE POLICY "KYC insert own"
   ON kyc_sessions FOR INSERT WITH CHECK (user_id = auth.uid());
 
+DROP POLICY IF EXISTS "KYC update own" ON kyc_sessions;
 CREATE POLICY "KYC update own"
   ON kyc_sessions FOR UPDATE USING (user_id = auth.uid());
 
+DROP POLICY IF EXISTS "KYC read admin" ON kyc_sessions;
 CREATE POLICY "KYC read admin"
   ON kyc_sessions FOR SELECT USING (
     EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND is_admin = true)
   );
 
+DROP POLICY IF EXISTS "KYC update admin" ON kyc_sessions;
 CREATE POLICY "KYC update admin"
   ON kyc_sessions FOR UPDATE USING (
     EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND is_admin = true)
@@ -270,12 +291,15 @@ CREATE TABLE IF NOT EXISTS id_documents (
 
 ALTER TABLE id_documents ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "ID docs read own" ON id_documents;
 CREATE POLICY "ID docs read own"
   ON id_documents FOR SELECT USING (user_id = auth.uid());
 
+DROP POLICY IF EXISTS "ID docs insert own" ON id_documents;
 CREATE POLICY "ID docs insert own"
   ON id_documents FOR INSERT WITH CHECK (user_id = auth.uid());
 
+DROP POLICY IF EXISTS "ID docs read admin" ON id_documents;
 CREATE POLICY "ID docs read admin"
   ON id_documents FOR SELECT USING (
     EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND is_admin = true)
@@ -302,11 +326,13 @@ CREATE TABLE IF NOT EXISTS verification_results (
 
 ALTER TABLE verification_results ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Verification results read own" ON verification_results;
 CREATE POLICY "Verification results read own"
   ON verification_results FOR SELECT USING (
     EXISTS (SELECT 1 FROM kyc_sessions WHERE session_id = verification_results.session_id AND user_id = auth.uid())
   );
 
+DROP POLICY IF EXISTS "Verification results read admin" ON verification_results;
 CREATE POLICY "Verification results read admin"
   ON verification_results FOR SELECT USING (
     EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND is_admin = true)
@@ -331,14 +357,17 @@ CREATE TABLE IF NOT EXISTS kyc_audit_logs (
 
 ALTER TABLE kyc_audit_logs ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Audit logs read own" ON kyc_audit_logs;
 CREATE POLICY "Audit logs read own"
   ON kyc_audit_logs FOR SELECT USING (user_id = auth.uid());
 
+DROP POLICY IF EXISTS "Audit logs read admin" ON kyc_audit_logs;
 CREATE POLICY "Audit logs read admin"
   ON kyc_audit_logs FOR SELECT USING (
     EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND is_admin = true)
   );
 
+DROP POLICY IF EXISTS "Audit logs insert system" ON kyc_audit_logs;
 CREATE POLICY "Audit logs insert system"
   ON kyc_audit_logs FOR INSERT WITH CHECK (true);
 
