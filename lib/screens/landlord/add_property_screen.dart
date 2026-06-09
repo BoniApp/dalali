@@ -86,6 +86,18 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
   bool _hasWater = true;
   bool _hasParking = false;
   bool _hasSecurity = false;
+  bool _hasElectricity = true;
+  bool _hasInternet = false;
+  bool _hasGym = false;
+  bool _hasSwimmingPool = false;
+  bool _hasBalcony = false;
+  bool _hasGarden = false;
+  bool _hasBackupGenerator = false;
+  bool _hasCctv = false;
+  bool _hasElevator = false;
+  bool _petFriendly = false;
+  bool _hasAirConditioning = false;
+  bool _hasFittedKitchen = false;
   ListingType _listingType = ListingType.basic;
   PropertyStatus _status = PropertyStatus.available;
 
@@ -418,6 +430,16 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
                 onChanged: (v) => setState(() => _hasWater = v),
               ),
               SwitchListTile(
+                title: const Text('Electricity'),
+                value: _hasElectricity,
+                onChanged: (v) => setState(() => _hasElectricity = v),
+              ),
+              SwitchListTile(
+                title: const Text('Internet / WiFi'),
+                value: _hasInternet,
+                onChanged: (v) => setState(() => _hasInternet = v),
+              ),
+              SwitchListTile(
                 title: const Text('Parking'),
                 value: _hasParking,
                 onChanged: (v) => setState(() => _hasParking = v),
@@ -426,6 +448,56 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
                 title: const Text('Security'),
                 value: _hasSecurity,
                 onChanged: (v) => setState(() => _hasSecurity = v),
+              ),
+              SwitchListTile(
+                title: const Text('CCTV'),
+                value: _hasCctv,
+                onChanged: (v) => setState(() => _hasCctv = v),
+              ),
+              SwitchListTile(
+                title: const Text('Backup Generator'),
+                value: _hasBackupGenerator,
+                onChanged: (v) => setState(() => _hasBackupGenerator = v),
+              ),
+              SwitchListTile(
+                title: const Text('Air Conditioning'),
+                value: _hasAirConditioning,
+                onChanged: (v) => setState(() => _hasAirConditioning = v),
+              ),
+              SwitchListTile(
+                title: const Text('Fitted Kitchen'),
+                value: _hasFittedKitchen,
+                onChanged: (v) => setState(() => _hasFittedKitchen = v),
+              ),
+              SwitchListTile(
+                title: const Text('Swimming Pool'),
+                value: _hasSwimmingPool,
+                onChanged: (v) => setState(() => _hasSwimmingPool = v),
+              ),
+              SwitchListTile(
+                title: const Text('Gym'),
+                value: _hasGym,
+                onChanged: (v) => setState(() => _hasGym = v),
+              ),
+              SwitchListTile(
+                title: const Text('Elevator / Lift'),
+                value: _hasElevator,
+                onChanged: (v) => setState(() => _hasElevator = v),
+              ),
+              SwitchListTile(
+                title: const Text('Balcony'),
+                value: _hasBalcony,
+                onChanged: (v) => setState(() => _hasBalcony = v),
+              ),
+              SwitchListTile(
+                title: const Text('Garden / Yard'),
+                value: _hasGarden,
+                onChanged: (v) => setState(() => _hasGarden = v),
+              ),
+              SwitchListTile(
+                title: const Text('Pet Friendly'),
+                value: _petFriendly,
+                onChanged: (v) => setState(() => _petFriendly = v),
               ),
               const SizedBox(height: 16),
               const Text('Listing Options', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
@@ -709,6 +781,18 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
       hasWater: _hasWater,
       hasParking: _hasParking,
       hasSecurity: _hasSecurity,
+      hasElectricity: _hasElectricity,
+      hasInternet: _hasInternet,
+      hasGym: _hasGym,
+      hasSwimmingPool: _hasSwimmingPool,
+      hasBalcony: _hasBalcony,
+      hasGarden: _hasGarden,
+      hasBackupGenerator: _hasBackupGenerator,
+      hasCctv: _hasCctv,
+      hasElevator: _hasElevator,
+      petFriendly: _petFriendly,
+      hasAirConditioning: _hasAirConditioning,
+      hasFittedKitchen: _hasFittedKitchen,
       images: imageUrls,
       status: _status,
       listingType: _listingType,

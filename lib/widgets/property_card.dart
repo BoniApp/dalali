@@ -171,10 +171,34 @@ class PropertyCard extends StatelessWidget {
                         _Chip('Furnished', Colors.orange.shade100, Colors.orange.shade800),
                       if (property.hasWater)
                         _Chip('Water', Colors.blue.shade100, Colors.blue.shade800),
+                      if (property.hasElectricity)
+                        _Chip('Power', Colors.amber.shade100, Colors.amber.shade800),
+                      if (property.hasInternet)
+                        _Chip('WiFi', Colors.indigo.shade100, Colors.indigo.shade800),
                       if (property.hasParking)
                         _Chip('Parking', Colors.green.shade100, Colors.green.shade800),
                       if (property.hasSecurity)
                         _Chip('Security', Colors.purple.shade100, Colors.purple.shade800),
+                      if (property.hasCctv)
+                        _Chip('CCTV', Colors.red.shade100, Colors.red.shade800),
+                      if (property.hasBackupGenerator)
+                        _Chip('Gen', Colors.yellow.shade100, Colors.yellow.shade800),
+                      if (property.hasAirConditioning)
+                        _Chip('AC', Colors.cyan.shade100, Colors.cyan.shade800),
+                      if (property.hasFittedKitchen)
+                        _Chip('Kitchen', Colors.brown.shade100, Colors.brown.shade800),
+                      if (property.hasSwimmingPool)
+                        _Chip('Pool', Colors.lightBlue.shade100, Colors.lightBlue.shade800),
+                      if (property.hasGym)
+                        _Chip('Gym', Colors.deepOrange.shade100, Colors.deepOrange.shade800),
+                      if (property.hasElevator)
+                        _Chip('Lift', Colors.grey.shade200, Colors.grey.shade800),
+                      if (property.hasBalcony)
+                        _Chip('Balcony', Colors.pink.shade100, Colors.pink.shade800),
+                      if (property.hasGarden)
+                        _Chip('Garden', Colors.lightGreen.shade100, Colors.lightGreen.shade800),
+                      if (property.petFriendly)
+                        _Chip('Pets', Colors.teal.shade100, Colors.teal.shade800),
                     ],
                   ),
                 ],

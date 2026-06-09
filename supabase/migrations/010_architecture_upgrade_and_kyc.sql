@@ -368,7 +368,19 @@ ALTER TABLE properties
   ADD COLUMN IF NOT EXISTS registry_id UUID REFERENCES property_registry(registry_id),
   ADD COLUMN IF NOT EXISTS agency_fee_eligible BOOLEAN NOT NULL DEFAULT false,
   ADD COLUMN IF NOT EXISTS tenancy_confirmed BOOLEAN NOT NULL DEFAULT false,
-  ADD COLUMN IF NOT EXISTS listing_status TEXT NOT NULL DEFAULT 'draft' CHECK (listing_status IN ('draft','active','viewing','negotiating','tenancyConfirmed','closed'));
+  ADD COLUMN IF NOT EXISTS listing_status TEXT NOT NULL DEFAULT 'draft' CHECK (listing_status IN ('draft','active','viewing','negotiating','tenancyConfirmed','closed')),
+  ADD COLUMN IF NOT EXISTS has_electricity BOOLEAN NOT NULL DEFAULT true,
+  ADD COLUMN IF NOT EXISTS has_internet BOOLEAN NOT NULL DEFAULT false,
+  ADD COLUMN IF NOT EXISTS has_gym BOOLEAN NOT NULL DEFAULT false,
+  ADD COLUMN IF NOT EXISTS has_swimming_pool BOOLEAN NOT NULL DEFAULT false,
+  ADD COLUMN IF NOT EXISTS has_balcony BOOLEAN NOT NULL DEFAULT false,
+  ADD COLUMN IF NOT EXISTS has_garden BOOLEAN NOT NULL DEFAULT false,
+  ADD COLUMN IF NOT EXISTS has_backup_generator BOOLEAN NOT NULL DEFAULT false,
+  ADD COLUMN IF NOT EXISTS has_cctv BOOLEAN NOT NULL DEFAULT false,
+  ADD COLUMN IF NOT EXISTS has_elevator BOOLEAN NOT NULL DEFAULT false,
+  ADD COLUMN IF NOT EXISTS pet_friendly BOOLEAN NOT NULL DEFAULT false,
+  ADD COLUMN IF NOT EXISTS has_air_conditioning BOOLEAN NOT NULL DEFAULT false,
+  ADD COLUMN IF NOT EXISTS has_fitted_kitchen BOOLEAN NOT NULL DEFAULT false;
 
 CREATE INDEX IF NOT EXISTS idx_properties_registry ON properties(registry_id);
 CREATE INDEX IF NOT EXISTS idx_properties_creator ON properties(listing_creator_id);

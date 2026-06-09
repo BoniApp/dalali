@@ -37,6 +37,18 @@ class _EditPropertyScreenState extends State<EditPropertyScreen> {
   late bool _hasWater;
   late bool _hasParking;
   late bool _hasSecurity;
+  late bool _hasElectricity;
+  late bool _hasInternet;
+  late bool _hasGym;
+  late bool _hasSwimmingPool;
+  late bool _hasBalcony;
+  late bool _hasGarden;
+  late bool _hasBackupGenerator;
+  late bool _hasCctv;
+  late bool _hasElevator;
+  late bool _petFriendly;
+  late bool _hasAirConditioning;
+  late bool _hasFittedKitchen;
   late ListingType _listingType;
   late PropertyStatus _status;
 
@@ -68,6 +80,18 @@ class _EditPropertyScreenState extends State<EditPropertyScreen> {
     _hasWater = p.hasWater;
     _hasParking = p.hasParking;
     _hasSecurity = p.hasSecurity;
+    _hasElectricity = p.hasElectricity;
+    _hasInternet = p.hasInternet;
+    _hasGym = p.hasGym;
+    _hasSwimmingPool = p.hasSwimmingPool;
+    _hasBalcony = p.hasBalcony;
+    _hasGarden = p.hasGarden;
+    _hasBackupGenerator = p.hasBackupGenerator;
+    _hasCctv = p.hasCctv;
+    _hasElevator = p.hasElevator;
+    _petFriendly = p.petFriendly;
+    _hasAirConditioning = p.hasAirConditioning;
+    _hasFittedKitchen = p.hasFittedKitchen;
     _listingType = p.listingType;
     _status = p.status;
     _paymentOptions = List<PaymentTerm>.from(p.paymentOptions);
@@ -420,6 +444,16 @@ class _EditPropertyScreenState extends State<EditPropertyScreen> {
                 onChanged: (v) => setState(() => _hasWater = v),
               ),
               SwitchListTile(
+                title: const Text('Electricity'),
+                value: _hasElectricity,
+                onChanged: (v) => setState(() => _hasElectricity = v),
+              ),
+              SwitchListTile(
+                title: const Text('Internet / WiFi'),
+                value: _hasInternet,
+                onChanged: (v) => setState(() => _hasInternet = v),
+              ),
+              SwitchListTile(
                 title: const Text('Parking'),
                 value: _hasParking,
                 onChanged: (v) => setState(() => _hasParking = v),
@@ -428,6 +462,56 @@ class _EditPropertyScreenState extends State<EditPropertyScreen> {
                 title: const Text('Security'),
                 value: _hasSecurity,
                 onChanged: (v) => setState(() => _hasSecurity = v),
+              ),
+              SwitchListTile(
+                title: const Text('CCTV'),
+                value: _hasCctv,
+                onChanged: (v) => setState(() => _hasCctv = v),
+              ),
+              SwitchListTile(
+                title: const Text('Backup Generator'),
+                value: _hasBackupGenerator,
+                onChanged: (v) => setState(() => _hasBackupGenerator = v),
+              ),
+              SwitchListTile(
+                title: const Text('Air Conditioning'),
+                value: _hasAirConditioning,
+                onChanged: (v) => setState(() => _hasAirConditioning = v),
+              ),
+              SwitchListTile(
+                title: const Text('Fitted Kitchen'),
+                value: _hasFittedKitchen,
+                onChanged: (v) => setState(() => _hasFittedKitchen = v),
+              ),
+              SwitchListTile(
+                title: const Text('Swimming Pool'),
+                value: _hasSwimmingPool,
+                onChanged: (v) => setState(() => _hasSwimmingPool = v),
+              ),
+              SwitchListTile(
+                title: const Text('Gym'),
+                value: _hasGym,
+                onChanged: (v) => setState(() => _hasGym = v),
+              ),
+              SwitchListTile(
+                title: const Text('Elevator / Lift'),
+                value: _hasElevator,
+                onChanged: (v) => setState(() => _hasElevator = v),
+              ),
+              SwitchListTile(
+                title: const Text('Balcony'),
+                value: _hasBalcony,
+                onChanged: (v) => setState(() => _hasBalcony = v),
+              ),
+              SwitchListTile(
+                title: const Text('Garden / Yard'),
+                value: _hasGarden,
+                onChanged: (v) => setState(() => _hasGarden = v),
+              ),
+              SwitchListTile(
+                title: const Text('Pet Friendly'),
+                value: _petFriendly,
+                onChanged: (v) => setState(() => _petFriendly = v),
               ),
               const SizedBox(height: 16),
               const Text('Listing Options', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
@@ -650,6 +734,18 @@ class _EditPropertyScreenState extends State<EditPropertyScreen> {
       hasWater: _hasWater,
       hasParking: _hasParking,
       hasSecurity: _hasSecurity,
+      hasElectricity: _hasElectricity,
+      hasInternet: _hasInternet,
+      hasGym: _hasGym,
+      hasSwimmingPool: _hasSwimmingPool,
+      hasBalcony: _hasBalcony,
+      hasGarden: _hasGarden,
+      hasBackupGenerator: _hasBackupGenerator,
+      hasCctv: _hasCctv,
+      hasElevator: _hasElevator,
+      petFriendly: _petFriendly,
+      hasAirConditioning: _hasAirConditioning,
+      hasFittedKitchen: _hasFittedKitchen,
       images: imageUrls,
       status: _status,
       listingType: _listingType,

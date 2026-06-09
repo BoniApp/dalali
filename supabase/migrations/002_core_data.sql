@@ -49,7 +49,19 @@ CREATE TABLE IF NOT EXISTS properties (
   payment_options TEXT[] DEFAULT ARRAY['monthly'],
   minimum_accepted_term TEXT,
   deposit_required BOOLEAN DEFAULT false,
-  deposit_amount NUMERIC DEFAULT 0
+  deposit_amount NUMERIC DEFAULT 0,
+  has_electricity BOOLEAN DEFAULT true,
+  has_internet BOOLEAN DEFAULT false,
+  has_gym BOOLEAN DEFAULT false,
+  has_swimming_pool BOOLEAN DEFAULT false,
+  has_balcony BOOLEAN DEFAULT false,
+  has_garden BOOLEAN DEFAULT false,
+  has_backup_generator BOOLEAN DEFAULT false,
+  has_cctv BOOLEAN DEFAULT false,
+  has_elevator BOOLEAN DEFAULT false,
+  pet_friendly BOOLEAN DEFAULT false,
+  has_air_conditioning BOOLEAN DEFAULT false,
+  has_fitted_kitchen BOOLEAN DEFAULT false
 );
 
 ALTER TABLE properties ENABLE ROW LEVEL SECURITY;

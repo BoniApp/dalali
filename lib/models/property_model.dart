@@ -95,6 +95,18 @@ class PropertyModel {
   final bool hasSecurity;
   final bool sharedCompound;
   final bool hasBorehole;
+  final bool hasElectricity;
+  final bool hasInternet;
+  final bool hasGym;
+  final bool hasSwimmingPool;
+  final bool hasBalcony;
+  final bool hasGarden;
+  final bool hasBackupGenerator;
+  final bool hasCctv;
+  final bool hasElevator;
+  final bool petFriendly;
+  final bool hasAirConditioning;
+  final bool hasFittedKitchen;
   final List<String> images;
   final String? videoUrl;
   final PropertyStatus status;
@@ -156,6 +168,18 @@ class PropertyModel {
     required this.hasSecurity,
     this.sharedCompound = false,
     this.hasBorehole = false,
+    this.hasElectricity = true,
+    this.hasInternet = false,
+    this.hasGym = false,
+    this.hasSwimmingPool = false,
+    this.hasBalcony = false,
+    this.hasGarden = false,
+    this.hasBackupGenerator = false,
+    this.hasCctv = false,
+    this.hasElevator = false,
+    this.petFriendly = false,
+    this.hasAirConditioning = false,
+    this.hasFittedKitchen = false,
     required this.images,
     this.videoUrl,
     this.status = PropertyStatus.available,
@@ -208,6 +232,18 @@ class PropertyModel {
     bool? hasSecurity,
     bool? sharedCompound,
     bool? hasBorehole,
+    bool? hasElectricity,
+    bool? hasInternet,
+    bool? hasGym,
+    bool? hasSwimmingPool,
+    bool? hasBalcony,
+    bool? hasGarden,
+    bool? hasBackupGenerator,
+    bool? hasCctv,
+    bool? hasElevator,
+    bool? petFriendly,
+    bool? hasAirConditioning,
+    bool? hasFittedKitchen,
     List<String>? images,
     String? videoUrl,
     PropertyStatus? status,
@@ -259,6 +295,18 @@ class PropertyModel {
       hasSecurity: hasSecurity ?? this.hasSecurity,
       sharedCompound: sharedCompound ?? this.sharedCompound,
       hasBorehole: hasBorehole ?? this.hasBorehole,
+      hasElectricity: hasElectricity ?? this.hasElectricity,
+      hasInternet: hasInternet ?? this.hasInternet,
+      hasGym: hasGym ?? this.hasGym,
+      hasSwimmingPool: hasSwimmingPool ?? this.hasSwimmingPool,
+      hasBalcony: hasBalcony ?? this.hasBalcony,
+      hasGarden: hasGarden ?? this.hasGarden,
+      hasBackupGenerator: hasBackupGenerator ?? this.hasBackupGenerator,
+      hasCctv: hasCctv ?? this.hasCctv,
+      hasElevator: hasElevator ?? this.hasElevator,
+      petFriendly: petFriendly ?? this.petFriendly,
+      hasAirConditioning: hasAirConditioning ?? this.hasAirConditioning,
+      hasFittedKitchen: hasFittedKitchen ?? this.hasFittedKitchen,
       images: images ?? this.images,
       videoUrl: videoUrl ?? this.videoUrl,
       status: status ?? this.status,
