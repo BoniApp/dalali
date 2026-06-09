@@ -325,6 +325,51 @@ class DataService {
   }
 
   // ═══════════════════════════════════════════════════════════════
+  //  KYC MODULE
+  // ═══════════════════════════════════════════════════════════════
+
+  Future<void> addKycSession(dynamic session) async {
+    await _db.from('kyc_sessions').insert(session.toJson());
+  }
+
+  Future<void> updateKycSession(dynamic session) async {
+    await _db.from('kyc_sessions').update(session.toJson()).eq('session_id', session.sessionId);
+  }
+
+  Future<dynamic> getKycSessionByUser(String userId) async {
+    final data = await _db.from('kyc_sessions').select().eq('user_id', userId).maybeSingle();
+    if (data == null) return null;
+    return data;
+  }
+
+  Stream<List<dynamic>> getKycSessionsForAdmin() {
+    return _db.from('kyc_sessions').stream(primaryKey: ['session_id'])
+        .map((rows) => rows);
+  }
+
+  Future<void> addIdDocument(dynamic doc) async {
+    await _db.from('id_documents').insert(doc.toJson());
+  }
+
+  Future<List<dynamic>> getIdDocumentsForUser(String userId) async {
+    final rows = await _db.from('id_documents').select().eq('user_id', userId);
+    return rows;
+  }
+
+  Future<void> addVerificationResult(dynamic result) async {
+    await _db.from('verification_results').insert(result.toJson());
+  }
+
+  Future<List<dynamic>> getVerificationResultsForSession(String sessionId) async {
+    final rows = await _db.from('verification_results').select().eq('session_id', sessionId);
+    return rows;
+  }
+
+  Future<void> addKycAuditLog(dynamic log) async {
+    await _db.from('kyc_audit_logs').insert(log.toJson());
+  }
+
+  // ═══════════════════════════════════════════════════════════════
   //  STUBS — Phase 3 & 4 (Reviews, Reports, Tenancy, etc.)
   // ═══════════════════════════════════════════════════════════════
 
@@ -376,6 +421,10 @@ class DataService {
       agentLicense: json['agent_license'],
       subscriptionTier: json['subscription_tier'] ?? 0,
       isVerifiedLandlord: json['is_verified_landlord'] ?? false,
+      isVerifiedAgent: json['is_verified_agent'] ?? false,
+      isVerifiedProperty: json['is_verified_property'] ?? false,
+      isVerifiedListingCreator: json['is_verified_listing_creator'] ?? false,
+      totalEarnings: (json['total_earnings'] as num?)?.toDouble() ?? 0,
       lastActive: json['last_active'] != null
           ? DateTime.tryParse(json['last_active'])
           : null,
