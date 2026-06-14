@@ -28,6 +28,20 @@ jobs:
           sudo mkswap /swapfile
           sudo swapon /swapfile
           sudo swapon --show
+                - name: Add swap space
+        run: |
+          # Check if swap already exists and remove it
+          if sudo test -f /swapfile; then
+            sudo swapoff /swapfile 2>/dev/null || true
+            sudo rm -f /swapfile
+          fi
+          
+          # Create new swap file
+          sudo dd if=/dev/zero of=/swapfile bs=1G count=8
+          sudo chmod 600 /swapfile
+          sudo mkswap /swapfile
+          sudo swapon /swapfile
+          sudo swapon --show
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
