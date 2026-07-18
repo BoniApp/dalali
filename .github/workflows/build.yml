@@ -21,6 +21,9 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
       - name: Add swap space
         run: |
           if sudo test -f /swapfile; then
@@ -45,55 +48,59 @@ jobs:
 
       - name: Create dummy firebase_options.dart
         run: |
+          mkdir -p lib
           if [ ! -f "lib/firebase_options.dart" ]; then
-            cat > lib/firebase_options.dart << 'EOF'
-          import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
-          import 'package:flutter/foundation.dart'
-              show defaultTargetPlatform, kIsWeb, TargetPlatform;
+            python3 - <<'PY'
+            from pathlib import Path
+            path = Path("lib/firebase_options.dart")
+            path.write_text("""import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
+            import 'package:flutter/foundation.dart'
+                show defaultTargetPlatform, kIsWeb, TargetPlatform;
 
-          class DefaultFirebaseOptions {
-            static FirebaseOptions get currentPlatform {
-              if (kIsWeb) {
-                return web;
+            class DefaultFirebaseOptions {
+              static FirebaseOptions get currentPlatform {
+                if (kIsWeb) {
+                  return web;
+                }
+                switch (defaultTargetPlatform) {
+                  case TargetPlatform.android:
+                    return android;
+                  case TargetPlatform.iOS:
+                    return ios;
+                  default:
+                    throw UnsupportedError('Unsupported platform');
+                }
               }
-              switch (defaultTargetPlatform) {
-                case TargetPlatform.android:
-                  return android;
-                case TargetPlatform.iOS:
-                  return ios;
-                default:
-                  throw UnsupportedError('Unsupported platform');
-              }
+
+              static const FirebaseOptions web = FirebaseOptions(
+                apiKey: 'DUMMY',
+                appId: 'DUMMY',
+                messagingSenderId: 'DUMMY',
+                projectId: 'DUMMY',
+                authDomain: 'DUMMY',
+                storageBucket: 'DUMMY',
+                measurementId: 'DUMMY',
+              );
+
+              static const FirebaseOptions android = FirebaseOptions(
+                apiKey: 'DUMMY',
+                appId: 'DUMMY',
+                messagingSenderId: 'DUMMY',
+                projectId: 'DUMMY',
+                storageBucket: 'DUMMY',
+              );
+
+              static const FirebaseOptions ios = FirebaseOptions(
+                apiKey: 'DUMMY',
+                appId: 'DUMMY',
+                messagingSenderId: 'DUMMY',
+                projectId: 'DUMMY',
+                storageBucket: 'DUMMY',
+                iosBundleId: 'DUMMY',
+              );
             }
-
-            static const FirebaseOptions web = FirebaseOptions(
-              apiKey: 'DUMMY',
-              appId: 'DUMMY',
-              messagingSenderId: 'DUMMY',
-              projectId: 'DUMMY',
-              authDomain: 'DUMMY',
-              storageBucket: 'DUMMY',
-              measurementId: 'DUMMY',
-            );
-
-            static const FirebaseOptions android = FirebaseOptions(
-              apiKey: 'DUMMY',
-              appId: 'DUMMY',
-              messagingSenderId: 'DUMMY',
-              projectId: 'DUMMY',
-              storageBucket: 'DUMMY',
-            );
-
-            static const FirebaseOptions ios = FirebaseOptions(
-              apiKey: 'DUMMY',
-              appId: 'DUMMY',
-              messagingSenderId: 'DUMMY',
-              projectId: 'DUMMY',
-              storageBucket: 'DUMMY',
-              iosBundleId: 'DUMMY',
-            );
-          }
-          EOF
+            """)
+            PY
           fi
 
       - name: Build APK
