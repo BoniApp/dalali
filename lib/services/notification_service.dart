@@ -27,7 +27,7 @@ class NotificationService {
     );
 
     await _localNotifications.initialize(
-      initSettings,
+      settings: initSettings,
       onDidReceiveNotificationResponse: _onNotificationTap,
     );
 
@@ -66,10 +66,10 @@ class NotificationService {
     const details = NotificationDetails(android: androidDetails, iOS: iosDetails);
 
     await _localNotifications.show(
-      DateTime.now().millisecond,
-      title,
-      body,
-      details,
+      id: DateTime.now().millisecond,
+      title: title,
+      body: body,
+      notificationDetails: details,
       payload: payload,
     );
   }

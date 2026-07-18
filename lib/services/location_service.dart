@@ -140,7 +140,7 @@ class LocationService {
         address['residential'] as String? ??
         '';
 
-    final ward = address['suburb'] as String? ??
+    var ward = address['suburb'] as String? ??
         address['quarter'] as String? ??
         address['hamlet'] as String? ??
         address['neighbourhood'] as String? ??
