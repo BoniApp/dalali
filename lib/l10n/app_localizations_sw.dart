@@ -476,4 +476,180 @@ class AppLocalizationsSw extends AppLocalizations {
 
   @override
   String get trustBadgeVerifiedCreator => 'Muumba wa Orodha Aliyethibitishwa';
+
+  @override
+  String get referral => 'Rufaa';
+
+  @override
+  String get campaigns => 'Kampeni';
+
+  @override
+  String get influencerProgram => 'Mpango wa Washawishi';
+
+  @override
+  String get applyToEarnCommissions => 'Jisajili ili kupata kamisheni';
+
+  @override
+  String get influencerDashboard => 'Dashibodi ya Mshawishi';
+
+  @override
+  String get commissionHint =>
+      'Pata kamisheni ya 10% ya kila ada ya wakala inayolipwa na watu uliowaleta.';
+
+  @override
+  String get totalClicks => 'Jumla ya Mibofyo';
+
+  @override
+  String get registrations => 'Usajili';
+
+  @override
+  String get conversions => 'Mabadiliko';
+
+  @override
+  String get totalEarnings => 'Jumla ya Mapato';
+
+  @override
+  String get availableBalance => 'Salio Linalopatikana';
+
+  @override
+  String get pendingBalance => 'Salio Linalosubiri';
+
+  @override
+  String get recentConversions => 'Mabadiliko ya Hivi Karibuni';
+
+  @override
+  String get noConversionsYet =>
+      'Hakuna mabadiliko bado. Sambaza kiungo chako cha rufaa ili kuanza kupata kamisheni!';
+
+  @override
+  String get notInfluencerYet =>
+      'Bado si mshawishi. Jisajili kwenye Mpango wa Washawishi ili kuanza kupata kamisheni.';
+
+  @override
+  String get applyNow => 'Jisajili Sasa';
+
+  @override
+  String get conversionRegistration => 'Usajili';
+
+  @override
+  String get conversionAgencyFee => 'Malipo ya Ada ya Wakala';
+
+  @override
+  String get conversionPremium => 'Malipo ya Premium';
+
+  @override
+  String get conversionDealClosed => 'Mkataba Umekamilika';
+
+  @override
+  String get yourReferralCode => 'Msimbo Wako wa Rufaa';
+
+  @override
+  String get copy => 'Nakili';
+
+  @override
+  String get copied => 'Imenakiliwa!';
+
+  @override
+  String get share => 'Sambaza';
+
+  @override
+  String referralShareMessage(String code, String url) {
+    return 'Jiunge na Dalali kwa msimbo wangu wa rufaa $code: $url';
+  }
+
+  @override
+  String get campaignLinks => 'Viungo vya Kampeni';
+
+  @override
+  String get noLinksYet => 'Hakuna viungo vya rufaa bado.';
+
+  @override
+  String get myCampaigns => 'Kampeni Zangu';
+
+  @override
+  String get noCampaignsJoined => 'Hujaajiunga na kampeni yoyote bado.';
+
+  @override
+  String get joined => 'Umejiunga';
+
+  @override
+  String get availableCampaigns => 'Kampeni Zinazopatikana';
+
+  @override
+  String get noCampaignsAvailable => 'Hakuna kampeni zinazopatikana kwa sasa.';
+
+  @override
+  String get join => 'Jiunge';
+
+  @override
+  String get joinedCampaign => 'Umejiunga na kampeni kwa mafanikio';
+
+  @override
+  String get joinCampaignFailed => 'Imeshindikana kujiunga na kampeni';
+
+  @override
+  String get tiktokUrl => 'Kiungo cha TikTok';
+
+  @override
+  String get instagramUrl => 'Kiungo cha Instagram';
+
+  @override
+  String get youtubeUrl => 'Kiungo cha YouTube';
+
+  @override
+  String get followersCount => 'Idadi ya Wafuasi';
+
+  @override
+  String get contentNiche => 'Aina ya Maudhui';
+
+  @override
+  String get audienceLocation => 'Eneo la Watazamaji';
+
+  @override
+  String get fieldRequired => 'Inahitajika';
+
+  @override
+  String get enterValidNumber => 'Weka namba sahihi';
+
+  @override
+  String get applicationUnderReview => 'Ombi Linakaguliwa';
+
+  @override
+  String get applicationUnderReviewMessage =>
+      'Ombi lako la kujiunga na Mpango wa Washawishi linakaguliwa. Tutakujulisha hivi karibuni.';
+
+  @override
+  String get applicationRejected => 'Ombi Limekataliwa';
+
+  @override
+  String get applicationApproved => 'Ombi Limekubaliwa';
+
+  @override
+  String get applicationApprovedMessage =>
+      'Hongera! Sasa wewe ni mshawishi wa Dalali. Anza kusambaza kiungo chako cha rufaa.';
+
+  @override
+  String get goToDashboard => 'Nenda kwenye Dashibodi';
+
+  @override
+  String get applicationSubmitted =>
+      'Ombi limewasilishwa! Tutalikagua hivi karibuni.';
+
+  @override
+  String get nicheRealEstate => 'Mali Isiyohamishika';
+
+  @override
+  String get nicheLifestyle => 'Mtindo wa Maisha';
+
+  @override
+  String get nicheComedy => 'Uchekeshaji';
+
+  @override
+  String get nicheEducation => 'Elimu';
+
+  @override
+  String get nicheNews => 'Habari';
+
+  @override
+  String get nicheOther => 'Nyingine';
 }

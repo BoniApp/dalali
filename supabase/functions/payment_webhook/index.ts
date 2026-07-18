@@ -4,7 +4,7 @@
 // `transactions` row in Supabase. Implement provider-specific verification
 // (HMAC signatures, timestamps) according to the gateway docs.
 
-import { serve } from 'std/server'
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 
 serve(async (req) => {
   try {

@@ -476,4 +476,180 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get trustBadgeVerifiedCreator => 'Verified Listing Creator';
+
+  @override
+  String get referral => 'Referral';
+
+  @override
+  String get campaigns => 'Campaigns';
+
+  @override
+  String get influencerProgram => 'Influencer Program';
+
+  @override
+  String get applyToEarnCommissions => 'Apply to earn commissions';
+
+  @override
+  String get influencerDashboard => 'Influencer Dashboard';
+
+  @override
+  String get commissionHint =>
+      'Earn 10% of every agency fee paid by your referrals.';
+
+  @override
+  String get totalClicks => 'Total Clicks';
+
+  @override
+  String get registrations => 'Registrations';
+
+  @override
+  String get conversions => 'Conversions';
+
+  @override
+  String get totalEarnings => 'Total Earnings';
+
+  @override
+  String get availableBalance => 'Available Balance';
+
+  @override
+  String get pendingBalance => 'Pending Balance';
+
+  @override
+  String get recentConversions => 'Recent Conversions';
+
+  @override
+  String get noConversionsYet =>
+      'No conversions yet. Share your referral link to start earning!';
+
+  @override
+  String get notInfluencerYet =>
+      'You are not an influencer yet. Apply to the Influencer Program to start earning commissions.';
+
+  @override
+  String get applyNow => 'Apply Now';
+
+  @override
+  String get conversionRegistration => 'Registration';
+
+  @override
+  String get conversionAgencyFee => 'Agency Fee Payment';
+
+  @override
+  String get conversionPremium => 'Premium Payment';
+
+  @override
+  String get conversionDealClosed => 'Deal Closed';
+
+  @override
+  String get yourReferralCode => 'Your Referral Code';
+
+  @override
+  String get copy => 'Copy';
+
+  @override
+  String get copied => 'Copied!';
+
+  @override
+  String get share => 'Share';
+
+  @override
+  String referralShareMessage(String code, String url) {
+    return 'Join Dalali with my referral code $code: $url';
+  }
+
+  @override
+  String get campaignLinks => 'Campaign Links';
+
+  @override
+  String get noLinksYet => 'No referral links yet.';
+
+  @override
+  String get myCampaigns => 'My Campaigns';
+
+  @override
+  String get noCampaignsJoined => 'You have not joined any campaigns yet.';
+
+  @override
+  String get joined => 'Joined';
+
+  @override
+  String get availableCampaigns => 'Available Campaigns';
+
+  @override
+  String get noCampaignsAvailable => 'No campaigns available right now.';
+
+  @override
+  String get join => 'Join';
+
+  @override
+  String get joinedCampaign => 'Joined campaign successfully';
+
+  @override
+  String get joinCampaignFailed => 'Could not join campaign';
+
+  @override
+  String get tiktokUrl => 'TikTok URL';
+
+  @override
+  String get instagramUrl => 'Instagram URL';
+
+  @override
+  String get youtubeUrl => 'YouTube URL';
+
+  @override
+  String get followersCount => 'Followers Count';
+
+  @override
+  String get contentNiche => 'Content Niche';
+
+  @override
+  String get audienceLocation => 'Audience Location';
+
+  @override
+  String get fieldRequired => 'Required';
+
+  @override
+  String get enterValidNumber => 'Enter a valid number';
+
+  @override
+  String get applicationUnderReview => 'Application Under Review';
+
+  @override
+  String get applicationUnderReviewMessage =>
+      'Your Influencer Program application is being reviewed. We will notify you soon.';
+
+  @override
+  String get applicationRejected => 'Application Rejected';
+
+  @override
+  String get applicationApproved => 'Application Approved';
+
+  @override
+  String get applicationApprovedMessage =>
+      'Congratulations! You are now a Dalali influencer. Start sharing your referral link.';
+
+  @override
+  String get goToDashboard => 'Go to Dashboard';
+
+  @override
+  String get applicationSubmitted =>
+      'Application submitted! We will review it shortly.';
+
+  @override
+  String get nicheRealEstate => 'Real Estate';
+
+  @override
+  String get nicheLifestyle => 'Lifestyle';
+
+  @override
+  String get nicheComedy => 'Comedy';
+
+  @override
+  String get nicheEducation => 'Education';
+
+  @override
+  String get nicheNews => 'News';
+
+  @override
+  String get nicheOther => 'Other';
 }

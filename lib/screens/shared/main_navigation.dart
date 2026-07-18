@@ -13,6 +13,9 @@ import 'package:dalali/screens/move/move_dashboard_screen.dart';
 import 'package:dalali/screens/auth/login_screen.dart';
 import 'package:dalali/screens/earnings/earnings_screen.dart';
 import 'package:dalali/screens/opportunity/opportunity_feed_screen.dart';
+import 'package:dalali/screens/influencer/influencer_dashboard_screen.dart';
+import 'package:dalali/screens/influencer/referral_link_screen.dart';
+import 'package:dalali/screens/influencer/influencer_campaigns_screen.dart';
 
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
@@ -71,6 +74,14 @@ class _MainNavigationState extends State<MainNavigation> {
           EarningsScreen(),
           ProfileScreen(),
         ];
+      case UserRole.influencer:
+        return const [
+          InfluencerDashboardScreen(),
+          ReferralLinkScreen(),
+          InfluencerCampaignsScreen(),
+          EarningsScreen(),
+          ProfileScreen(),
+        ];
     }
   }
 
@@ -98,6 +109,14 @@ class _MainNavigationState extends State<MainNavigation> {
           NavigationDestination(icon: const Icon(Icons.dashboard), label: l10n.dashboard),
           NavigationDestination(icon: const Icon(Icons.add_home), label: l10n.add),
           NavigationDestination(icon: const Icon(Icons.trending_up), label: l10n.opportunities),
+          NavigationDestination(icon: const Icon(Icons.account_balance_wallet), label: l10n.earnings),
+          NavigationDestination(icon: const Icon(Icons.person), label: l10n.profile),
+        ];
+      case UserRole.influencer:
+        return [
+          NavigationDestination(icon: const Icon(Icons.dashboard), label: l10n.dashboard),
+          NavigationDestination(icon: const Icon(Icons.link), label: l10n.referral),
+          NavigationDestination(icon: const Icon(Icons.campaign), label: l10n.campaigns),
           NavigationDestination(icon: const Icon(Icons.account_balance_wallet), label: l10n.earnings),
           NavigationDestination(icon: const Icon(Icons.person), label: l10n.profile),
         ];

@@ -1,0 +1,201 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:dalali/config/app_theme.dart';
+import 'package:dalali/l10n/app_localizations.dart';
+import 'package:dalali/models/influencer/referral_link_model.dart';
+import 'package:dalali/providers/app_state.dart';
+import 'package:dalali/services/influencer/influencer_service.dart';
+import 'package:dalali/screens/influencer/influencer_application_screen.dart';
+
+class ReferralLinkScreen extends StatelessWidget {
+  const ReferralLinkScreen({super.key});
+
+  void _copy(BuildContext context, String value) {
+    final l10n = AppLocalizations.of(context)!;
+    Clipboard.setData(ClipboardData(text: value));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(l10n.copied)),
+    );
+  }
+
+  Future<void> _shareWhatsApp(BuildContext context, String message) async {
+    final uri = Uri.parse('https://wa.me/?text=${Uri.encodeComponent(message)}');
+    if (await canLaunchUrl(uri)) await launchUrl(uri);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final appState = context.watch<AppState>();
+    final user = appState.currentUser;
+    final profile = appState.influencerProfile;
+
+    if (user == null) {
+      return Scaffold(
+        appBar: AppBar(
+          title: Text(l10n.referral),
+          backgroundColor: AppTheme.primary,
+          foregroundColor: Colors.white,
+        ),
+        body: Center(child: Text(l10n.notLoggedIn)),
+      );
+    }
+
+    if (profile == null) {
+      return Scaffold(
+        appBar: AppBar(
+          title: Text(l10n.referral),
+          backgroundColor: AppTheme.primary,
+          foregroundColor: Colors.white,
+        ),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  l10n.notInfluencerYet,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton(
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const InfluencerApplicationScreen()),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primary,
+                    foregroundColor: Colors.white,
+                  ),
+                  child: Text(l10n.applyNow),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    final service = InfluencerService();
+    final referralUrl = service.buildReferralUrl(profile.referralCode);
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(l10n.referral),
+        backgroundColor: AppTheme.primary,
+        foregroundColor: Colors.white,
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Card(
+              color: AppTheme.primary,
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  children: [
+                    Text(
+                      l10n.yourReferralCode,
+                      style: const TextStyle(fontSize: 13, color: Colors.white70),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      profile.referralCode,
+                      style: const TextStyle(
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 2,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      referralUrl,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontSize: 12, color: Colors.white70),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        ElevatedButton.icon(
+                          onPressed: () => _copy(context, referralUrl),
+                          icon: const Icon(Icons.copy, size: 18),
+                          label: Text(l10n.copy),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            foregroundColor: AppTheme.primary,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        ElevatedButton.icon(
+                          onPressed: () => _shareWhatsApp(
+                            context,
+                            l10n.referralShareMessage(profile.referralCode, referralUrl),
+                          ),
+                          icon: const Icon(Icons.share, size: 18),
+                          label: Text(l10n.share),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green,
+                            foregroundColor: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              l10n.campaignLinks,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            StreamBuilder<List<ReferralLinkModel>>(
+              stream: service.getMyLinks(user.id),
+              builder: (context, snapshot) {
+                final links = snapshot.data ?? [];
+                if (links.isEmpty) {
+                  return Padding(
+                    padding: const EdgeInsets.all(32),
+                    child: Text(
+                      l10n.noLinksYet,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.grey[600]),
+                    ),
+                  );
+                }
+                return Column(
+                  children: links.map((link) {
+                    final url = service.buildReferralUrl(link.code);
+                    return Card(
+                      child: ListTile(
+                        leading: CircleAvatar(
+                          backgroundColor: AppTheme.primary.withAlpha(13),
+                          child: const Icon(Icons.link, color: AppTheme.primary),
+                        ),
+                        title: Text(link.code),
+                        subtitle: Text(url, style: const TextStyle(fontSize: 12)),
+                        trailing: IconButton(
+                          icon: const Icon(Icons.copy, color: AppTheme.primary),
+                          onPressed: () => _copy(context, url),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

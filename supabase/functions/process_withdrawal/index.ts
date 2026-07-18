@@ -6,7 +6,7 @@
 // - Initiate payout via provider (Selcom placeholder)
 // - Update withdrawal status and log
 
-import { serve } from 'std/server'
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { computeHmacHex } from '../_shared/hmac.ts'
 
 export async function handler(req: Request): Promise<Response> {
@@ -187,5 +187,5 @@ export async function handler(req: Request): Promise<Response> {
   }
 }
 
-// Serve the handler for deployment
-serve(handler)
+// Serve the handler for deployment (skipped when imported by tests)
+if (import.meta.main) serve(handler)

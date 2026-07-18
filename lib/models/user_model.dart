@@ -1,6 +1,6 @@
 import 'package:dalali/models/user_preferences_model.dart';
 
-enum UserRole { seeker, landlord, agent }
+enum UserRole { seeker, landlord, agent, influencer }
 enum VerificationStatus { unverified, pending, verified }
 enum MoveMode { none, planning, active }
 

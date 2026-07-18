@@ -463,6 +463,290 @@ class AdminService {
     );
   }
 
+  // ─── INFLUENCERS ─────────────────────────────────────────────
+
+  /// Influencer applications, newest first, optionally filtered by
+  /// status ('pending' | 'approved' | 'rejected'). The table already
+  /// carries full_name/phone/email, so no user join is needed.
+  Stream<List<Map<String, dynamic>>> getInfluencerApplications({String? status}) {
+    final query = _db.from('influencer_applications').stream(primaryKey: ['id']);
+    final filtered = status != null ? query.eq('status', status) : query;
+    return filtered.order('created_at', ascending: false).map((rows) => rows);
+  }
+
+  /// Influencer profiles ordered by total earnings.
+  /// Realtime streams cannot embed relations, so the owning users row
+  /// (full_name, email, phone) is fetched and merged under a 'users'
+  /// key on each emission.
+  Stream<List<Map<String, dynamic>>> getInfluencers() {
+    return _db
+        .from('influencers')
+        .stream(primaryKey: ['user_id'])
+        .order('total_earnings', ascending: false)
+        .asyncMap((rows) async {
+      if (rows.isEmpty) return <Map<String, dynamic>>[];
+      final ids = rows.map((r) => r['user_id']).whereType<String>().toList();
+      final users = await _db.from('users').select('id, full_name, email, phone').inFilter('id', ids);
+      final byId = {for (final u in users) u['id']: u};
+      return rows.map((r) => {...r, 'users': byId[r['user_id']]}).toList();
+    });
+  }
+
+  /// Single influencer row with the owning users row embedded.
+  Future<Map<String, dynamic>> getInfluencerDetail(String userId) async {
+    final data = await _db
+        .from('influencers')
+        .select('*, users(full_name, email, phone)')
+        .eq('user_id', userId)
+        .maybeSingle();
+    if (data == null) throw Exception('Influencer not found');
+    return data;
+  }
+
+  /// Approve an influencer application by invoking the
+  /// `generate-referral-code` Edge Function. The function approves the
+  /// application, activates the influencer, mints the referral code,
+  /// flips the user role, ensures a wallet, and notifies the user.
+  /// Uses the current admin's access token for authorization.
+  /// Returns the minted referral code.
+  Future<String> approveApplication({
+    required String adminId,
+    required String adminName,
+    required AdminRole adminRole,
+    required String applicationId,
+  }) async {
+    final session = SupabaseService.client.auth.currentSession;
+    final token = session?.accessToken;
+    if (token == null) throw Exception('Not authenticated');
+
+    final functionsHost = SupabaseConfig.url.replaceFirst('.supabase.co', '.functions.supabase.co');
+    final url = Uri.parse('$functionsHost/generate-referral-code');
+    final resp = await http.post(
+      url,
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+      body: json.encode({'application_id': applicationId}),
+    );
+
+    if (resp.statusCode < 200 || resp.statusCode >= 300) {
+      String message = resp.body;
+      try {
+        final body = json.decode(resp.body);
+        if (body is Map && body['error'] != null) message = body['error'].toString();
+      } catch (_) {}
+      throw Exception('Approve application failed: ${resp.statusCode} $message');
+    }
+
+    final body = json.decode(resp.body) as Map<String, dynamic>;
+    final referralCode = body['referral_code']?.toString() ?? '';
+
+    await _logAction(
+      adminId: adminId,
+      adminName: adminName,
+      adminRole: adminRole,
+      action: 'approve_influencer_application',
+      targetCollection: 'influencer_applications',
+      targetId: applicationId,
+      after: {'status': 'approved', 'referral_code': referralCode},
+    );
+
+    return referralCode;
+  }
+
+  Future<void> rejectApplication({
+    required String adminId,
+    required String adminName,
+    required AdminRole adminRole,
+    required String applicationId,
+    required String reason,
+  }) async {
+    final result = await _db.from('influencer_applications').update({
+      'status': 'rejected',
+      'rejection_reason': reason,
+      'reviewed_by': adminId,
+      'reviewed_at': DateTime.now().toIso8601String(),
+    }).eq('id', applicationId).select();
+    if (result.isEmpty) {
+      throw Exception(
+        'Reject application failed: RLS blocked the update. '
+        'Ensure your user has is_admin=true in the users table.',
+      );
+    }
+    await _logAction(
+      adminId: adminId,
+      adminName: adminName,
+      adminRole: adminRole,
+      action: 'reject_influencer_application',
+      targetCollection: 'influencer_applications',
+      targetId: applicationId,
+      after: {'status': 'rejected', 'rejection_reason': reason},
+    );
+  }
+
+  /// Set an influencer's status ('active' | 'suspended').
+  Future<void> setInfluencerStatus({
+    required String adminId,
+    required String adminName,
+    required AdminRole adminRole,
+    required String userId,
+    required String status,
+  }) async {
+    final result = await _db.from('influencers').update({'status': status}).eq('user_id', userId).select();
+    if (result.isEmpty) {
+      throw Exception(
+        'Update influencer status failed: RLS blocked the update. '
+        'Ensure your user has is_admin=true in the users table.',
+      );
+    }
+    await _logAction(
+      adminId: adminId,
+      adminName: adminName,
+      adminRole: adminRole,
+      action: 'set_influencer_status',
+      targetCollection: 'influencers',
+      targetId: userId,
+      after: {'status': status},
+    );
+  }
+
+  /// Update the influencer program commission rates on the singleton
+  /// system_settings row. Only non-null fields are written.
+  Future<void> setInfluencerRates({
+    required String adminId,
+    required String adminName,
+    required AdminRole adminRole,
+    double? agencyFeePct,
+    double? premiumPct,
+    double? registrationBonus,
+    bool? programEnabled,
+  }) async {
+    final updates = <String, dynamic>{
+      if (agencyFeePct != null) 'influencer_agency_fee_pct': agencyFeePct,
+      if (premiumPct != null) 'influencer_premium_pct': premiumPct,
+      if (registrationBonus != null) 'influencer_registration_bonus': registrationBonus,
+      if (programEnabled != null) 'influencer_program_enabled': programEnabled,
+    };
+    if (updates.isEmpty) return;
+    final result = await _db.from('system_settings').update(updates).eq('id', 'default').select();
+    if (result.isEmpty) {
+      throw Exception(
+        'Update influencer rates failed: no rows updated. '
+        'Check if the default settings row exists and you have admin permissions.',
+      );
+    }
+    await _logAction(
+      adminId: adminId,
+      adminName: adminName,
+      adminRole: adminRole,
+      action: 'set_influencer_rates',
+      targetCollection: 'system_settings',
+      after: updates,
+    );
+  }
+
+  // ─── CAMPAIGNS ────────────────────────────────────────────────
+
+  Stream<List<Map<String, dynamic>>> getCampaigns() {
+    return _db
+        .from('campaigns')
+        .stream(primaryKey: ['id'])
+        .order('created_at', ascending: false)
+        .map((rows) => rows);
+  }
+
+  Future<void> createCampaign({
+    required String adminId,
+    required String adminName,
+    required AdminRole adminRole,
+    required Map<String, dynamic> data,
+  }) async {
+    await _db.from('campaigns').insert({
+      ...data,
+      'status': 'draft',
+      'created_by': adminId,
+    });
+    await _logAction(
+      adminId: adminId,
+      adminName: adminName,
+      adminRole: adminRole,
+      action: 'create_campaign',
+      targetCollection: 'campaigns',
+      after: data,
+    );
+  }
+
+  /// Set a campaign's status ('active' | 'paused' | 'ended').
+  Future<void> setCampaignStatus({
+    required String adminId,
+    required String adminName,
+    required AdminRole adminRole,
+    required String campaignId,
+    required String status,
+  }) async {
+    final result = await _db.from('campaigns').update({'status': status}).eq('id', campaignId).select();
+    if (result.isEmpty) {
+      throw Exception(
+        'Update campaign status failed: RLS blocked the update. '
+        'Ensure your user has is_admin=true in the users table.',
+      );
+    }
+    await _logAction(
+      adminId: adminId,
+      adminName: adminName,
+      adminRole: adminRole,
+      action: 'set_campaign_status',
+      targetCollection: 'campaigns',
+      targetId: campaignId,
+      after: {'status': status},
+    );
+  }
+
+  Future<List<Map<String, dynamic>>> getCampaignParticipants(String campaignId) async {
+    final rows = await _db
+        .from('campaign_participants')
+        .select('*, influencers(referral_code, users(full_name, email))')
+        .eq('campaign_id', campaignId);
+    return rows;
+  }
+
+  /// AI-ready heuristic matching of active influencers to a campaign
+  /// (see match_influencers_for_campaign in migration 011).
+  Future<List<Map<String, dynamic>>> matchInfluencers(String campaignId) async {
+    final rows = await _db.rpc('match_influencers_for_campaign', params: {'p_campaign_id': campaignId});
+    return (rows as List).map((e) => Map<String, dynamic>.from(e as Map)).toList();
+  }
+
+  // ─── REFERRAL CONVERSIONS / FRAUD / COMMISSIONS ───────────────
+
+  Future<List<Map<String, dynamic>>> getReferralConversions({String? influencerId, int limit = 100}) async {
+    var query = _db.from('referral_conversions').select();
+    if (influencerId != null) query = query.eq('influencer_id', influencerId);
+    final rows = await query.order('created_at', ascending: false).limit(limit);
+    return rows;
+  }
+
+  Future<List<Map<String, dynamic>>> getFraudLogs({String? influencerId, int limit = 100}) async {
+    var query = _db.from('fraud_logs').select();
+    if (influencerId != null) query = query.eq('influencer_id', influencerId);
+    final rows = await query.order('created_at', ascending: false).limit(limit);
+    return rows;
+  }
+
+  /// Influencer commission ledger rows (earnings of type
+  /// 'referralCommission'), newest first, with the influencer's
+  /// full_name embedded under 'users'.
+  Future<List<Map<String, dynamic>>> getCommissionEntries({int limit = 200}) async {
+    final rows = await _db
+        .from('earnings')
+        .select('*, users(full_name)')
+        .eq('type', 'referralCommission')
+        .order('created_at', ascending: false)
+        .limit(limit);
+    return rows;
+  }
+
   // ─── DIAGNOSTIC ───────────────────────────────────────────────
 
   /// Check if the current user has admin privileges in the database.

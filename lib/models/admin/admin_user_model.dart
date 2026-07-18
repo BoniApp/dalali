@@ -196,4 +196,10 @@ class AdminPermissions {
 
   static bool canManageAdmins(AdminRole role) =>
       role == AdminRole.superAdmin;
+
+  static bool canManageInfluencers(AdminRole role) =>
+      role == AdminRole.superAdmin ||
+      role == AdminRole.financeAdmin ||
+      role == AdminRole.supportAgent ||
+      role == AdminRole.fraudAnalyst;
 }

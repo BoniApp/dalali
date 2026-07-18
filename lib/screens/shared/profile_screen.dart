@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dalali/config/app_theme.dart';
 import 'package:dalali/l10n/app_localizations.dart';
 import 'package:dalali/models/user_model.dart';
 import 'package:dalali/providers/app_state.dart';
@@ -9,6 +10,8 @@ import 'package:dalali/screens/wallet/wallet_screen.dart';
 import 'package:dalali/screens/shared/settings_screen.dart';
 import 'package:dalali/screens/tenancy/my_tenancies_screen.dart';
 import 'package:dalali/screens/tenancy/reservation_requests_screen.dart';
+import 'package:dalali/screens/influencer/influencer_application_screen.dart';
+import 'package:dalali/screens/influencer/influencer_dashboard_screen.dart';
 import 'package:provider/provider.dart';
 
 class ProfileScreen extends StatelessWidget {
@@ -18,13 +21,14 @@ class ProfileScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final user = context.watch<AppState>().currentUser;
     final authMode = context.watch<AppState>().authMode;
+    final influencerProfile = context.watch<AppState>().influencerProfile;
     final l10n = AppLocalizations.of(context)!;
 
     if (user == null) {
       return Scaffold(
         appBar: AppBar(
           title: Text(l10n.profile),
-          backgroundColor: Colors.teal,
+          backgroundColor: AppTheme.primary,
           foregroundColor: Colors.white,
         ),
         body: Center(
@@ -51,7 +55,7 @@ class ProfileScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(l10n.profile),
-        backgroundColor: Colors.teal,
+        backgroundColor: AppTheme.primary,
         foregroundColor: Colors.white,
       ),
       body: SingleChildScrollView(
@@ -60,10 +64,10 @@ class ProfileScreen extends StatelessWidget {
           children: [
             CircleAvatar(
               radius: 50,
-              backgroundColor: Colors.teal.shade100,
+              backgroundColor: AppTheme.primary.withAlpha(26),
               child: Text(
                 user.fullName.isNotEmpty ? user.fullName.substring(0, 1) : '?',
-                style: const TextStyle(fontSize: 36, color: Colors.teal),
+                style: const TextStyle(fontSize: 36, color: AppTheme.primary),
               ),
             ),
             const SizedBox(height: 16),
@@ -106,18 +110,18 @@ class ProfileScreen extends StatelessWidget {
                 if (user.isVerifiedProperty)
                   _TrustBadge(icon: Icons.home_work, label: l10n.trustBadgeVerifiedProperty, color: Colors.blue),
                 if (user.isVerifiedListingCreator)
-                  _TrustBadge(icon: Icons.add_home, label: l10n.trustBadgeVerifiedCreator, color: Colors.teal),
+                  _TrustBadge(icon: Icons.add_home, label: l10n.trustBadgeVerifiedCreator, color: AppTheme.primary),
               ],
             ),
             const SizedBox(height: 16),
             // Wallet Card
             Card(
-              color: Colors.teal.shade50,
+              color: AppTheme.primary.withAlpha(13),
               child: ListTile(
                 leading: Container(
                   padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(color: Colors.teal.shade100, shape: BoxShape.circle),
-                  child: Icon(Icons.account_balance_wallet, color: Colors.teal.shade800),
+                  decoration: BoxDecoration(color: AppTheme.primary.withAlpha(26), shape: BoxShape.circle),
+                  child: Icon(Icons.account_balance_wallet, color: AppTheme.primaryDark),
                 ),
                 title: const Text('My Wallet', style: TextStyle(fontWeight: FontWeight.bold)),
                 subtitle: const Text('Balance, transactions & withdrawals'),
@@ -125,6 +129,35 @@ class ProfileScreen extends StatelessWidget {
                 onTap: () => Navigator.push(
                   context,
                   MaterialPageRoute(builder: (_) => const WalletScreen()),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            // Influencer Program Card
+            Card(
+              color: Colors.pink.shade50,
+              child: ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(color: Colors.pink.shade100, shape: BoxShape.circle),
+                  child: Icon(Icons.star, color: Colors.pink.shade800),
+                ),
+                title: Text(l10n.influencerProgram, style: const TextStyle(fontWeight: FontWeight.bold)),
+                subtitle: Text(
+                  influencerProfile == null
+                      ? l10n.applyToEarnCommissions
+                      : influencerProfile.isActive
+                          ? '${l10n.yourReferralCode}: ${influencerProfile.referralCode}'
+                          : l10n.applicationUnderReview,
+                ),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => influencerProfile != null && influencerProfile.isActive
+                        ? const InfluencerDashboardScreen()
+                        : const InfluencerApplicationScreen(),
+                  ),
                 ),
               ),
             ),
@@ -339,7 +372,7 @@ class _ProfileTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      leading: Icon(icon, color: Colors.teal),
+      leading: Icon(icon, color: AppTheme.primary),
       title: Text(label, style: TextStyle(fontSize: 13, color: Colors.grey[600])),
       subtitle: Text(value, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500)),
     );

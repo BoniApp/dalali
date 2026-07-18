@@ -21,17 +21,20 @@ import 'package:dalali/models/property_claim_model.dart';
 import 'package:dalali/models/deal_model.dart';
 import 'package:dalali/models/agency_fee_model.dart';
 import 'package:dalali/models/earnings_model.dart';
+import 'package:dalali/models/influencer/influencer_model.dart';
 import 'package:dalali/services/data_service.dart';
 import 'package:dalali/services/auth_service.dart';
 import 'package:dalali/services/notification_service.dart';
 import 'package:dalali/services/safety_engine.dart';
 import 'package:dalali/services/earnings_service.dart';
+import 'package:dalali/services/influencer/influencer_service.dart';
 
 enum AuthMode { supabase }
 
 class AppState extends ChangeNotifier {
   AuthMode _authMode = AuthMode.supabase;
   UserModel? currentUser;
+  InfluencerModel? influencerProfile;
   List<PropertyModel> _properties = [];
   List<PropertyModel> _myProperties = [];
   List<FavoriteModel> _favorites = [];
@@ -81,6 +84,14 @@ class AppState extends ChangeNotifier {
             role: UserRole.seeker,
             createdAt: DateTime.now(),
           );
+        }
+        // Load influencer profile (if any) alongside the user profile
+        try {
+          influencerProfile =
+              await InfluencerService().getInfluencerProfile(currentUser!.id);
+        } catch (e) {
+          debugPrint('getInfluencerProfile error: $e');
+          influencerProfile = null;
         }
         _subscribeToDatabase();
         notifyListeners();
@@ -416,6 +427,15 @@ class AppState extends ChangeNotifier {
       _myClaims = list.cast<PropertyClaimModel>();
       notifyListeners();
     }));
+
+    // Influencer profile (influencer role or existing profile only)
+    if (currentUser!.role == UserRole.influencer || influencerProfile != null) {
+      _subscriptions.add(
+          InfluencerService().watchInfluencerProfile(currentUser!.id).listen((profile) {
+        influencerProfile = profile;
+        notifyListeners();
+      }));
+    }
   }
 
   void _unsubscribeFromDatabase() {
@@ -428,6 +448,7 @@ class AppState extends ChangeNotifier {
     _myAgencyFees = [];
     _myEarnings = [];
     _myClaims = [];
+    influencerProfile = null;
   }
 
   bool get _isFirebase => _authMode == AuthMode.supabase;

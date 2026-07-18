@@ -1009,6 +1009,342 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Verified Listing Creator'**
   String get trustBadgeVerifiedCreator;
+
+  /// No description provided for @referral.
+  ///
+  /// In en, this message translates to:
+  /// **'Referral'**
+  String get referral;
+
+  /// No description provided for @campaigns.
+  ///
+  /// In en, this message translates to:
+  /// **'Campaigns'**
+  String get campaigns;
+
+  /// No description provided for @influencerProgram.
+  ///
+  /// In en, this message translates to:
+  /// **'Influencer Program'**
+  String get influencerProgram;
+
+  /// No description provided for @applyToEarnCommissions.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply to earn commissions'**
+  String get applyToEarnCommissions;
+
+  /// No description provided for @influencerDashboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Influencer Dashboard'**
+  String get influencerDashboard;
+
+  /// No description provided for @commissionHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Earn 10% of every agency fee paid by your referrals.'**
+  String get commissionHint;
+
+  /// No description provided for @totalClicks.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Clicks'**
+  String get totalClicks;
+
+  /// No description provided for @registrations.
+  ///
+  /// In en, this message translates to:
+  /// **'Registrations'**
+  String get registrations;
+
+  /// No description provided for @conversions.
+  ///
+  /// In en, this message translates to:
+  /// **'Conversions'**
+  String get conversions;
+
+  /// No description provided for @totalEarnings.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Earnings'**
+  String get totalEarnings;
+
+  /// No description provided for @availableBalance.
+  ///
+  /// In en, this message translates to:
+  /// **'Available Balance'**
+  String get availableBalance;
+
+  /// No description provided for @pendingBalance.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending Balance'**
+  String get pendingBalance;
+
+  /// No description provided for @recentConversions.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent Conversions'**
+  String get recentConversions;
+
+  /// No description provided for @noConversionsYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No conversions yet. Share your referral link to start earning!'**
+  String get noConversionsYet;
+
+  /// No description provided for @notInfluencerYet.
+  ///
+  /// In en, this message translates to:
+  /// **'You are not an influencer yet. Apply to the Influencer Program to start earning commissions.'**
+  String get notInfluencerYet;
+
+  /// No description provided for @applyNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply Now'**
+  String get applyNow;
+
+  /// No description provided for @conversionRegistration.
+  ///
+  /// In en, this message translates to:
+  /// **'Registration'**
+  String get conversionRegistration;
+
+  /// No description provided for @conversionAgencyFee.
+  ///
+  /// In en, this message translates to:
+  /// **'Agency Fee Payment'**
+  String get conversionAgencyFee;
+
+  /// No description provided for @conversionPremium.
+  ///
+  /// In en, this message translates to:
+  /// **'Premium Payment'**
+  String get conversionPremium;
+
+  /// No description provided for @conversionDealClosed.
+  ///
+  /// In en, this message translates to:
+  /// **'Deal Closed'**
+  String get conversionDealClosed;
+
+  /// No description provided for @yourReferralCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Your Referral Code'**
+  String get yourReferralCode;
+
+  /// No description provided for @copy.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy'**
+  String get copy;
+
+  /// No description provided for @copied.
+  ///
+  /// In en, this message translates to:
+  /// **'Copied!'**
+  String get copied;
+
+  /// No description provided for @share.
+  ///
+  /// In en, this message translates to:
+  /// **'Share'**
+  String get share;
+
+  /// No description provided for @referralShareMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Join Dalali with my referral code {code}: {url}'**
+  String referralShareMessage(String code, String url);
+
+  /// No description provided for @campaignLinks.
+  ///
+  /// In en, this message translates to:
+  /// **'Campaign Links'**
+  String get campaignLinks;
+
+  /// No description provided for @noLinksYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No referral links yet.'**
+  String get noLinksYet;
+
+  /// No description provided for @myCampaigns.
+  ///
+  /// In en, this message translates to:
+  /// **'My Campaigns'**
+  String get myCampaigns;
+
+  /// No description provided for @noCampaignsJoined.
+  ///
+  /// In en, this message translates to:
+  /// **'You have not joined any campaigns yet.'**
+  String get noCampaignsJoined;
+
+  /// No description provided for @joined.
+  ///
+  /// In en, this message translates to:
+  /// **'Joined'**
+  String get joined;
+
+  /// No description provided for @availableCampaigns.
+  ///
+  /// In en, this message translates to:
+  /// **'Available Campaigns'**
+  String get availableCampaigns;
+
+  /// No description provided for @noCampaignsAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'No campaigns available right now.'**
+  String get noCampaignsAvailable;
+
+  /// No description provided for @join.
+  ///
+  /// In en, this message translates to:
+  /// **'Join'**
+  String get join;
+
+  /// No description provided for @joinedCampaign.
+  ///
+  /// In en, this message translates to:
+  /// **'Joined campaign successfully'**
+  String get joinedCampaign;
+
+  /// No description provided for @joinCampaignFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not join campaign'**
+  String get joinCampaignFailed;
+
+  /// No description provided for @tiktokUrl.
+  ///
+  /// In en, this message translates to:
+  /// **'TikTok URL'**
+  String get tiktokUrl;
+
+  /// No description provided for @instagramUrl.
+  ///
+  /// In en, this message translates to:
+  /// **'Instagram URL'**
+  String get instagramUrl;
+
+  /// No description provided for @youtubeUrl.
+  ///
+  /// In en, this message translates to:
+  /// **'YouTube URL'**
+  String get youtubeUrl;
+
+  /// No description provided for @followersCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Followers Count'**
+  String get followersCount;
+
+  /// No description provided for @contentNiche.
+  ///
+  /// In en, this message translates to:
+  /// **'Content Niche'**
+  String get contentNiche;
+
+  /// No description provided for @audienceLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Audience Location'**
+  String get audienceLocation;
+
+  /// No description provided for @fieldRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Required'**
+  String get fieldRequired;
+
+  /// No description provided for @enterValidNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid number'**
+  String get enterValidNumber;
+
+  /// No description provided for @applicationUnderReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Application Under Review'**
+  String get applicationUnderReview;
+
+  /// No description provided for @applicationUnderReviewMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Your Influencer Program application is being reviewed. We will notify you soon.'**
+  String get applicationUnderReviewMessage;
+
+  /// No description provided for @applicationRejected.
+  ///
+  /// In en, this message translates to:
+  /// **'Application Rejected'**
+  String get applicationRejected;
+
+  /// No description provided for @applicationApproved.
+  ///
+  /// In en, this message translates to:
+  /// **'Application Approved'**
+  String get applicationApproved;
+
+  /// No description provided for @applicationApprovedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Congratulations! You are now a Dalali influencer. Start sharing your referral link.'**
+  String get applicationApprovedMessage;
+
+  /// No description provided for @goToDashboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Go to Dashboard'**
+  String get goToDashboard;
+
+  /// No description provided for @applicationSubmitted.
+  ///
+  /// In en, this message translates to:
+  /// **'Application submitted! We will review it shortly.'**
+  String get applicationSubmitted;
+
+  /// No description provided for @nicheRealEstate.
+  ///
+  /// In en, this message translates to:
+  /// **'Real Estate'**
+  String get nicheRealEstate;
+
+  /// No description provided for @nicheLifestyle.
+  ///
+  /// In en, this message translates to:
+  /// **'Lifestyle'**
+  String get nicheLifestyle;
+
+  /// No description provided for @nicheComedy.
+  ///
+  /// In en, this message translates to:
+  /// **'Comedy'**
+  String get nicheComedy;
+
+  /// No description provided for @nicheEducation.
+  ///
+  /// In en, this message translates to:
+  /// **'Education'**
+  String get nicheEducation;
+
+  /// No description provided for @nicheNews.
+  ///
+  /// In en, this message translates to:
+  /// **'News'**
+  String get nicheNews;
+
+  /// No description provided for @nicheOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get nicheOther;
 }
 
 class _AppLocalizationsDelegate

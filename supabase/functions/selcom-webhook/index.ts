@@ -109,6 +109,28 @@ async function handlePaymentSuccess(supabase: any, event: any) {
   // Credit platform
   await creditWallet(supabase, "_platform", "pending_balance", platformShare, "total_earned");
 
+  // Trigger influencer commission for this payment (best-effort:
+  // a commission failure must never fail the payment webhook).
+  try {
+    const commissionSecret = Deno.env.get("COMMISSION_SECRET");
+    if (commissionSecret) {
+      const fnBase = Deno.env.get("SUPABASE_URL")!.replace(
+        ".supabase.co",
+        ".functions.supabase.co"
+      );
+      await fetch(`${fnBase}/calculate-influencer-commission`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-commission-secret": commissionSecret,
+        },
+        body: JSON.stringify({ transaction_id: tx.id }),
+      });
+    }
+  } catch (e) {
+    console.error("Influencer commission trigger failed:", e);
+  }
+
   console.log(`Payment processed: ${orderId}`);
 }
 

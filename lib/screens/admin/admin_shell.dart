@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dalali/config/app_theme.dart';
 import 'package:dalali/models/admin/admin_user_model.dart';
 import 'package:dalali/screens/admin/dashboard_admin_screen.dart';
 import 'package:dalali/screens/admin/wallets_admin_screen.dart';
@@ -16,6 +17,9 @@ import 'package:dalali/screens/admin/disputes_admin_screen.dart';
 import 'package:dalali/screens/admin/property_registry_admin_screen.dart';
 import 'package:dalali/screens/admin/property_claims_admin_screen.dart';
 import 'package:dalali/screens/admin/agency_fees_admin_screen.dart';
+import 'package:dalali/screens/admin/influencers_admin_screen.dart';
+import 'package:dalali/screens/admin/campaigns_admin_screen.dart';
+import 'package:dalali/screens/admin/influencer_reports_admin_screen.dart';
 import 'package:dalali/screens/admin/login_admin_screen.dart';
 import 'package:dalali/services/supabase_service.dart';
 
@@ -104,6 +108,21 @@ class _AdminShellState extends State<AdminShell> {
       adminName: widget.adminName,
       adminRole: widget.adminRole,
     )),
+    _NavItem(icon: Icons.campaign, label: 'Influencers', screenBuilder: () => InfluencersAdminScreen(
+      adminId: widget.adminId,
+      adminName: widget.adminName,
+      adminRole: widget.adminRole,
+    )),
+    _NavItem(icon: Icons.rocket_launch, label: 'Campaigns', screenBuilder: () => CampaignsAdminScreen(
+      adminId: widget.adminId,
+      adminName: widget.adminName,
+      adminRole: widget.adminRole,
+    )),
+    _NavItem(icon: Icons.insights, label: 'Influencer Reports', screenBuilder: () => InfluencerReportsAdminScreen(
+      adminId: widget.adminId,
+      adminName: widget.adminName,
+      adminRole: widget.adminRole,
+    )),
   ];
 
   List<_NavItem> get _visibleItems {
@@ -133,6 +152,10 @@ class _AdminShellState extends State<AdminShell> {
           return AdminPermissions.canManageDisputes(widget.adminRole);
         case 'Agency Fees':
           return AdminPermissions.canManageWallets(widget.adminRole);
+        case 'Influencers':
+        case 'Campaigns':
+        case 'Influencer Reports':
+          return AdminPermissions.canManageInfluencers(widget.adminRole);
         default:
           return true;
       }
@@ -163,7 +186,7 @@ class _AdminShellState extends State<AdminShell> {
               ? null
               : AppBar(
                   title: Text(items[_selectedIndex.clamp(0, items.length - 1)].label),
-                  backgroundColor: Colors.teal.shade800,
+                  backgroundColor: AppTheme.primaryDark,
                   foregroundColor: Colors.white,
                   actions: [
                     Padding(
@@ -201,7 +224,7 @@ class _AdminShellState extends State<AdminShell> {
   Widget _buildSidebar(List<_NavItem> items) {
     return Container(
       width: 260,
-      color: Colors.teal.shade900,
+      color: AppTheme.primaryDark,
       child: Column(
         children: [
           Container(
@@ -212,7 +235,7 @@ class _AdminShellState extends State<AdminShell> {
               children: [
                 Row(
                   children: [
-                    Icon(Icons.admin_panel_settings, color: Colors.teal.shade200, size: 28),
+                    Icon(Icons.admin_panel_settings, color: AppTheme.primary.withAlpha(51), size: 28),
                     const SizedBox(width: 12),
                     const Text(
                       'Dalali Admin',
@@ -246,7 +269,7 @@ class _AdminShellState extends State<AdminShell> {
                     style: TextStyle(color: selected ? Colors.white : Colors.white70, fontSize: 14),
                   ),
                   selected: selected,
-                  selectedTileColor: Colors.teal.shade700,
+                  selectedTileColor: AppTheme.primaryDark,
                   onTap: () => setState(() => _selectedIndex = index),
                 );
               },
@@ -267,17 +290,17 @@ class _AdminShellState extends State<AdminShell> {
   Widget _buildDrawer(List<_NavItem> items) {
     return Drawer(
       child: Container(
-        color: Colors.teal.shade900,
+        color: AppTheme.primaryDark,
         child: Column(
           children: [
             DrawerHeader(
-              decoration: BoxDecoration(color: Colors.teal.shade800),
+              decoration: BoxDecoration(color: AppTheme.primaryDark),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     children: [
-                      Icon(Icons.admin_panel_settings, color: Colors.teal.shade200, size: 28),
+                      Icon(Icons.admin_panel_settings, color: AppTheme.primary.withAlpha(51), size: 28),
                       const SizedBox(width: 12),
                       const Text('Dalali Admin', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
                     ],
@@ -301,7 +324,7 @@ class _AdminShellState extends State<AdminShell> {
                     leading: Icon(items[index].icon, color: selected ? Colors.white : Colors.white60),
                     title: Text(items[index].label, style: TextStyle(color: selected ? Colors.white : Colors.white70)),
                     selected: selected,
-                    selectedTileColor: Colors.teal.shade700,
+                    selectedTileColor: AppTheme.primaryDark,
                     onTap: () {
                       setState(() => _selectedIndex = index);
                       Navigator.pop(context);

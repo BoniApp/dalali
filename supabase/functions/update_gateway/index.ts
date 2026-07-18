@@ -2,7 +2,7 @@
 // Requires header 'x-admin-secret' matching ADMIN_API_SECRET env var.
 // Deploy to Supabase functions and set ADMIN_API_SECRET, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY env vars.
 
-import { serve } from 'std/server'
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 
 serve(async (req) => {
   try {

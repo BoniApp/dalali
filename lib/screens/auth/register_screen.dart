@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:dalali/config/app_theme.dart';
 import 'package:dalali/models/user_model.dart';
 import 'package:dalali/services/auth_service.dart';
+import 'package:dalali/services/influencer/influencer_service.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -16,6 +18,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  final _referralCodeController = TextEditingController();
   final _authService = AuthService();
 
   bool _isLoading = false;
@@ -29,6 +32,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _phoneController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
+    _referralCodeController.dispose();
     super.dispose();
   }
 
@@ -43,13 +47,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     setState(() => _isLoading = true);
     try {
-      await _authService.registerWithEmail(
+      final newUser = await _authService.registerWithEmail(
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
         fullName: _nameController.text.trim(),
         phone: _phoneController.text.trim(),
         role: _selectedRole,
       );
+      // Optional referral code — fire-and-forget, never blocks registration
+      final referralCode = _referralCodeController.text.trim();
+      if (newUser != null && referralCode.isNotEmpty) {
+        InfluencerService()
+            .applyReferralCode(code: referralCode, userId: newUser.id)
+            .catchError((_) => false);
+      }
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Account created successfully!')),
@@ -168,13 +179,24 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     return null;
                   },
                 ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _referralCodeController,
+                  textCapitalization: TextCapitalization.characters,
+                  decoration: InputDecoration(
+                    labelText: 'Referral Code (Optional)',
+                    prefixIcon: const Icon(Icons.card_giftcard),
+                    hintText: 'e.g. JUMA2024',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
                 const SizedBox(height: 24),
                 SizedBox(
                   height: 50,
                   child: ElevatedButton(
                     onPressed: _isLoading ? null : _register,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.teal,
+                      backgroundColor: AppTheme.primary,
                       foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
