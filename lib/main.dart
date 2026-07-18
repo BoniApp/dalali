@@ -93,8 +93,17 @@ class AuthWrapper extends StatelessWidget {
       stream: AuthService().authStateChanges,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting && appState.currentUser == null) {
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
+          return Scaffold(
+            body: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Image.asset('assets/images/dalali_logo.png', width: 120, height: 120),
+                  const SizedBox(height: 24),
+                  const CircularProgressIndicator(),
+                ],
+              ),
+            ),
           );
         }
 

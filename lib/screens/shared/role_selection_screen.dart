@@ -51,14 +51,13 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                   GestureDetector(
                     onTap: () => _onLogoTap(context),
                     child: Center(
-                      child: Container(
-                        width: 80,
-                        height: 80,
-                        decoration: BoxDecoration(
-                          color: Colors.teal.shade50,
-                          borderRadius: BorderRadius.circular(20),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(20),
+                        child: Image.asset(
+                          'assets/images/dalali_logo.png',
+                          width: 96,
+                          height: 96,
                         ),
-                        child: const Icon(Icons.home_work, size: 40, color: Colors.teal),
                       ),
                     ),
                   ),

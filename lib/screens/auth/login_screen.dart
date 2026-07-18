@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dalali/config/app_theme.dart';
 import 'package:dalali/l10n/app_localizations.dart';
 import 'package:dalali/services/auth_service.dart';
 import 'package:dalali/screens/auth/register_screen.dart';
@@ -63,14 +64,15 @@ class _LoginScreenState extends State<LoginScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   const SizedBox(height: 40),
-                  Container(
-                    width: 80,
-                    height: 80,
-                    decoration: BoxDecoration(
-                      color: Colors.teal.shade50,
+                  Center(
+                    child: ClipRRect(
                       borderRadius: BorderRadius.circular(20),
+                      child: Image.asset(
+                        'assets/images/dalali_logo.png',
+                        width: 96,
+                        height: 96,
+                      ),
                     ),
-                    child: const Icon(Icons.home_work, size: 40, color: Colors.teal),
                   ),
                   const SizedBox(height: 24),
                   Text(
@@ -132,7 +134,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: ElevatedButton(
                       onPressed: _isLoading ? null : _login,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.teal,
+                        backgroundColor: AppTheme.primary,
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
