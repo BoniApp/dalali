@@ -83,6 +83,9 @@ class PropertyModel {
   final String title;
   final String description;
   final String location;
+  final String street;
+  final String district;
+  final String ward;
   final double latitude;
   final double longitude;
   final double rentPrice;
@@ -156,6 +159,9 @@ class PropertyModel {
     required this.title,
     required this.description,
     required this.location,
+    this.street = '',
+    this.district = '',
+    this.ward = '',
     required this.latitude,
     required this.longitude,
     required this.rentPrice,
@@ -265,6 +271,9 @@ class PropertyModel {
     bool? tenancyConfirmed,
     ListingStatus? listingStatus,
     double? rating,
+    String? street,
+    String? district,
+    String? ward,
     int? reviewCount,
     bool? isBoosted,
     DateTime? boostExpiresAt,
@@ -328,6 +337,9 @@ class PropertyModel {
       tenancyConfirmed: tenancyConfirmed ?? this.tenancyConfirmed,
       listingStatus: listingStatus ?? this.listingStatus,
       rating: rating ?? this.rating,
+      street: street ?? this.street,
+      district: district ?? this.district,
+      ward: ward ?? this.ward,
       reviewCount: reviewCount ?? this.reviewCount,
       isBoosted: isBoosted ?? this.isBoosted,
       boostExpiresAt: boostExpiresAt ?? this.boostExpiresAt,

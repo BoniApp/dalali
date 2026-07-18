@@ -213,7 +213,7 @@ class _MaintenanceTab extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               DropdownButtonFormField<MaintenanceCategory>(
-                value: selected,
+                initialValue: selected,
                 decoration: const InputDecoration(labelText: 'Category', border: OutlineInputBorder()),
                 items: categories.map((c) => DropdownMenuItem(
                   value: c,

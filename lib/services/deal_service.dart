@@ -1,4 +1,5 @@
 import 'package:dalali/models/deal_model.dart';
+import 'package:dalali/models/property_model.dart';
 import 'package:dalali/services/data_service.dart';
 
 /// ═══════════════════════════════════════════════════════════════
@@ -98,6 +99,15 @@ class DealService {
       status: DealStatus.tenancyConfirmed,
       confirmedAt: DateTime.now(),
     ));
+
+    final property = await _data.getPropertyById(deal.propertyId);
+    if (property != null) {
+      await _data.updateProperty(property.copyWith(
+        status: PropertyStatus.occupied,
+        listingStatus: ListingStatus.tenancyConfirmed,
+        tenancyConfirmed: true,
+      ));
+    }
   }
 
   Future<void> markAgencyFeePaid(String dealId) async {

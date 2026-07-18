@@ -43,13 +43,13 @@ class AppState extends ChangeNotifier {
   List<NeighbourhoodReportModel> _neighbourhoodReports = [];
   List<TenancyApplicationModel> _tenancyApplications = [];
   List<TenancyModel> _tenancies = [];
-  List<MoveChecklistModel> _moveChecklists = [];
+  final List<MoveChecklistModel> _moveChecklists = [];
   List<MaintenanceRequestModel> _maintenanceRequests = [];
   List<RentScheduleModel> _rentSchedules = [];
   List<NotificationModel> _notifications = [];
 
   // ═══ New Architecture Fields ═══════════════════════════════
-  List<PropertyRegistryModel> _propertyRegistry = [];
+  final List<PropertyRegistryModel> _propertyRegistry = [];
   List<PropertyClaimModel> _myClaims = [];
   List<DealModel> _myDeals = [];
   List<AgencyFeeModel> _myAgencyFees = [];

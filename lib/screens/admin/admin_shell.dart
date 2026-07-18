@@ -9,6 +9,9 @@ import 'package:dalali/screens/admin/withdrawals_admin_screen.dart';
 import 'package:dalali/screens/admin/fraud_admin_screen.dart';
 import 'package:dalali/screens/admin/analytics_admin_screen.dart';
 import 'package:dalali/screens/admin/settings_admin_screen.dart';
+import 'package:dalali/screens/admin/system_control_panel_admin_screen.dart';
+import 'package:dalali/screens/admin/payment_providers_admin_screen.dart';
+import 'package:dalali/screens/admin/commissions_admin_screen.dart';
 import 'package:dalali/screens/admin/disputes_admin_screen.dart';
 import 'package:dalali/screens/admin/property_registry_admin_screen.dart';
 import 'package:dalali/screens/admin/property_claims_admin_screen.dart';
@@ -37,7 +40,23 @@ class _AdminShellState extends State<AdminShell> {
 
   List<_NavItem> get _allItems => [
     _NavItem(icon: Icons.dashboard, label: 'Dashboard', screenBuilder: () => const DashboardAdminScreen()),
+    _NavItem(icon: Icons.admin_panel_settings, label: 'System Control', screenBuilder: () => SystemControlPanelAdminScreen(
+      adminId: widget.adminId,
+      adminName: widget.adminName,
+      adminRole: widget.adminRole,
+    )),
     _NavItem(icon: Icons.account_balance_wallet, label: 'Wallets', screenBuilder: () => const WalletsAdminScreen()),
+    _NavItem(icon: Icons.payment, label: 'Payments', screenBuilder: () => const TransactionsAdminScreen()),
+    _NavItem(icon: Icons.monetization_on, label: 'Commissions', screenBuilder: () => CommissionsAdminScreen(
+      adminId: widget.adminId,
+      adminName: widget.adminName,
+      adminRole: widget.adminRole,
+    )),
+    _NavItem(icon: Icons.connect_without_contact, label: 'Providers', screenBuilder: () => PaymentProvidersAdminScreen(
+      adminId: widget.adminId,
+      adminName: widget.adminName,
+      adminRole: widget.adminRole,
+    )),
     _NavItem(icon: Icons.receipt_long, label: 'Transactions', screenBuilder: () => const TransactionsAdminScreen()),
     _NavItem(icon: Icons.home_work, label: 'Listings', screenBuilder: () => ListingsAdminScreen(
       adminId: widget.adminId,

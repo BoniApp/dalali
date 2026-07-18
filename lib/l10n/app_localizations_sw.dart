@@ -1,3 +1,5 @@
+// ignore: unused_import
+import 'package:intl/intl.dart' as intl;
 import 'app_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -347,7 +349,8 @@ class AppLocalizationsSw extends AppLocalizations {
   String get accountVerification => 'Uthibitisho wa Akaunti';
 
   @override
-  String get verifyAccountDescription => 'Ili kuthibitisha akaunti yako, unahitaji kutoa:';
+  String get verifyAccountDescription =>
+      'Ili kuthibitisha akaunti yako, unahitaji kutoa:';
 
   @override
   String get nidaRequired => 'Kitambulisho cha Taifa (NIDA)';
@@ -356,7 +359,8 @@ class AppLocalizationsSw extends AppLocalizations {
   String get phoneVerificationRequired => 'Uthibitisho wa namba ya simu';
 
   @override
-  String get verifiedUsersBenefit => 'Watumiaji walioithibitisha wanapata nembo na kuaminika zaidi na wateja.';
+  String get verifiedUsersBenefit =>
+      'Watumiaji walioithibitisha wanapata nembo na kuaminika zaidi na wateja.';
 
   @override
   String get later => 'Baadaye';
@@ -389,7 +393,8 @@ class AppLocalizationsSw extends AppLocalizations {
   String get agencyFeeHistory => 'Historia ya Ada ya Wakala';
 
   @override
-  String get noEarningsYet => 'Hakuna mapato bado. Orodhesha mali kuanza kupata!';
+  String get noEarningsYet =>
+      'Hakuna mapato bado. Orodhesha mali kuanza kupata!';
 
   @override
   String get opportunityFeed => 'Lishe ya Fursa';

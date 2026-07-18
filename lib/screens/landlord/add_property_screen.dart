@@ -7,6 +7,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:dalali/models/property_model.dart';
 import 'package:dalali/models/user_model.dart';
 import 'package:dalali/providers/app_state.dart';
+import 'package:dalali/services/location_service.dart';
 import 'package:dalali/services/storage_service.dart';
 import 'package:dalali/services/app_settings.dart';
 import 'package:dalali/services/property_registry_service.dart';
@@ -14,54 +15,6 @@ import 'package:dalali/utils/helpers.dart';
 import 'package:dalali/l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:dalali/screens/claims/claim_property_screen.dart';
-
-/// Built-in coordinates for common Tanzanian areas.
-/// Users only type the location name; we resolve lat/lng automatically.
-final Map<String, LatLng> tzLocations = {
-  'masaki, dar es salaam': const LatLng(-6.7480, 39.2710),
-  'mikocheni, dar es salaam': const LatLng(-6.7630, 39.2500),
-  'oyster bay, dar es salaam': const LatLng(-6.7400, 39.2800),
-  'upanga, dar es salaam': const LatLng(-6.8100, 39.2700),
-  'kariakoo, dar es salaam': const LatLng(-6.8200, 39.2700),
-  'kijitonyama, dar es salaam': const LatLng(-6.7700, 39.2400),
-  'ubungo, dar es salaam': const LatLng(-6.7924, 39.2083),
-  'buguruni, dar es salaam': const LatLng(-6.8330, 39.2200),
-  'tandika, dar es salaam': const LatLng(-6.8600, 39.2300),
-  'changombe, dar es salaam': const LatLng(-6.8400, 39.2100),
-  'makuburi, dar es salaam': const LatLng(-6.8050, 39.2150),
-  'kiwalani, dar es salaam': const LatLng(-6.8550, 39.2050),
-  'gongolamboto, dar es salaam': const LatLng(-6.8700, 39.1900),
-  'kawe, dar es salaam': const LatLng(-6.7200, 39.2600),
-  'kinondoni, dar es salaam': const LatLng(-6.7800, 39.2300),
-  'ilala, dar es salaam': const LatLng(-6.8250, 39.2700),
-  'temeke, dar es salaam': const LatLng(-6.8500, 39.2500),
-  'city centre, dodoma': const LatLng(-6.1731, 35.7419),
-  'nyamagana, mwanza': const LatLng(-2.5167, 32.9000),
-  'ilemela, mwanza': const LatLng(-2.5200, 32.9200),
-  'arusha city, arusha': const LatLng(-3.3869, 36.6830),
-  'moshi, kilimanjaro': const LatLng(-3.3400, 37.3400),
-  'mbeya city, mbeya': const LatLng(-8.9100, 33.4500),
-  'morogoro, morogoro': const LatLng(-6.8200, 37.6600),
-  'tanga, tanga': const LatLng(-5.0700, 39.1000),
-  'zanzibar city, zanzibar': const LatLng(-6.1659, 39.2026),
-  'stone town, zanzibar': const LatLng(-6.1622, 39.1921),
-};
-
-LatLng resolveCoordinates(String location) {
-  final key = location.toLowerCase().trim();
-  // Exact match
-  if (tzLocations.containsKey(key)) {
-    return tzLocations[key]!;
-  }
-  // Partial match — check if any known area name appears in the input
-  for (final entry in tzLocations.entries) {
-    if (key.contains(entry.key.split(',').first.trim())) {
-      return entry.value;
-    }
-  }
-  // Default to central Dar es Salaam
-  return const LatLng(-6.7924, 39.2083);
-}
 
 class AddPropertyScreen extends StatefulWidget {
   const AddPropertyScreen({super.key});
@@ -75,9 +28,14 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _locationController = TextEditingController();
+  final _streetController = TextEditingController();
+  final _otherWardController = TextEditingController();
   final _priceController = TextEditingController();
 
   LatLng _pin = const LatLng(-6.7924, 39.2083);
+  String _selectedDistrict = LocationService.districtWards.keys.first;
+  String _selectedWard = LocationService.districtWards.values.first.first;
+  bool _isDetectingAddress = false;
 
   int _bedrooms = 2;
   int _bathrooms = 1;
@@ -117,18 +75,44 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
     _titleController.dispose();
     _descriptionController.dispose();
     _locationController.dispose();
+    _streetController.dispose();
+    _otherWardController.dispose();
     _priceController.dispose();
     _depositController.dispose();
     super.dispose();
   }
 
-  void _updatePinFromLocation() {
+  Future<void> _updatePinFromLocation() async {
     final loc = _locationController.text;
-    if (loc.isNotEmpty) {
-      setState(() {
-        _pin = resolveCoordinates(loc);
-      });
-    }
+    if (loc.isEmpty) return;
+
+    setState(() {
+      _pin = LocationService.resolveCoordinates(loc);
+      _isDetectingAddress = true;
+    });
+
+    final address = await LocationService.reverseGeocodeAddress(_pin.latitude, _pin.longitude);
+    final districtWard = LocationService.resolveDistrictWard(loc);
+
+    setState(() {
+      final candidateDistrict = address['district']?.isNotEmpty == true && LocationService.districtWards.containsKey(address['district'])
+          ? address['district']!
+          : districtWard['district'] ?? _selectedDistrict;
+      final candidateWard = address['ward']?.isNotEmpty == true ? address['ward']! : districtWard['ward'] ?? _selectedWard;
+      _selectedDistrict = candidateDistrict;
+      if (LocationService.districtWards[candidateDistrict]?.contains(candidateWard) == true) {
+        _selectedWard = candidateWard;
+        _otherWardController.clear();
+      } else if (candidateWard.isNotEmpty) {
+        _selectedWard = LocationService.otherOption;
+        _otherWardController.text = candidateWard;
+      } else {
+        _selectedWard = LocationService.districtWards[candidateDistrict]!.first;
+        _otherWardController.clear();
+      }
+      _streetController.text = address['street'] ?? _streetController.text;
+      _isDetectingAddress = false;
+    });
   }
 
   Future<void> _pickImage(ImageSource source) async {
@@ -204,6 +188,91 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
                 validator: (v) => v == null || v.isEmpty ? 'Required' : null,
                 onChanged: (_) => _updatePinFromLocation(),
               ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _streetController,
+                decoration: const InputDecoration(
+                  labelText: 'Street Name',
+                  border: OutlineInputBorder(),
+                  suffixIcon: Icon(Icons.streetview),
+                ),
+                validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: DropdownButtonFormField<String>(
+                      value: _selectedDistrict,
+                      decoration: const InputDecoration(
+                        labelText: 'District',
+                        border: OutlineInputBorder(),
+                      ),
+                      items: LocationService.districtWards.keys.map((district) {
+                        return DropdownMenuItem(value: district, child: Text(district));
+                      }).toList(),
+                      onChanged: (value) {
+                        if (value == null) return;
+                        setState(() {
+                          _selectedDistrict = value;
+                          _selectedWard = LocationService.districtWards[value]!.first;
+                          _otherWardController.clear();
+                        });
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: DropdownButtonFormField<String>(
+                      value: _selectedWard,
+                      decoration: const InputDecoration(
+                        labelText: 'Ward',
+                        border: OutlineInputBorder(),
+                      ),
+                      items: LocationService.districtWards[_selectedDistrict]!
+                          .map((ward) => DropdownMenuItem(value: ward, child: Text(ward)))
+                          .toList(),
+                      onChanged: (value) {
+                        if (value == null) return;
+                        setState(() {
+                          _selectedWard = value;
+                          if (value != LocationService.otherOption) {
+                            _otherWardController.clear();
+                          }
+                        });
+                      },
+                    ),
+                  ),
+                ],
+              ),
+              if (_selectedWard == LocationService.otherOption)
+                Padding(
+                  padding: const EdgeInsets.only(top: 12),
+                  child: TextFormField(
+                    controller: _otherWardController,
+                    decoration: const InputDecoration(
+                      labelText: 'Enter Ward Name',
+                      border: OutlineInputBorder(),
+                    ),
+                    validator: (value) {
+                      if (_selectedWard == LocationService.otherOption && (value == null || value.trim().isEmpty)) {
+                        return 'Enter ward name';
+                      }
+                      return null;
+                    },
+                  ),
+                ),
+              if (_isDetectingAddress)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  child: Row(
+                    children: const [
+                      SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)),
+                      SizedBox(width: 12),
+                      Text('Detecting street and ward...'),
+                    ],
+                  ),
+                ),
               const SizedBox(height: 8),
 
               // ─── Map Preview ────────────────────────────────────────
@@ -366,7 +435,7 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
               const Text('Property Details', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               const SizedBox(height: 12),
               DropdownButtonFormField<PropertyType>(
-                value: _propertyType,
+                initialValue: _propertyType,
                 decoration: const InputDecoration(labelText: 'Property Type', border: OutlineInputBorder()),
                 items: PropertyType.values.map((t) => DropdownMenuItem(
                   value: t,
@@ -503,7 +572,7 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
               const Text('Listing Options', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               const SizedBox(height: 12),
               DropdownButtonFormField<ListingType>(
-                value: _listingType,
+                initialValue: _listingType,
                 decoration: const InputDecoration(labelText: 'Listing Type', border: OutlineInputBorder()),
                 items: [
                   const DropdownMenuItem(value: ListingType.basic, child: Text('Basic (Free)')),
@@ -522,7 +591,7 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
                 ),
               const SizedBox(height: 12),
               DropdownButtonFormField<PropertyStatus>(
-                value: _status,
+                initialValue: _status,
                 decoration: const InputDecoration(labelText: 'Status', border: OutlineInputBorder()),
                 items: PropertyStatus.values.map((s) => DropdownMenuItem(
                   value: s,
@@ -567,7 +636,7 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<PaymentTerm>(
-                value: _minimumAcceptedTerm,
+                initialValue: _minimumAcceptedTerm,
                 decoration: const InputDecoration(labelText: 'Minimum Accepted Term', border: OutlineInputBorder()),
                 items: _paymentOptions.map((term) => DropdownMenuItem(
                   value: term,
@@ -771,6 +840,9 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
       title: _titleController.text,
       description: _descriptionController.text,
       location: _locationController.text,
+      street: _streetController.text,
+      district: _selectedDistrict,
+      ward: _selectedWard == LocationService.otherOption ? _otherWardController.text.trim() : _selectedWard,
       latitude: _pin.latitude,
       longitude: _pin.longitude,
       rentPrice: rent,

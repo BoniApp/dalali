@@ -119,6 +119,32 @@ class WithdrawalsAdminScreen extends StatelessWidget {
                                       }
                                     },
                                   ),
+                                if (status == 'processing')
+                                  IconButton(
+                                    icon: const Icon(Icons.send, color: Colors.blue, size: 18),
+                                    tooltip: 'Execute Payout',
+                                    onPressed: () async {
+                                      try {
+                                        await AdminService().executeWithdrawal(
+                                          adminId: adminId,
+                                          adminName: adminName,
+                                          adminRole: adminRole,
+                                          withdrawalId: withdrawalId,
+                                        );
+                                        if (context.mounted) {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            const SnackBar(content: Text('Payout executed')),
+                                          );
+                                        }
+                                      } catch (e) {
+                                        if (context.mounted) {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+                                          );
+                                        }
+                                      }
+                                    },
+                                  ),
                               ],
                             )),
                           ],

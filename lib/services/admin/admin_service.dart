@@ -1,5 +1,9 @@
+import 'dart:convert';
+
+import 'package:dalali/config/supabase_config.dart';
 import 'package:dalali/models/admin/admin_user_model.dart';
 import 'package:dalali/services/supabase_service.dart';
+import 'package:http/http.dart' as http;
 
 /// Centralized admin service for dashboard operations.
 /// All write operations log to admin_logs table automatically.
@@ -262,6 +266,43 @@ class AdminService {
       adminName: adminName,
       adminRole: adminRole,
       action: 'reject_withdrawal',
+      targetCollection: 'withdrawals',
+      targetId: withdrawalId,
+    );
+  }
+
+  /// Execute the payout by invoking the `process_withdrawal` Edge Function.
+  /// Uses the current admin's access token for authorization.
+  Future<void> executeWithdrawal({
+    required String adminId,
+    required String adminName,
+    required AdminRole adminRole,
+    required String withdrawalId,
+  }) async {
+    final session = SupabaseService.client.auth.currentSession;
+    final token = session?.accessToken;
+    if (token == null) throw Exception('Not authenticated');
+
+    final functionsHost = SupabaseConfig.url.replaceFirst('.supabase.co', '.functions.supabase.co');
+    final url = Uri.parse('$functionsHost/process_withdrawal');
+    final resp = await http.post(
+      url,
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+      body: json.encode({'withdrawal_id': withdrawalId}),
+    );
+
+    if (resp.statusCode < 200 || resp.statusCode >= 300) {
+      throw Exception('Payout execution failed: ${resp.statusCode} ${resp.body}');
+    }
+
+    await _logAction(
+      adminId: adminId,
+      adminName: adminName,
+      adminRole: adminRole,
+      action: 'execute_withdrawal',
       targetCollection: 'withdrawals',
       targetId: withdrawalId,
     );

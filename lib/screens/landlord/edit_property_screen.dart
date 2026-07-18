@@ -9,9 +9,8 @@ import 'package:dalali/providers/app_state.dart';
 import 'package:dalali/services/storage_service.dart';
 import 'package:dalali/services/app_settings.dart';
 import 'package:dalali/utils/helpers.dart';
+import 'package:dalali/services/location_service.dart';
 import 'package:provider/provider.dart';
-
-import 'add_property_screen.dart' show resolveCoordinates;
 
 class EditPropertyScreen extends StatefulWidget {
   final PropertyModel property;
@@ -27,8 +26,13 @@ class _EditPropertyScreenState extends State<EditPropertyScreen> {
   late final TextEditingController _titleController;
   late final TextEditingController _descriptionController;
   late final TextEditingController _locationController;
+  late final TextEditingController _streetController;
+  late final TextEditingController _otherWardController;
   late final TextEditingController _priceController;
 
+  String _selectedDistrict = LocationService.districtWards.keys.first;
+  String _selectedWard = LocationService.districtWards.values.first.first;
+  bool _isDetectingAddress = false;
   late LatLng _pin;
   late int _bedrooms;
   late int _bathrooms;
@@ -71,7 +75,20 @@ class _EditPropertyScreenState extends State<EditPropertyScreen> {
     _titleController = TextEditingController(text: p.title);
     _descriptionController = TextEditingController(text: p.description);
     _locationController = TextEditingController(text: p.location);
+    _streetController = TextEditingController(text: p.street);
     _priceController = TextEditingController(text: p.rentPrice.toStringAsFixed(0));
+    _selectedDistrict = p.district.isNotEmpty ? p.district : LocationService.districtWards.keys.first;
+    final savedWard = p.ward.isNotEmpty ? p.ward : LocationService.districtWards[_selectedDistrict]!.first;
+    if (savedWard.isNotEmpty && LocationService.districtWards[_selectedDistrict]!.contains(savedWard)) {
+      _selectedWard = savedWard;
+      _otherWardController = TextEditingController();
+    } else if (savedWard.isNotEmpty) {
+      _selectedWard = LocationService.otherOption;
+      _otherWardController = TextEditingController(text: savedWard);
+    } else {
+      _selectedWard = LocationService.districtWards[_selectedDistrict]!.first;
+      _otherWardController = TextEditingController();
+    }
     _pin = LatLng(p.latitude, p.longitude);
     _bedrooms = p.bedrooms;
     _bathrooms = p.bathrooms;
@@ -106,18 +123,44 @@ class _EditPropertyScreenState extends State<EditPropertyScreen> {
     _titleController.dispose();
     _descriptionController.dispose();
     _locationController.dispose();
+    _streetController.dispose();
+    _otherWardController.dispose();
     _priceController.dispose();
     _depositController.dispose();
     super.dispose();
   }
 
-  void _updatePinFromLocation() {
+  Future<void> _updatePinFromLocation() async {
     final loc = _locationController.text;
-    if (loc.isNotEmpty) {
-      setState(() {
-        _pin = resolveCoordinates(loc);
-      });
-    }
+    if (loc.isEmpty) return;
+
+    setState(() {
+      _pin = LocationService.resolveCoordinates(loc);
+      _isDetectingAddress = true;
+    });
+
+    final address = await LocationService.reverseGeocodeAddress(_pin.latitude, _pin.longitude);
+    final districtWard = LocationService.resolveDistrictWard(loc);
+
+    setState(() {
+      final candidateDistrict = address['district']?.isNotEmpty == true && LocationService.districtWards.containsKey(address['district'])
+          ? address['district']!
+          : districtWard['district'] ?? _selectedDistrict;
+      final candidateWard = address['ward']?.isNotEmpty == true ? address['ward']! : districtWard['ward'] ?? _selectedWard;
+      _selectedDistrict = candidateDistrict;
+      if (LocationService.districtWards[candidateDistrict]?.contains(candidateWard) == true) {
+        _selectedWard = candidateWard;
+        _otherWardController.clear();
+      } else if (candidateWard.isNotEmpty) {
+        _selectedWard = LocationService.otherOption;
+        _otherWardController.text = candidateWard;
+      } else {
+        _selectedWard = LocationService.districtWards[candidateDistrict]!.first;
+        _otherWardController.clear();
+      }
+      _streetController.text = address['street'] ?? _streetController.text;
+      _isDetectingAddress = false;
+    });
   }
 
   Future<void> _pickImage(ImageSource source) async {
@@ -198,6 +241,90 @@ class _EditPropertyScreenState extends State<EditPropertyScreen> {
                 validator: (v) => v == null || v.isEmpty ? 'Required' : null,
                 onChanged: (_) => _updatePinFromLocation(),
               ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _streetController,
+                decoration: const InputDecoration(
+                  labelText: 'Street Name',
+                  border: OutlineInputBorder(),
+                  suffixIcon: Icon(Icons.streetview),
+                ),
+                validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: DropdownButtonFormField<String>(
+                      value: _selectedDistrict,
+                      decoration: const InputDecoration(
+                        labelText: 'District',
+                        border: OutlineInputBorder(),
+                      ),
+                      items: LocationService.districtWards.keys.map((district) {
+                        return DropdownMenuItem(value: district, child: Text(district));
+                      }).toList(),
+                      onChanged: (value) {
+                        if (value == null) return;
+                        setState(() {
+                          _selectedDistrict = value;
+                          _selectedWard = LocationService.districtWards[value]!.first;
+                        });
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: DropdownButtonFormField<String>(
+                      value: _selectedWard,
+                      decoration: const InputDecoration(
+                        labelText: 'Ward',
+                        border: OutlineInputBorder(),
+                      ),
+                      items: LocationService.districtWards[_selectedDistrict]!
+                          .map((ward) => DropdownMenuItem(value: ward, child: Text(ward)))
+                          .toList(),
+                      onChanged: (value) {
+                        if (value == null) return;
+                        setState(() {
+                          _selectedWard = value;
+                          if (value != LocationService.otherOption) {
+                            _otherWardController.clear();
+                          }
+                        });
+                      },
+                    ),
+                  ),
+                ],
+              ),
+              if (_selectedWard == LocationService.otherOption)
+                Padding(
+                  padding: const EdgeInsets.only(top: 12),
+                  child: TextFormField(
+                    controller: _otherWardController,
+                    decoration: const InputDecoration(
+                      labelText: 'Enter Ward Name',
+                      border: OutlineInputBorder(),
+                    ),
+                    validator: (value) {
+                      if (_selectedWard == LocationService.otherOption && (value == null || value.trim().isEmpty)) {
+                        return 'Enter ward name';
+                      }
+                      return null;
+                    },
+                  ),
+                ),
+              if (_isDetectingAddress)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  child: Row(
+                    children: const [
+                      SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)),
+                      SizedBox(width: 12),
+                      Text('Detecting street and ward...'),
+                    ],
+                  ),
+                ),
               const SizedBox(height: 8),
 
               // ─── Map Preview ────────────────────────────────────────
@@ -380,7 +507,7 @@ class _EditPropertyScreenState extends State<EditPropertyScreen> {
               const Text('Property Details', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               const SizedBox(height: 12),
               DropdownButtonFormField<PropertyType>(
-                value: _propertyType,
+                initialValue: _propertyType,
                 decoration: const InputDecoration(labelText: 'Property Type', border: OutlineInputBorder()),
                 items: PropertyType.values.map((t) => DropdownMenuItem(
                   value: t,
@@ -517,7 +644,7 @@ class _EditPropertyScreenState extends State<EditPropertyScreen> {
               const Text('Listing Options', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               const SizedBox(height: 12),
               DropdownButtonFormField<ListingType>(
-                value: _listingType,
+                initialValue: _listingType,
                 decoration: const InputDecoration(labelText: 'Listing Type', border: OutlineInputBorder()),
                 items: [
                   const DropdownMenuItem(value: ListingType.basic, child: Text('Basic (Free)')),
@@ -536,7 +663,7 @@ class _EditPropertyScreenState extends State<EditPropertyScreen> {
                 ),
               const SizedBox(height: 12),
               DropdownButtonFormField<PropertyStatus>(
-                value: _status,
+                initialValue: _status,
                 decoration: const InputDecoration(labelText: 'Status', border: OutlineInputBorder()),
                 items: PropertyStatus.values.map((s) => DropdownMenuItem(
                   value: s,
@@ -580,7 +707,7 @@ class _EditPropertyScreenState extends State<EditPropertyScreen> {
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<PaymentTerm>(
-                value: _minimumAcceptedTerm,
+                initialValue: _minimumAcceptedTerm,
                 decoration: const InputDecoration(labelText: 'Minimum Accepted Term', border: OutlineInputBorder()),
                 items: _paymentOptions.map((term) => DropdownMenuItem(
                   value: term,
@@ -747,6 +874,9 @@ class _EditPropertyScreenState extends State<EditPropertyScreen> {
       hasAirConditioning: _hasAirConditioning,
       hasFittedKitchen: _hasFittedKitchen,
       images: imageUrls,
+      street: _streetController.text,
+      district: _selectedDistrict,
+      ward: _selectedWard == LocationService.otherOption ? _otherWardController.text.trim() : _selectedWard,
       status: _status,
       listingType: _listingType,
       updatedAt: DateTime.now(),
@@ -785,7 +915,7 @@ class _EditPropertyScreenState extends State<EditPropertyScreen> {
           );
         }
 
-        Navigator.pop(context);
+        Navigator.pop(context, updatedProperty);
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error saving property: $e'), backgroundColor: Colors.red),

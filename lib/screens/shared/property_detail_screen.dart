@@ -42,6 +42,14 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
     _incrementView();
   }
 
+  @override
+  void didUpdateWidget(covariant PropertyDetailScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.property.id != oldWidget.property.id) {
+      _property = widget.property;
+    }
+  }
+
   Future<void> _incrementView() async {
     try {
       await DataService().incrementPropertyView(_property.id, _property.viewCount);

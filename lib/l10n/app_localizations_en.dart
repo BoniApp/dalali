@@ -1,3 +1,5 @@
+// ignore: unused_import
+import 'package:intl/intl.dart' as intl;
 import 'app_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -347,7 +349,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accountVerification => 'Account Verification';
 
   @override
-  String get verifyAccountDescription => 'To verify your account, you need to provide:';
+  String get verifyAccountDescription =>
+      'To verify your account, you need to provide:';
 
   @override
   String get nidaRequired => 'National ID (NIDA)';
@@ -356,7 +359,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get phoneVerificationRequired => 'Phone number verification';
 
   @override
-  String get verifiedUsersBenefit => 'Verified users get a badge and more trust from clients.';
+  String get verifiedUsersBenefit =>
+      'Verified users get a badge and more trust from clients.';
 
   @override
   String get later => 'Later';
@@ -389,7 +393,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get agencyFeeHistory => 'Agency Fee History';
 
   @override
-  String get noEarningsYet => 'No earnings yet. List a property to start earning!';
+  String get noEarningsYet =>
+      'No earnings yet. List a property to start earning!';
 
   @override
   String get opportunityFeed => 'Opportunity Feed';

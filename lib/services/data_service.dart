@@ -67,6 +67,12 @@ class DataService {
     return rows.map(_propertyFromJson).toList();
   }
 
+  Future<PropertyModel?> getPropertyById(String id) async {
+    final data = await _db.from('properties').select().eq('id', id).maybeSingle();
+    if (data == null) return null;
+    return _propertyFromJson(data);
+  }
+
   Future<void> addProperty(PropertyModel property) async {
     final json = _propertyToJson(property);
     try {
@@ -497,6 +503,9 @@ class DataService {
       registryId: json['registry_id'],
       agencyFeeEligible: json['agency_fee_eligible'] ?? false,
       tenancyConfirmed: json['tenancy_confirmed'] ?? false,
+      street: json['street'] ?? '',
+      district: json['district'] ?? '',
+      ward: json['ward'] ?? '',
       listingStatus: ListingStatus.values.firstWhere(
         (e) => e.name == json['listing_status'],
         orElse: () => ListingStatus.draft,
@@ -579,6 +588,9 @@ class DataService {
       'registry_id': p.registryId,
       'agency_fee_eligible': p.agencyFeeEligible,
       'tenancy_confirmed': p.tenancyConfirmed,
+      'street': p.street,
+      'district': p.district,
+      'ward': p.ward,
       'listing_status': p.listingStatus.name,
       'created_at': p.createdAt.toIso8601String(),
       'view_count': p.viewCount,
