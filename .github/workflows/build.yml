@@ -22,7 +22,9 @@ jobs:
           distribution: 'temurin'
 
       - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y android-sdk-platform-34 android-sdk-build-tools-34.0.0
 
       - name: Add swap space
         run: |
