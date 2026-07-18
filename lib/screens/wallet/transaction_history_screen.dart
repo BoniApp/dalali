@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dalali/config/app_theme.dart';
 import 'package:dalali/models/wallet_model.dart';
 import 'package:dalali/providers/app_state.dart';
 import 'package:dalali/services/wallet_service.dart';
@@ -35,7 +36,7 @@ class TransactionHistoryScreen extends StatelessWidget {
       case TransactionStatus.available:
         return Colors.green;
       case TransactionStatus.completed:
-        return Colors.teal;
+        return AppTheme.primary;
       case TransactionStatus.failed:
         return Colors.red;
       case TransactionStatus.reversed:
@@ -65,7 +66,7 @@ class TransactionHistoryScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Transaction History'),
-        backgroundColor: Colors.teal,
+        backgroundColor: AppTheme.primary,
         foregroundColor: Colors.white,
       ),
       body: user == null

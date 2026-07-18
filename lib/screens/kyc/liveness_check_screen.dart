@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dalali/config/app_theme.dart';
 import 'package:dalali/services/kyc/kyc_service.dart';
 import 'package:dalali/services/kyc/liveness_service.dart';
 import 'package:dalali/screens/kyc/verification_pending_screen.dart';
@@ -93,10 +94,10 @@ class _LivenessCheckScreenState extends State<LivenessCheckScreen> {
                 width: 160,
                 height: 160,
                 decoration: BoxDecoration(
-                  color: Colors.teal.withAlpha(30),
+                  color: AppTheme.primary.withAlpha(30),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.face, size: 80, color: Colors.teal),
+                child: const Icon(Icons.face, size: 80, color: AppTheme.primary),
               ),
               const SizedBox(height: 24),
               const Text(

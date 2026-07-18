@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dalali/config/app_theme.dart';
 import 'package:dalali/utils/helpers.dart';
 import 'package:fl_chart/fl_chart.dart';
 
@@ -116,7 +117,7 @@ class _TopLocationsChart extends StatelessWidget {
         borderData: FlBorderData(show: false),
         barGroups: List.generate(5, (i) => BarChartGroupData(
           x: i,
-          barRods: [BarChartRodData(toY: [45, 38, 32, 28, 25][i].toDouble(), color: Colors.teal, width: 24, borderRadius: const BorderRadius.vertical(top: Radius.circular(4)))],
+          barRods: [BarChartRodData(toY: [45, 38, 32, 28, 25][i].toDouble(), color: AppTheme.primary, width: 24, borderRadius: const BorderRadius.vertical(top: Radius.circular(4)))],
         )),
       ),
     );
@@ -131,7 +132,7 @@ class _ConversionFunnel extends StatelessWidget {
       children: [
         _FunnelRow(label: 'Property Views', value: 12450, max: 12450, color: Colors.blue),
         const SizedBox(height: 8),
-        _FunnelRow(label: 'Inquiries', value: 3200, max: 12450, color: Colors.teal),
+        _FunnelRow(label: 'Inquiries', value: 3200, max: 12450, color: AppTheme.primary),
         const SizedBox(height: 8),
         _FunnelRow(label: 'Viewings Scheduled', value: 1800, max: 12450, color: Colors.amber),
         const SizedBox(height: 8),
@@ -186,7 +187,7 @@ class _TopAgentsChart extends StatelessWidget {
     ];
     return Column(
       children: agents.map((a) => ListTile(
-        leading: CircleAvatar(backgroundColor: Colors.teal.shade100, child: Text(a.$1[0], style: const TextStyle(color: Colors.teal, fontWeight: FontWeight.bold))),
+        leading: CircleAvatar(backgroundColor: AppTheme.primary.withAlpha(26), child: Text(a.$1[0], style: const TextStyle(color: AppTheme.primary, fontWeight: FontWeight.bold))),
         title: Text(a.$1, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
         subtitle: Text('${a.$2} deals', style: TextStyle(fontSize: 11, color: Colors.grey[600])),
         trailing: Text(Helpers.formatPrice(a.$3.toDouble()), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),

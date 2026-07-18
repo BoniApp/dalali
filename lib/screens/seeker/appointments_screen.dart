@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dalali/config/app_theme.dart';
 import 'package:dalali/providers/app_state.dart';
 // import 'package:dalali/models/appointment_model.dart';
 import 'package:dalali/utils/helpers.dart';
@@ -14,7 +15,7 @@ class AppointmentsScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('My Appointments'),
-        backgroundColor: Colors.teal,
+        backgroundColor: AppTheme.primary,
         foregroundColor: Colors.white,
       ),
       body: appointments.isEmpty

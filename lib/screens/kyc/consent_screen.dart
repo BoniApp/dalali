@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dalali/config/app_theme.dart';
 import 'package:dalali/l10n/app_localizations.dart';
 import 'package:dalali/services/kyc/kyc_service.dart';
 import 'package:dalali/screens/kyc/id_type_selection_screen.dart';
@@ -52,7 +53,7 @@ class _ConsentScreenState extends State<ConsentScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Icon(Icons.verified_user, size: 48, color: Colors.teal),
+              const Icon(Icons.verified_user, size: 48, color: AppTheme.primary),
               const SizedBox(height: 16),
               const Text(
                 'Verify Your Identity',
@@ -132,7 +133,7 @@ class _ConsentItem extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: Colors.teal),
+          Icon(icon, color: AppTheme.primary),
           const SizedBox(width: 12),
           Expanded(
             child: Column(

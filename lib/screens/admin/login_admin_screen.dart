@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:dalali/config/app_theme.dart';
 import 'package:dalali/models/admin/admin_user_model.dart';
 import 'package:dalali/screens/admin/admin_shell.dart';
 import 'package:dalali/services/supabase_service.dart';
@@ -91,7 +92,7 @@ class _LoginAdminScreenState extends State<LoginAdminScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.admin_panel_settings, size: 64, color: Colors.teal.shade700),
+              Icon(Icons.admin_panel_settings, size: 64, color: AppTheme.primaryDark),
               const SizedBox(height: 24),
               const Text(
                 'Dalali Admin',
@@ -148,7 +149,7 @@ class _LoginAdminScreenState extends State<LoginAdminScreen> {
                 child: ElevatedButton(
                   onPressed: _isLoading ? null : _login,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.teal.shade700,
+                    backgroundColor: AppTheme.primaryDark,
                     foregroundColor: Colors.white,
                   ),
                   child: _isLoading

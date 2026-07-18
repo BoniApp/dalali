@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dalali/config/app_theme.dart';
 import 'package:dalali/models/property_model.dart';
 import 'package:dalali/providers/app_state.dart';
 import 'package:provider/provider.dart';
@@ -141,7 +142,7 @@ class PropertyCard extends StatelessWidget {
                     style: const TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.bold,
-                      color: Colors.teal,
+                      color: AppTheme.primary,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -163,7 +164,7 @@ class PropertyCard extends StatelessWidget {
                     runSpacing: 2,
                     children: [
                       ...property.paymentOptions.take(3).map((term) =>
-                        _Chip(Helpers.paymentTermLabel(term), Colors.teal.shade50, Colors.teal.shade800),
+                        _Chip(Helpers.paymentTermLabel(term), AppTheme.primary.withAlpha(13), AppTheme.primaryDark),
                       ),
                       if (property.paymentOptions.length > 3)
                         _Chip('+${property.paymentOptions.length - 3} more', Colors.grey.shade100, Colors.grey.shade700),
@@ -198,7 +199,7 @@ class PropertyCard extends StatelessWidget {
                       if (property.hasGarden)
                         _Chip('Garden', Colors.lightGreen.shade100, Colors.lightGreen.shade800),
                       if (property.petFriendly)
-                        _Chip('Pets', Colors.teal.shade100, Colors.teal.shade800),
+                        _Chip('Pets', AppTheme.primary.withAlpha(26), AppTheme.primaryDark),
                     ],
                   ),
                 ],

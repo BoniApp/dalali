@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dalali/config/app_theme.dart';
 import 'package:dalali/models/admin/admin_user_model.dart';
 import 'package:dalali/services/admin/admin_service.dart';
 import 'package:intl/intl.dart';
@@ -144,7 +145,7 @@ class UsersAdminScreen extends StatelessWidget {
   Color _roleColor(String role) {
     return switch (role.toLowerCase()) {
       'seeker' => Colors.blue,
-      'landlord' => Colors.teal,
+      'landlord' => AppTheme.primary,
       'agent' => Colors.purple,
       _ => Colors.grey,
     };

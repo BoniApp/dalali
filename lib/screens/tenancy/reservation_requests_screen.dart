@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dalali/config/app_theme.dart';
 import 'package:dalali/models/property_model.dart';
 import 'package:dalali/models/tenancy_application_model.dart';
 import 'package:dalali/models/user_model.dart';
@@ -17,7 +18,7 @@ class ReservationRequestsScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(isLandlord ? 'Reservation Approvals' : 'My Applications'),
-        backgroundColor: Colors.teal,
+        backgroundColor: AppTheme.primary,
         foregroundColor: Colors.white,
       ),
       body: isLandlord
@@ -214,7 +215,7 @@ class ApplyForTenancyButton extends StatelessWidget {
       onPressed: () => _submitApplication(context, appState, user),
       icon: const Icon(Icons.send),
       label: const Text('Apply to Rent'),
-      style: ElevatedButton.styleFrom(backgroundColor: Colors.teal, foregroundColor: Colors.white),
+      style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primary, foregroundColor: Colors.white),
     );
   }
 

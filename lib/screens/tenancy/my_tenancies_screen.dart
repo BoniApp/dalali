@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dalali/config/app_theme.dart';
 import 'package:dalali/models/tenancy_model.dart';
 import 'package:dalali/models/user_model.dart';
 import 'package:dalali/providers/app_state.dart';
@@ -18,7 +19,7 @@ class MyTenanciesScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(isLandlord ? 'Active Tenancies' : 'My Tenancies'),
-        backgroundColor: Colors.teal,
+        backgroundColor: AppTheme.primary,
         foregroundColor: Colors.white,
       ),
       body: tenancies.isEmpty

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dalali/config/app_theme.dart';
 import 'package:dalali/models/property_model.dart';
 import 'package:dalali/providers/app_state.dart';
 import 'package:dalali/utils/helpers.dart';
@@ -178,7 +179,7 @@ class AgentDashboardScreen extends StatelessWidget {
                                   const SizedBox(height: 4),
                                   Text(p.location, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
                                   const SizedBox(height: 4),
-                                  Text(Helpers.formatPrice(p.rentPrice), style: const TextStyle(color: Colors.teal, fontWeight: FontWeight.bold)),
+                                  Text(Helpers.formatPrice(p.rentPrice), style: const TextStyle(color: AppTheme.primary, fontWeight: FontWeight.bold)),
                                 ],
                               ),
                             ),

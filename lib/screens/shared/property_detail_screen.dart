@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dalali/config/app_theme.dart';
 import 'package:dalali/models/property_model.dart';
 import 'package:dalali/models/user_model.dart';
 import 'package:dalali/models/appointment_model.dart';
@@ -148,7 +149,7 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
-                          color: Colors.teal,
+                          color: AppTheme.primary,
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
@@ -293,8 +294,8 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
                   Card(
                     child: ListTile(
                       leading: CircleAvatar(
-                        backgroundColor: Colors.teal.shade100,
-                        child: const Icon(Icons.person, color: Colors.teal),
+                        backgroundColor: AppTheme.primary.withAlpha(26),
+                        child: const Icon(Icons.person, color: AppTheme.primary),
                       ),
                       title: Text(p.landlordName),
                       subtitle: Column(
@@ -315,11 +316,11 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           IconButton(
-                            icon: const Icon(Icons.phone, color: Colors.teal),
+                            icon: const Icon(Icons.phone, color: AppTheme.primary),
                             onPressed: () => _call(p.landlordPhone),
                           ),
                           IconButton(
-                            icon: const Icon(Icons.message, color: Colors.teal),
+                            icon: const Icon(Icons.message, color: AppTheme.primary),
                             onPressed: () => _sms(p.landlordPhone),
                           ),
                         ],
@@ -334,7 +335,7 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
                       icon: const Icon(Icons.calendar_today),
                       label: const Text('Schedule Viewing'),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.teal,
+                        backgroundColor: AppTheme.primary,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 14),
                       ),
@@ -367,7 +368,7 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
                     width: double.infinity,
                     child: OutlinedButton.icon(
                       onPressed: () => _showInquiryDialog(context, p),
-                      icon: const Icon(Icons.message, color: Colors.teal),
+                      icon: const Icon(Icons.message, color: AppTheme.primary),
                       label: const Text('Send Inquiry'),
                     ),
                   ),
@@ -410,7 +411,7 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
             return Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.check_circle, size: 16, color: Colors.teal.shade600),
+                Icon(Icons.check_circle, size: 16, color: AppTheme.primary),
                 const SizedBox(width: 4),
                 Text(Helpers.paymentTermLabel(term), style: const TextStyle(fontSize: 14)),
               ],
@@ -436,7 +437,7 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
         ),
         const SizedBox(height: 12),
         Card(
-          color: Colors.teal.shade50,
+          color: AppTheme.primary.withAlpha(13),
           child: Padding(
             padding: const EdgeInsets.all(12),
             child: Column(
@@ -619,7 +620,7 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
                 const SnackBar(content: Text('Inquiry sent successfully!')),
               );
             },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.teal, foregroundColor: Colors.white),
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primary, foregroundColor: Colors.white),
             child: const Text('Send'),
           ),
         ],
@@ -660,7 +661,7 @@ class _DetailItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(icon, size: 20, color: Colors.teal),
+        Icon(icon, size: 20, color: AppTheme.primary),
         const SizedBox(width: 8),
         Text(label, style: const TextStyle(fontSize: 14)),
       ],
@@ -694,7 +695,7 @@ class _CostRow extends StatelessWidget {
             style: TextStyle(
               fontSize: isTotal ? 14 : 13,
               fontWeight: isTotal ? FontWeight.bold : FontWeight.normal,
-              color: isTotal ? Colors.teal : Colors.black,
+              color: isTotal ? AppTheme.primary : Colors.black,
             ),
           ),
         ],
@@ -714,16 +715,16 @@ class _AmenityChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: active ? Colors.teal.shade50 : Colors.grey.shade100,
+        color: active ? AppTheme.primary.withAlpha(13) : Colors.grey.shade100,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: active ? Colors.teal : Colors.grey.shade300),
+        border: Border.all(color: active ? AppTheme.primary : Colors.grey.shade300),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 18, color: active ? Colors.teal : Colors.grey),
+          Icon(icon, size: 18, color: active ? AppTheme.primary : Colors.grey),
           const SizedBox(width: 6),
-          Text(label, style: TextStyle(color: active ? Colors.teal : Colors.grey)),
+          Text(label, style: TextStyle(color: active ? AppTheme.primary : Colors.grey)),
         ],
       ),
     );
@@ -806,7 +807,7 @@ class _SourceBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (label, color, icon) = switch (sourceType) {
-      ListingSource.landlordListing => ('Landlord Listing', Colors.teal, Icons.business),
+      ListingSource.landlordListing => ('Landlord Listing', AppTheme.primary, Icons.business),
       ListingSource.userMoveListing => ('Move Listing', Colors.orange, Icons.local_shipping),
       ListingSource.agentListing => ('Agent Listing', Colors.purple, Icons.support_agent),
     };

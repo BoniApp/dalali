@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dalali/config/app_theme.dart';
 import 'package:dalali/models/notification_model.dart';
 import 'package:dalali/providers/app_state.dart';
 import 'package:dalali/utils/helpers.dart';
@@ -15,7 +16,7 @@ class NotificationsScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Notifications'),
-        backgroundColor: Colors.teal,
+        backgroundColor: AppTheme.primary,
         foregroundColor: Colors.white,
         actions: [
           if (unreadCount > 0)
@@ -58,7 +59,7 @@ class _NotificationTile extends StatelessWidget {
       key: Key(notification.id),
       direction: DismissDirection.endToStart,
       background: Container(
-        color: Colors.teal,
+        color: AppTheme.primary,
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 20),
         child: const Icon(Icons.done, color: Colors.white),
@@ -66,10 +67,10 @@ class _NotificationTile extends StatelessWidget {
       onDismissed: (_) => context.read<AppState>().markNotificationRead(notification.id),
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: notification.isRead ? Colors.grey.shade200 : Colors.teal.shade100,
+          backgroundColor: notification.isRead ? Colors.grey.shade200 : AppTheme.primary.withAlpha(26),
           child: Icon(
             _iconForType(notification.type),
-            color: notification.isRead ? Colors.grey : Colors.teal,
+            color: notification.isRead ? Colors.grey : AppTheme.primary,
           ),
         ),
         title: Text(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dalali/config/app_theme.dart';
 import 'package:dalali/models/tenancy_model.dart';
 import 'package:dalali/models/maintenance_request_model.dart';
 import 'package:dalali/models/rent_schedule_model.dart';
@@ -21,7 +22,7 @@ class TenancyDetailScreen extends StatelessWidget {
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Tenancy Details'),
-          backgroundColor: Colors.teal,
+          backgroundColor: AppTheme.primary,
           foregroundColor: Colors.white,
           bottom: const TabBar(
             tabs: [
@@ -144,7 +145,7 @@ class _DetailRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         children: [
-          Icon(icon, size: 20, color: Colors.teal),
+          Icon(icon, size: 20, color: AppTheme.primary),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -191,7 +192,7 @@ class _MaintenanceTab extends StatelessWidget {
                 onPressed: () => _showSubmitDialog(context),
                 icon: const Icon(Icons.add),
                 label: const Text('New Maintenance Request'),
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.teal, foregroundColor: Colors.white),
+                style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primary, foregroundColor: Colors.white),
               ),
             ),
           ),
@@ -282,7 +283,7 @@ class _MaintenanceCard extends StatelessWidget {
               children: [
                 Chip(
                   label: Text(request.category.name[0].toUpperCase() + request.category.name.substring(1)),
-                  backgroundColor: Colors.teal.shade50,
+                  backgroundColor: AppTheme.primary.withAlpha(13),
                   visualDensity: VisualDensity.compact,
                 ),
                 const Spacer(),
@@ -359,7 +360,7 @@ class _RentTab extends StatelessWidget {
                 ? Chip(label: const Text('Paid'), backgroundColor: Colors.green.shade100, labelStyle: const TextStyle(color: Colors.green))
                 : ElevatedButton(
                     onPressed: () => appState.markRentPaid(s.id),
-                    style: ElevatedButton.styleFrom(backgroundColor: Colors.teal, foregroundColor: Colors.white),
+                    style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primary, foregroundColor: Colors.white),
                     child: const Text('Pay'),
                   ),
           ),

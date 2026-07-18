@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dalali/config/app_theme.dart';
 import 'package:dalali/models/wallet_model.dart';
 import 'package:dalali/models/user_model.dart';
 import 'package:dalali/providers/app_state.dart';
@@ -18,7 +19,7 @@ class WalletScreen extends StatelessWidget {
 
     if (user == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Wallet'), backgroundColor: Colors.teal, foregroundColor: Colors.white),
+        appBar: AppBar(title: const Text('Wallet'), backgroundColor: AppTheme.primary, foregroundColor: Colors.white),
         body: const Center(child: Text('Please log in to view your wallet')),
       );
     }
@@ -26,7 +27,7 @@ class WalletScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('My Wallet'),
-        backgroundColor: Colors.teal,
+        backgroundColor: AppTheme.primary,
         foregroundColor: Colors.white,
       ),
       body: StreamBuilder<WalletModel?>(
@@ -44,7 +45,7 @@ class WalletScreen extends StatelessWidget {
                 _ActionButton(
                   icon: Icons.account_balance_wallet,
                   label: 'Withdraw Funds',
-                  color: Colors.teal,
+                  color: AppTheme.primary,
                   onTap: () => Navigator.push(
                     context,
                     MaterialPageRoute(builder: (_) => const WithdrawalScreen()),
@@ -89,7 +90,7 @@ class _BalanceCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      color: Colors.teal,
+      color: AppTheme.primary,
       elevation: 4,
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -233,8 +234,8 @@ class _StepItem extends StatelessWidget {
       children: [
         CircleAvatar(
           radius: 12,
-          backgroundColor: Colors.teal.shade100,
-          child: Text('$number', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.teal.shade800)),
+          backgroundColor: AppTheme.primary.withAlpha(26),
+          child: Text('$number', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.primaryDark)),
         ),
         const SizedBox(width: 12),
         Expanded(child: Text(text, style: const TextStyle(fontSize: 13, height: 1.4))),

@@ -6,7 +6,7 @@ Guidance for AI coding agents working in this repository. This file assumes no p
 
 ## Project Overview
 
-**Dalali** is a Flutter application that connects landlords, house seekers, and agents in Tanzania (initially Dar es Salaam). The broader vision (see `REQUIREMENTS.md`) is a "Housing Transition Network": property listings & search, a move/relocation engine, tenancy lifecycle management, a neighbourhood safety network, a wallet/payments system (TZS), KYC verification, and an admin back office.
+**Dalali** is a Flutter application that connects landlords, house seekers, and agents in Tanzania (initially Dar es Salaam). The broader vision (see `REQUIREMENTS.md`) is a "Housing Transition Network": property listings & search, a move/relocation engine, tenancy lifecycle management, a neighbourhood safety network, a wallet/payments system (TZS), KYC verification, an influencer partnership program, and an admin back office.
 
 - **Package name**: `dalali` (Dart), Android namespace/applicationId `dalali.tz`
 - **Version**: 1.0.0+1, Dart SDK `^3.6.1`, Flutter stable (CI pins 3.44.6; `pubspec.lock` requires Flutter >=3.38.1 / Dart >=3.10)
@@ -28,16 +28,16 @@ The current backend is **Supabase** (Postgres + Auth + Storage + Realtime + Edge
 lib/
   main.dart            # Main app entry point (user app)
   main_admin.dart      # Separate admin dashboard entry point
-  config/              # supabase_config.dart (URL + anon key)
+  config/              # supabase_config.dart (URL + anon key), app_theme.dart (design system)
   models/              # Plain Dart model classes with fromJson/toJson
-    admin/  kyc/       # Domain subfolders
+    admin/  kyc/  influencer/  # Domain subfolders
   providers/           # app_state.dart (central state), theme_provider.dart, language_provider.dart
   screens/             # UI organized by role/domain:
     auth/              #   login, register
-    seeker/ landlord/ agent/
+    seeker/ landlord/ agent/ influencer/
     shared/            #   main_navigation, profile, property_detail, settings, ...
     tenancy/ move/ safety/ claims/ deals/ earnings/ opportunity/ wallet/ kyc/
-    admin/             #   ~18 admin screens (users, wallets, withdrawals, fraud, ...)
+    admin/             #   ~22 admin screens (users, wallets, withdrawals, fraud, influencers, ...)
   services/            # Business logic + Supabase access
     supabase_service.dart   # Singleton wrapper (SupabaseService.client)
     data_service.dart       # CRUD for core tables (replaces old FirestoreService)
@@ -46,15 +46,15 @@ lib/
     property_registry_service.dart, matching_engine.dart, recommendation_engine.dart,
     safety_engine.dart, report_service.dart, notification_service.dart,
     storage_service.dart, location_service.dart, ...
-    admin/  kyc/            # Domain subfolders (admin_service, KYC: NIDA, OCR, liveness, AML)
+    admin/  kyc/  influencer/ # Domain subfolders (admin_service, KYC: NIDA/OCR/liveness/AML, influencer + campaign services)
   widgets/             # Reusable widgets (property_card, verification_badge, safety_badge, ...)
   utils/helpers.dart   # Formatting helpers (TZS currency, dates)
   l10n/                # ARB files (app_en.arb, app_sw.arb) + generated localizations
 supabase/
-  migrations/          # Numbered SQL migrations (001–009; note there are two 001_* and two 002_* files)
-  functions/           # Deno/TypeScript Edge Functions (payment webhooks, withdrawals, KYC, ...)
+  migrations/          # Numbered SQL migrations (001–011; note there are two 001_* and two 002_* files)
+  functions/           # Deno/TypeScript Edge Functions (payment webhooks, withdrawals, KYC, influencer commissions, ...)
   DEPLOYMENT_GUIDE.md  # How to run migrations & deploy edge functions (current, use this one)
-test/widget_test.dart  # Widget tests (flutter_test)
+test/                  # flutter_test widget + unit tests (widget_test.dart, influencer_models_test.dart)
 .github/workflows/     # build.yml (Android APK), deploy_edge_functions.yml (Deno tests + deploy)
 android/ ios/ web/ ... # Standard Flutter platform folders
 assets/images/         # Bundled image assets
@@ -67,13 +67,25 @@ assets/images/         # Bundled image assets
 - **Two entry points**:
   - User app: `lib/main.dart` (default)
   - Admin dashboard: `lib/main_admin.dart` — run with `flutter run -t lib/main_admin.dart -d chrome`
-- **Roles**: Seeker, Landlord, Agent, plus Admin (admin shell under `lib/screens/admin/`, gated by `users.is_admin` in RLS policies).
-- **Localization**: English (`en`) and Kiswahili (`sw`) via ARB files. `l10n.yaml` outputs generated code into `lib/l10n` (`generate: true` in `pubspec.yaml`). When adding user-facing strings, add keys to **both** `app_en.arb` and `app_sw.arb`, then run `flutter gen-l10n` (or `flutter pub get` / any build, which triggers generation).
+- **Roles**: Seeker, Landlord, Agent, Influencer, plus Admin (admin shell under `lib/screens/admin/`, gated by `users.is_admin` in RLS policies). `UserRole` lives in `lib/models/user_model.dart`; `lib/screens/shared/main_navigation.dart` has exhaustive switches over it (adding a role breaks compilation until extended — intended). Influencer role is granted by admin approval (edge function flips `users.role`), not picked at signup.
+- **Localization**: English (`en`) and Kiswahili (`sw`) via ARB files. `l10n.yaml` outputs generated code into `lib/l10n` (`generate: true` in `pubspec.yaml`). When adding user-facing strings, add keys to **both** `app_en.arb` and `app_sw.arb`, then run `flutter gen-l10n` (or `flutter pub get` / any build, which triggers generation). Admin screens conventionally hardcode English.
 - **Money**: TZS; agency fee is a fixed 20,000 TZS per confirmed tenancy. Prices formatted with `Helpers.formatPrice` (`sw_TZ` locale).
 - **Maps**: `flutter_map` + OpenStreetMap (chosen deliberately to avoid Google Maps API keys). Haversine-based distance/safety scoring in `safety_engine.dart` / `property_registry_service.dart`.
 - **Comment style**: Services and important files use boxed banner comments (`/// ═══...═══`) — match this when editing those files.
+- **Design system**: `lib/config/app_theme.dart` defines the semantic colors (primary `#0D9488` teal, action `#F97316` orange CTA, text `#1F2937`, border `#E5E7EB`, dark bg `#0F172A`), the typography scale (32/24/18/16/14), button/input states, and 8pt spacing constants, per the DalaliApp UI Component Specification. `ThemeProvider` and `main_admin.dart` both consume `AppTheme.light()/dark()` — prefer `AppTheme` constants over hardcoded `Colors.teal`.
+- **Brand asset**: `assets/images/dalali_logo.png` (512×512) is the canonical logo; the Android/iOS/web launcher icons are generated from it.
 - **Linting**: `flutter_lints` defaults only (`analysis_options.yaml` has no custom rules). Keep code `flutter analyze`-clean.
 - **Dead code note**: `lib/services/mock_data_service.dart` exists but is not referenced elsewhere; verify before building on it.
+
+## Influencer Partnership System (migration 011)
+
+- **Flow**: user applies in-app (`influencer_applications`) → admin approves in the admin dashboard → `generate-referral-code` edge function activates the `influencers` row, mints the referral code + default `referral_links` row, flips `users.role` to `influencer`, and ensures a wallet exists.
+- **Attribution**: new users enter a referral code at registration → `referral_clicks` + a zero-amount `referral_conversions('registration')` row (client-insertable under tight RLS). Deep links (`dalaliapp.com/ref/CODE`) are a planned follow-up; the schema is ready for them.
+- **Commissions**: computed server-side only. `selcom-webhook` calls `calculate-influencer-commission` (secret-gated) after a successful payment → shared routine in `_shared/influencer_commission.ts` attributes the payer, computes the rate from `system_settings` (`influencer_agency_fee_pct` 10% of the 20,000 TZS agency fee = 2,000 TZS; `influencer_premium_pct` 20% for other payment types), inserts `referral_conversions` + an `earnings` row (`type='referralCommission'`), and credits the influencer's existing `wallets` row. Idempotent via `UNIQUE(referred_user_id, conversion_type)`. `scheduled-settlement` later moves pending → available and marks conversions paid. `verify-referral-payment` re-processes an order_id for ops backfill.
+- **No parallel money tables**: influencer balances/payouts reuse `wallets`, `transactions`, `withdrawals`, and the existing `process-withdrawal` function — do not create influencer-specific wallet tables.
+- **Campaigns**: `campaigns` + `campaign_participants` (admin-managed; influencers join in-app). `match_influencers_for_campaign(uuid)` is an admin-only SQL RPC returning heuristic scores — the documented swap-in point for a real AI matcher.
+- **Fraud**: self-referral/duplicate/suspended-influencer crediting is blocked server-side and logged to `fraud_logs` (admin-visible). `prevent_influencer_tamper` trigger protects `influencers` status/counters/code from client writes.
+- **Client code**: `lib/models/influencer/`, `lib/services/influencer/`, `lib/screens/influencer/` (dashboard, referral link, campaigns, application) + admin screens (`influencers_admin_screen`, `influencer_detail_admin_screen`, `campaigns_admin_screen`, `influencer_reports_admin_screen`) wired into `admin_shell.dart` via `AdminPermissions.canManageInfluencers`.
 
 ## Build & Test Commands
 
@@ -92,30 +104,30 @@ flutter build web -t lib/main_admin.dart       # Admin web build
 
 ### Edge Functions (Deno)
 
-Supabase Edge Functions in `supabase/functions/` are TypeScript on Deno. Some have Deno tests (`_shared/hmac_test.ts`, `process_withdrawal/index.test.ts`):
+Supabase Edge Functions in `supabase/functions/` are TypeScript on Deno (v2). Tests live next to the code (`_shared/hmac_test.ts`, `_shared/influencer_commission_test.ts`, `process_withdrawal/index.test.ts`):
 
 ```bash
-cd supabase/functions && deno test --unstable --quiet
+cd supabase/functions && deno test --unstable --quiet --allow-env
 ```
 
 Deploy per `supabase/DEPLOYMENT_GUIDE.md` (Supabase CLI: `supabase db push`, `supabase functions deploy <name>`). CI (`deploy_edge_functions.yml`) runs Deno tests on push to `main` and deploys if `SUPABASE_ACCESS_TOKEN`/`SUPABASE_PROJECT_REF` secrets are set.
 
 ### Database migrations
 
-SQL migrations in `supabase/migrations/` are applied in filename order via `supabase db push` or `psql -f`. **Caution**: there are two files numbered `001_*` and two numbered `002_*` — check actual file contents before adding a new migration; use the next free number (`010_...`).
+SQL migrations in `supabase/migrations/` are applied in filename order via `supabase db push` or `psql -f`. **Caution**: there are two files numbered `001_*` and two numbered `002_*` — check actual file contents before adding a new migration; use the next free number (`012_...`).
 
 ## Testing Instructions
 
-- Tests use `flutter_test`; currently only widget tests in `test/widget_test.dart` (e.g., `VerificationBadge`). There is no large test suite — add tests alongside new logic, especially for services/engines (matching, safety scoring, earnings) and new widgets.
+- Tests use `flutter_test`; widget tests in `test/widget_test.dart` (e.g., `VerificationBadge`) and model unit tests in `test/influencer_models_test.dart`. There is no large test suite — add tests alongside new logic, especially for services/engines (matching, safety scoring, earnings) and new widgets.
 - Keep tests independent of Supabase (no network); pump widgets inside a `MaterialApp` as in existing tests.
 - Run `flutter test` and `flutter analyze` before considering a change done.
 
 ## Security Considerations
 
-- **Secrets**: `SUPABASE_SERVICE_ROLE_KEY` and `ADMIN_API_SECRET` must never appear in client code — they are Edge Function environment variables only (set via `supabase secrets set`). The anon key in `lib/config/supabase_config.dart` is the publishable client key and relies on RLS for protection.
+- **Secrets**: `SUPABASE_SERVICE_ROLE_KEY`, `ADMIN_API_SECRET`, and `COMMISSION_SECRET` must never appear in client code — they are Edge Function environment variables only (set via `supabase secrets set`). `COMMISSION_SECRET` gates the server-to-server influencer commission endpoints (`calculate-influencer-commission`, `verify-referral-payment`). The anon key in `lib/config/supabase_config.dart` is the publishable client key and relies on RLS for protection.
 - **Row Level Security** is the primary authorization mechanism. Policies gate admin access via `users.is_admin`; see `supabase/migrations/006_admin_rls_policies.sql` and `SUPABASE_SCHEMA_UPGRADE.md`. When adding tables/columns, also add RLS policies and test them.
-- **Anti-tamper**: Postgres triggers (e.g., `prevent_property_tamper`) block clients from modifying moderation fields like `is_approved`, `view_count`, `inquiry_count`, ratings, and safety scores. Don't attempt to write these from the client.
-- **Payments**: Webhook Edge Functions (`payment_webhook`, `selcom-webhook`) verify provider signatures/HMAC (see `_shared/hmac.ts`). Preserve signature verification when editing payment flows.
+- **Anti-tamper**: Postgres triggers (`prevent_property_tamper`, `prevent_influencer_tamper`) block clients from modifying moderation fields like `is_approved`, `view_count`, ratings, safety scores, influencer status/counters/referral_code. Don't attempt to write these from the client.
+- **Payments**: Webhook Edge Functions (`payment_webhook`, `selcom-webhook`) verify provider signatures/HMAC (see `_shared/hmac.ts`). Preserve signature verification when editing payment flows. Commission crediting happens server-side only; wallet mutations are service-role only (`USING (false)` client policies).
 - **KYC**: Sensitive identity data (NIDA integration, OCR, liveness) flows through `lib/services/kyc/` and the `process-kyc-verification` function; location data collection is opt-in and requires explicit user consent.
 - New properties default to unapproved (`is_approved: false` / `listing_status: 'draft'`) pending admin moderation.
 
@@ -123,7 +135,7 @@ SQL migrations in `supabase/migrations/` are applied in filename order via `supa
 
 - `.github/workflows/build.yml`: on push/PR to `main`/`master`, builds a release Android APK (Flutter 3.44.6, JDK 17, Android platform/build-tools 36, NDK 28.2.13676358, adds swap, `--no-tree-shake-icons`, arm64) and uploads it as an artifact.
 - Release signing: `android/app/build.gradle` signs release builds with the upload keystore described by `android/key.properties` (gitignored) when that file exists; otherwise it falls back to the debug key so CI and local `flutter run --release` keep working.
-- `.github/workflows/deploy_edge_functions.yml`: on push to `main`, runs Deno tests for Edge Functions and conditionally deploys them.
+- `.github/workflows/deploy_edge_functions.yml`: on push to `main`, runs Deno tests (Deno v2.x, `--allow-env`) for Edge Functions and conditionally deploys them.
 
 ## Key Documentation Files
 

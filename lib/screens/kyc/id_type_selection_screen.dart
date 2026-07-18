@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dalali/config/app_theme.dart';
 import 'package:dalali/models/kyc/kyc_session_model.dart';
 import 'package:dalali/services/kyc/kyc_service.dart';
 import 'package:dalali/screens/kyc/document_capture_screen.dart';
@@ -16,7 +17,7 @@ class IdTypeSelectionScreen extends StatelessWidget {
   const IdTypeSelectionScreen({super.key, required this.userId});
 
   static const List<_IdOption> _options = [
-    _IdOption(IdDocumentType.nidaId, 'National ID (NIDA)', Icons.badge, Colors.teal, isRecommended: true),
+    _IdOption(IdDocumentType.nidaId, 'National ID (NIDA)', Icons.badge, AppTheme.primary, isRecommended: true),
     _IdOption(IdDocumentType.passport, 'Passport', Icons.book, Colors.indigo),
     _IdOption(IdDocumentType.driversLicense, 'Driver\'s License', Icons.drive_eta, Colors.blue),
     _IdOption(IdDocumentType.zanId, 'Zanzibar ID (ZanID)', Icons.credit_card, Colors.green),
@@ -62,7 +63,7 @@ class IdTypeSelectionScreen extends StatelessWidget {
                 ),
                 title: Text(opt.label),
                 subtitle: opt.isRecommended
-                    ? const Text('Recommended', style: TextStyle(color: Colors.teal, fontSize: 12))
+                    ? const Text('Recommended', style: TextStyle(color: AppTheme.primary, fontSize: 12))
                     : null,
                 trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                 onTap: () => _select(context, opt.type),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dalali/config/app_theme.dart';
 import 'package:dalali/services/admin/admin_service.dart';
 import 'package:dalali/utils/helpers.dart';
 import 'package:intl/intl.dart';
@@ -91,7 +92,7 @@ class _StatusChip extends StatelessWidget {
       'processing' => (Colors.blue, 'Processing'),
       'locked' => (Colors.purple, 'Locked'),
       'available' => (Colors.green, 'Available'),
-      'completed' => (Colors.teal, 'Completed'),
+      'completed' => (AppTheme.primary, 'Completed'),
       'failed' => (Colors.red, 'Failed'),
       'reversed' => (Colors.grey, 'Reversed'),
       _ => (Colors.grey, status),

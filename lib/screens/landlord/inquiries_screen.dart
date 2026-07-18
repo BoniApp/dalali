@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dalali/config/app_theme.dart';
 import 'package:dalali/providers/app_state.dart';
 // import 'package:dalali/models/inquiry_model.dart';
 import 'package:dalali/utils/helpers.dart';
@@ -15,7 +16,7 @@ class InquiriesScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Inquiries'),
-        backgroundColor: Colors.teal,
+        backgroundColor: AppTheme.primary,
         foregroundColor: Colors.white,
       ),
       body: inquiries.isEmpty
@@ -43,7 +44,7 @@ class InquiriesScreen extends StatelessWidget {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(i.propertyTitle, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.teal)),
+                            Text(i.propertyTitle, style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primary)),
                             if (!i.isRead)
                               Container(
                                 width: 10,
@@ -90,7 +91,7 @@ class InquiriesScreen extends StatelessWidget {
                                 onPressed: () => context.read<AppState>().markInquiryRead(i.id),
                                 icon: const Icon(Icons.done, size: 18),
                                 label: const Text('Mark Read'),
-                                style: ElevatedButton.styleFrom(backgroundColor: Colors.teal, foregroundColor: Colors.white),
+                                style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primary, foregroundColor: Colors.white),
                               ),
                             ),
                           ],

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dalali/config/app_theme.dart';
 import 'package:dalali/services/admin/admin_service.dart';
 import 'package:dalali/utils/helpers.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -44,7 +45,7 @@ class DashboardAdminScreen extends StatelessWidget {
                   label: 'Active Listings',
                   stream: adminService.getActiveListingsCount(),
                   icon: Icons.home_work,
-                  color: Colors.teal,
+                  color: AppTheme.primary,
                 ),
                 _MetricCard(
                   label: 'Pending Listings',
@@ -202,7 +203,7 @@ class _RevenueCard extends StatelessWidget {
                             PieChartSectionData(
                               value: 40,
                               title: '40%',
-                              color: Colors.teal,
+                              color: AppTheme.primary,
                               radius: 30,
                               titleStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
                             ),
@@ -284,7 +285,7 @@ class _DailyTransactionsChart extends StatelessWidget {
           barRods: [
             BarChartRodData(
               toY: [12, 19, 8, 15, 22, 18, 25][i].toDouble(),
-              color: Colors.teal,
+              color: AppTheme.primary,
               width: 20,
               borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
             ),
@@ -329,10 +330,10 @@ class _RevenueTrendChart extends StatelessWidget {
               FlSpot(6, 500000),
             ],
             isCurved: true,
-            color: Colors.teal,
+            color: AppTheme.primary,
             barWidth: 3,
             dotData: const FlDotData(show: true),
-            belowBarData: BarAreaData(show: true, color: Colors.teal.withValues(alpha: 0.1)),
+            belowBarData: BarAreaData(show: true, color: AppTheme.primary.withValues(alpha: 0.1)),
           ),
         ],
       ),

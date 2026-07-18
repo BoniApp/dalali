@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dalali/config/app_theme.dart';
 import 'package:dalali/models/property_model.dart';
 import 'package:dalali/providers/app_state.dart';
 import 'package:dalali/utils/helpers.dart';
@@ -21,7 +22,7 @@ class LandlordDashboardScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('My Dashboard'),
-        backgroundColor: Colors.teal,
+        backgroundColor: AppTheme.primary,
         foregroundColor: Colors.white,
         actions: const [NotificationBell(iconColor: Colors.white)],
       ),
@@ -139,7 +140,7 @@ class LandlordDashboardScreen extends StatelessWidget {
                                     const SizedBox(height: 4),
                                     Text(p.location, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
                                     const SizedBox(height: 4),
-                                    Text(Helpers.formatPrice(p.rentPrice), style: const TextStyle(color: Colors.teal, fontWeight: FontWeight.bold)),
+                                    Text(Helpers.formatPrice(p.rentPrice), style: const TextStyle(color: AppTheme.primary, fontWeight: FontWeight.bold)),
                                   ],
                                 ),
                               ),
@@ -149,7 +150,7 @@ class LandlordDashboardScreen extends StatelessWidget {
                                   const SizedBox(height: 8),
                                   Text('${p.viewCount} views', style: TextStyle(fontSize: 11, color: Colors.grey[600])),
                                   IconButton(
-                                    icon: const Icon(Icons.edit, size: 18, color: Colors.teal),
+                                    icon: const Icon(Icons.edit, size: 18, color: AppTheme.primary),
                                     onPressed: () => Navigator.push(
                                       context,
                                       MaterialPageRoute(builder: (_) => EditPropertyScreen(property: p)),

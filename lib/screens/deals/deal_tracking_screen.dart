@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:dalali/config/app_theme.dart';
 import 'package:dalali/l10n/app_localizations.dart';
 import 'package:dalali/providers/app_state.dart';
 import 'package:dalali/models/deal_model.dart';
@@ -84,7 +85,7 @@ class DealTrackingScreen extends StatelessWidget {
       case DealStatus.agencyFeePending:
         return Colors.amber;
       case DealStatus.agencyFeePaid:
-        return Colors.teal;
+        return AppTheme.primary;
       case DealStatus.closed:
         return Colors.grey;
     }

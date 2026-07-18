@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dalali/config/app_theme.dart';
 import 'package:dalali/providers/app_state.dart';
 import 'package:dalali/widgets/property_card.dart';
 import 'package:dalali/screens/shared/property_detail_screen.dart';
@@ -14,7 +15,7 @@ class FavoritesScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('My Favorites'),
-        backgroundColor: Colors.teal,
+        backgroundColor: AppTheme.primary,
         foregroundColor: Colors.white,
       ),
       body: favorites.isEmpty

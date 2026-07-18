@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dalali/config/app_theme.dart';
 import 'package:dalali/models/property_model.dart';
 import 'package:dalali/providers/app_state.dart';
 import 'package:dalali/services/app_settings.dart';
@@ -136,7 +137,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Confirm Payment'),
-        backgroundColor: Colors.teal,
+        backgroundColor: AppTheme.primary,
         foregroundColor: Colors.white,
       ),
       body: SingleChildScrollView(
@@ -156,7 +157,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                     const SizedBox(height: 8),
                     Text(
                       Helpers.formatPrice(p.rentAmount > 0 ? p.rentAmount : p.rentPrice),
-                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.teal),
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.primary),
                     ),
                   ],
                 ),
@@ -171,17 +172,17 @@ class _PaymentScreenState extends State<PaymentScreen> {
             _SummaryRow(label: 'Total to Pay', amount: AppSettings.agencyFee, isTotal: true),
             const SizedBox(height: 8),
             Card(
-              color: Colors.teal.shade50,
+              color: AppTheme.primary.withAlpha(13),
               child: Padding(
                 padding: const EdgeInsets.all(12),
                 child: Row(
                   children: [
-                    Icon(Icons.shield, color: Colors.teal.shade700),
+                    Icon(Icons.shield, color: AppTheme.primaryDark),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
                         'Your payment is protected. Funds are held in escrow for 48 hours before release to the agent.',
-                        style: TextStyle(fontSize: 12, color: Colors.teal.shade800),
+                        style: TextStyle(fontSize: 12, color: AppTheme.primaryDark),
                       ),
                     ),
                   ],
@@ -206,7 +207,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
               child: ElevatedButton(
                 onPressed: _isProcessing ? null : _initiatePayment,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.teal,
+                  backgroundColor: AppTheme.primary,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
@@ -264,7 +265,7 @@ class _SummaryRow extends StatelessWidget {
             style: TextStyle(
               fontSize: isTotal ? 16 : 14,
               fontWeight: isTotal ? FontWeight.bold : FontWeight.normal,
-              color: isFree ? Colors.green : (isTotal ? Colors.teal : Colors.black),
+              color: isFree ? Colors.green : (isTotal ? AppTheme.primary : Colors.black),
             ),
           ),
         ],

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dalali/config/app_theme.dart';
 import 'package:dalali/models/property_model.dart';
 import 'package:dalali/utils/helpers.dart';
 
@@ -174,7 +175,7 @@ class _FilterSheetState extends State<FilterSheet> {
                 Navigator.pop(context);
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.teal,
+                backgroundColor: AppTheme.primary,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 14),
               ),
@@ -200,9 +201,9 @@ class _FilterChip extends StatelessWidget {
       label: Text(label),
       selected: selected,
       onSelected: onSelected,
-      selectedColor: Colors.teal.shade100,
+      selectedColor: AppTheme.primary.withAlpha(26),
       labelStyle: TextStyle(
-        color: selected ? Colors.teal.shade800 : Colors.black,
+        color: selected ? AppTheme.primaryDark : Colors.black,
         fontWeight: selected ? FontWeight.bold : FontWeight.normal,
       ),
     );
@@ -230,10 +231,10 @@ class _ToggleChip extends StatelessWidget {
           onChanged(null);
         }
       },
-      selectedColor: Colors.teal.shade100,
-      checkmarkColor: Colors.teal,
+      selectedColor: AppTheme.primary.withAlpha(26),
+      checkmarkColor: AppTheme.primary,
       labelStyle: TextStyle(
-        color: value == true ? Colors.teal.shade800 : Colors.black,
+        color: value == true ? AppTheme.primaryDark : Colors.black,
       ),
     );
   }

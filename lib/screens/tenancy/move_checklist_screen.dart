@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dalali/config/app_theme.dart';
 import 'package:dalali/providers/app_state.dart';
 import 'package:provider/provider.dart';
 
@@ -46,7 +47,7 @@ class MoveChecklistScreen extends StatelessWidget {
                 value: progress,
                 minHeight: 8,
                 backgroundColor: Colors.grey[300],
-                valueColor: AlwaysStoppedAnimation<Color>(progress == 1 ? Colors.green : Colors.teal),
+                valueColor: AlwaysStoppedAnimation<Color>(progress == 1 ? Colors.green : AppTheme.primary),
                 borderRadius: BorderRadius.circular(4),
               ),
               const SizedBox(height: 4),
@@ -78,7 +79,7 @@ class MoveChecklistScreen extends StatelessWidget {
                   item.completed ? Icons.check_circle : Icons.circle_outlined,
                   color: item.completed ? Colors.green : Colors.grey[400],
                 ),
-                activeColor: Colors.teal,
+                activeColor: AppTheme.primary,
                 controlAffinity: ListTileControlAffinity.leading,
               );
             },

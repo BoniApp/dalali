@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dalali/config/app_theme.dart';
 import 'package:dalali/models/inquiry_model.dart';
 import 'package:dalali/providers/app_state.dart';
 import 'package:dalali/utils/helpers.dart';
@@ -15,7 +16,7 @@ class MessagesScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Messages'),
-        backgroundColor: Colors.teal,
+        backgroundColor: AppTheme.primary,
         foregroundColor: Colors.white,
       ),
       body: inquiries.isEmpty
@@ -35,8 +36,8 @@ class MessagesScreen extends StatelessWidget {
                 final i = inquiries[index];
                 return ListTile(
                   leading: CircleAvatar(
-                    backgroundColor: Colors.teal.shade100,
-                    child: const Icon(Icons.person, color: Colors.teal),
+                    backgroundColor: AppTheme.primary.withAlpha(26),
+                    child: const Icon(Icons.person, color: AppTheme.primary),
                   ),
                   title: Text(i.seekerName, style: const TextStyle(fontWeight: FontWeight.bold)),
                   subtitle: Text(i.message, maxLines: 1, overflow: TextOverflow.ellipsis),
@@ -62,7 +63,7 @@ class MessagesScreen extends StatelessWidget {
           children: [
             Text(inquiry.seekerName, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 4),
-            Text('Re: ${inquiry.propertyTitle}', style: TextStyle(color: Colors.teal)),
+            Text('Re: ${inquiry.propertyTitle}', style: TextStyle(color: AppTheme.primary)),
             const SizedBox(height: 8),
             Text(Helpers.formatDate(inquiry.createdAt), style: TextStyle(color: Colors.grey[600], fontSize: 12)),
             const Divider(),

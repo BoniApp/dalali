@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:dalali/config/app_theme.dart';
 import 'package:dalali/l10n/app_localizations.dart';
 import 'package:dalali/providers/app_state.dart';
 import 'package:dalali/models/earnings_model.dart';
@@ -43,7 +44,7 @@ class EarningsScreen extends StatelessWidget {
                 label: l10n.withdrawableBalance,
                 amount: summary.withdrawableBalance,
                 icon: Icons.account_balance_wallet,
-                color: Colors.teal,
+                color: AppTheme.primary,
               ),
               const SizedBox(height: 12),
               _EarningsCard(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dalali/config/app_theme.dart';
 import 'package:dalali/models/wallet_model.dart';
 import 'package:dalali/providers/app_state.dart';
 import 'package:dalali/services/wallet_service.dart';
@@ -98,7 +99,7 @@ class _WithdrawalScreenState extends State<WithdrawalScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Withdraw Funds'),
-        backgroundColor: Colors.teal,
+        backgroundColor: AppTheme.primary,
         foregroundColor: Colors.white,
       ),
       body: user == null
@@ -115,20 +116,20 @@ class _WithdrawalScreenState extends State<WithdrawalScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Card(
-                        color: Colors.teal.shade50,
+                        color: AppTheme.primary.withAlpha(13),
                         child: Padding(
                           padding: const EdgeInsets.all(16),
                           child: Row(
                             children: [
-                              Icon(Icons.account_balance_wallet, color: Colors.teal.shade700, size: 32),
+                              Icon(Icons.account_balance_wallet, color: AppTheme.primaryDark, size: 32),
                               const SizedBox(width: 16),
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text('Available Balance', style: TextStyle(fontSize: 12, color: Colors.teal.shade800)),
+                                  Text('Available Balance', style: TextStyle(fontSize: 12, color: AppTheme.primaryDark)),
                                   Text(
                                     Helpers.formatPrice(available),
-                                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.teal.shade800),
+                                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppTheme.primaryDark),
                                   ),
                                 ],
                               ),
@@ -174,9 +175,9 @@ class _WithdrawalScreenState extends State<WithdrawalScreen> {
                             label: Text(_providerLabel(provider)),
                             selected: selected,
                             onSelected: (_) => setState(() => _selectedProvider = provider),
-                            selectedColor: Colors.teal.shade100,
+                            selectedColor: AppTheme.primary.withAlpha(26),
                             labelStyle: TextStyle(
-                              color: selected ? Colors.teal.shade800 : Colors.black,
+                              color: selected ? AppTheme.primaryDark : Colors.black,
                               fontWeight: selected ? FontWeight.bold : FontWeight.normal,
                             ),
                           );
@@ -207,7 +208,7 @@ class _WithdrawalScreenState extends State<WithdrawalScreen> {
                         child: ElevatedButton(
                           onPressed: _isSubmitting ? null : _submit,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.teal,
+                            backgroundColor: AppTheme.primary,
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(vertical: 16),
                           ),

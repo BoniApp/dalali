@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dalali/config/app_theme.dart';
 import 'package:dalali/models/property_model.dart';
 import 'package:dalali/providers/app_state.dart';
 import 'package:dalali/widgets/property_card.dart';
@@ -65,7 +66,7 @@ class _SeekerHomeScreenState extends State<SeekerHomeScreen> {
       appBar: AppBar(
         title: const Text('Dalali'),
         centerTitle: true,
-        backgroundColor: Colors.teal,
+        backgroundColor: AppTheme.primary,
         foregroundColor: Colors.white,
         actions: [
           const NotificationBell(iconColor: Colors.white),

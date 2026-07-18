@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dalali/config/app_theme.dart';
 import 'package:dalali/models/admin/admin_user_model.dart';
 import 'package:dalali/services/admin/admin_service.dart';
 import 'package:dalali/screens/admin/payment_providers_admin_screen.dart';
@@ -176,7 +177,7 @@ class _SystemControlPanelAdminScreenState extends State<SystemControlPanelAdminS
                     runSpacing: 16,
                     children: [
                       _buildStatusCard('Users Online', '1,245', Icons.people, Colors.blue),
-                      _buildStatusCard('Active Listings', '35,600', Icons.home_work, Colors.teal),
+                      _buildStatusCard('Active Listings', '35,600', Icons.home_work, AppTheme.primary),
                       _buildStatusCard('API Status', 'Supabase ✓ Storage ✓ Payments ✓ Notifications ✓', Icons.cloud_done, Colors.green),
                       _buildStatusCard('Server Load', '23%', Icons.monitor_heart, Colors.orange),
                     ],

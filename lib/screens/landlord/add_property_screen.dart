@@ -4,6 +4,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_map_cancellable_tile_provider/flutter_map_cancellable_tile_provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:dalali/config/app_theme.dart';
 import 'package:dalali/models/property_model.dart';
 import 'package:dalali/models/user_model.dart';
 import 'package:dalali/providers/app_state.dart';
@@ -153,7 +154,7 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Add Property'),
-        backgroundColor: Colors.teal,
+        backgroundColor: AppTheme.primary,
         foregroundColor: Colors.white,
       ),
       body: SingleChildScrollView(
@@ -315,7 +316,7 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                         child: Row(
                           children: [
-                            Icon(Icons.map, color: Colors.teal.shade700, size: 20),
+                            Icon(Icons.map, color: AppTheme.primaryDark, size: 20),
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
@@ -325,10 +326,10 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
                             ),
                             Text(
                               'Adjust on Map',
-                              style: TextStyle(fontSize: 13, color: Colors.teal.shade700, fontWeight: FontWeight.w600),
+                              style: TextStyle(fontSize: 13, color: AppTheme.primaryDark, fontWeight: FontWeight.w600),
                             ),
                             const SizedBox(width: 4),
-                            Icon(Icons.chevron_right, color: Colors.teal.shade700, size: 18),
+                            Icon(Icons.chevron_right, color: AppTheme.primaryDark, size: 18),
                           ],
                         ),
                       ),
@@ -626,10 +627,10 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
                         }
                       });
                     },
-                    selectedColor: Colors.teal.shade100,
-                    checkmarkColor: Colors.teal,
+                    selectedColor: AppTheme.primary.withAlpha(26),
+                    checkmarkColor: AppTheme.primary,
                     labelStyle: TextStyle(
-                      color: selected ? Colors.teal.shade800 : Colors.black,
+                      color: selected ? AppTheme.primaryDark : Colors.black,
                     ),
                   );
                 }).toList(),
@@ -668,17 +669,17 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
               ],
               const SizedBox(height: 12),
               Card(
-                color: Colors.teal.shade50,
+                color: AppTheme.primary.withAlpha(13),
                 child: Padding(
                   padding: const EdgeInsets.all(12),
                   child: Row(
                     children: [
-                      Icon(Icons.info_outline, color: Colors.teal.shade700, size: 20),
+                      Icon(Icons.info_outline, color: AppTheme.primaryDark, size: 20),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           'A fixed agency fee of ${Helpers.formatPrice(AppSettings.agencyFee)} applies to all listings.',
-                          style: TextStyle(fontSize: 12, color: Colors.teal.shade800),
+                          style: TextStyle(fontSize: 12, color: AppTheme.primaryDark),
                         ),
                       ),
                     ],
@@ -691,7 +692,7 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
                 child: ElevatedButton(
                   onPressed: _isUploading ? null : _submit,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.teal,
+                    backgroundColor: AppTheme.primary,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
@@ -951,7 +952,7 @@ class _MapPickerScreenState extends State<_MapPickerScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Adjust Pin Location'),
-        backgroundColor: Colors.teal,
+        backgroundColor: AppTheme.primary,
         foregroundColor: Colors.white,
         actions: [
           TextButton(
@@ -987,7 +988,7 @@ class _MapPickerScreenState extends State<_MapPickerScreen> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => Navigator.pop(context, _selected),
-        backgroundColor: Colors.teal,
+        backgroundColor: AppTheme.primary,
         icon: const Icon(Icons.check, color: Colors.white),
         label: const Text('Confirm', style: TextStyle(color: Colors.white)),
       ),
