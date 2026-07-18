@@ -34,7 +34,7 @@ jobs:
           echo "$HOME/android-sdk/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
           echo "$HOME/android-sdk/platform-tools" >> "$GITHUB_PATH"
           yes | "$HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null
-          "$HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager" "platform-tools" "platforms;android-34" "build-tools;34.0.0"
+          "$HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager" "platform-tools" "platforms;android-36" "build-tools;36.0.0" "ndk;28.2.13676358"
 
       - name: Add swap space
         run: |
@@ -52,68 +52,11 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.27.3'
+          flutter-version: '3.44.6'
           channel: 'stable'
 
       - name: Get Flutter dependencies
         run: flutter pub get
-
-      - name: Create dummy firebase_options.dart
-        run: |
-          mkdir -p lib
-          if [ ! -f "lib/firebase_options.dart" ]; then
-            python3 - <<'PY'
-            from pathlib import Path
-            path = Path("lib/firebase_options.dart")
-            path.write_text("""import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
-            import 'package:flutter/foundation.dart'
-                show defaultTargetPlatform, kIsWeb, TargetPlatform;
-
-            class DefaultFirebaseOptions {
-              static FirebaseOptions get currentPlatform {
-                if (kIsWeb) {
-                  return web;
-                }
-                switch (defaultTargetPlatform) {
-                  case TargetPlatform.android:
-                    return android;
-                  case TargetPlatform.iOS:
-                    return ios;
-                  default:
-                    throw UnsupportedError('Unsupported platform');
-                }
-              }
-
-              static const FirebaseOptions web = FirebaseOptions(
-                apiKey: 'DUMMY',
-                appId: 'DUMMY',
-                messagingSenderId: 'DUMMY',
-                projectId: 'DUMMY',
-                authDomain: 'DUMMY',
-                storageBucket: 'DUMMY',
-                measurementId: 'DUMMY',
-              );
-
-              static const FirebaseOptions android = FirebaseOptions(
-                apiKey: 'DUMMY',
-                appId: 'DUMMY',
-                messagingSenderId: 'DUMMY',
-                projectId: 'DUMMY',
-                storageBucket: 'DUMMY',
-              );
-
-              static const FirebaseOptions ios = FirebaseOptions(
-                apiKey: 'DUMMY',
-                appId: 'DUMMY',
-                messagingSenderId: 'DUMMY',
-                projectId: 'DUMMY',
-                storageBucket: 'DUMMY',
-                iosBundleId: 'DUMMY',
-              );
-            }
-            """)
-            PY
-          fi
 
       - name: Build APK
         env:
