@@ -118,8 +118,8 @@ jobs:
       - name: Build APK
         env:
           GRADLE_OPTS: -Xmx4096m -Dorg.gradle.daemon=false -Dorg.gradle.parallel=false -Dorg.gradle.workers.max=2
-          ANDROID_HOME: ${{ github.workspace }}/android-sdk
-          ANDROID_SDK_ROOT: ${{ github.workspace }}/android-sdk
+          ANDROID_HOME: ${{ runner.home }}/android-sdk
+          ANDROID_SDK_ROOT: ${{ runner.home }}/android-sdk
         run: |
           export _JAVA_OPTIONS="-Xmx2048m"
           export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$PATH"
