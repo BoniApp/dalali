@@ -135,13 +135,31 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 const SizedBox(height: 16),
                 const Text('I am a:', style: TextStyle(fontWeight: FontWeight.w600)),
                 const SizedBox(height: 8),
+                // Two rows of two so all four roles fit on narrow phones —
+                // a single SegmentedButton row would clip Influencer.
                 SegmentedButton<UserRole>(
                   segments: const [
                     ButtonSegment(value: UserRole.seeker, label: Text('Seeker'), icon: Icon(Icons.search)),
                     ButtonSegment(value: UserRole.landlord, label: Text('Landlord'), icon: Icon(Icons.home)),
-                    ButtonSegment(value: UserRole.agent, label: Text('Agent'), icon: Icon(Icons.badge)),
                   ],
-                  selected: {_selectedRole},
+                  selected: {UserRole.seeker, UserRole.landlord}.contains(_selectedRole)
+                      ? {_selectedRole}
+                      : <UserRole>{},
+                  emptySelectionAllowed: true,
+                  onSelectionChanged: (Set<UserRole> newSelection) {
+                    setState(() => _selectedRole = newSelection.first);
+                  },
+                ),
+                const SizedBox(height: 8),
+                SegmentedButton<UserRole>(
+                  segments: const [
+                    ButtonSegment(value: UserRole.agent, label: Text('Agent'), icon: Icon(Icons.badge)),
+                    ButtonSegment(value: UserRole.influencer, label: Text('Influencer'), icon: Icon(Icons.star)),
+                  ],
+                  selected: {UserRole.agent, UserRole.influencer}.contains(_selectedRole)
+                      ? {_selectedRole}
+                      : <UserRole>{},
+                  emptySelectionAllowed: true,
                   onSelectionChanged: (Set<UserRole> newSelection) {
                     setState(() => _selectedRole = newSelection.first);
                   },

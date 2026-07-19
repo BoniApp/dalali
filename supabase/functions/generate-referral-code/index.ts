@@ -111,7 +111,15 @@ serve(async (req) => {
       });
     }
 
-    const code = await mintCode(supabase, app.full_name);
+    // If the user already has an influencer row (signed up directly with
+    // the influencer role — migration 013 trigger), reuse the existing
+    // code instead of minting a new one, so shared links keep working.
+    const { data: existing } = await supabase
+      .from("influencers")
+      .select("referral_code")
+      .eq("user_id", app.user_id)
+      .maybeSingle();
+    const code = existing?.referral_code ?? (await mintCode(supabase, app.full_name));
     const now = new Date().toISOString();
 
     await supabase.from("influencers").upsert({
@@ -127,11 +135,14 @@ serve(async (req) => {
       activated_at: now,
     });
 
-    await supabase.from("referral_links").insert({
-      influencer_id: app.user_id,
-      code,
-      is_active: true,
-    });
+    await supabase.from("referral_links").upsert(
+      {
+        influencer_id: app.user_id,
+        code,
+        is_active: true,
+      },
+      { onConflict: "code", ignoreDuplicates: true },
+    );
 
     await supabase.from("users").update({ role: "influencer" }).eq("id", app.user_id);
 
