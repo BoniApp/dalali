@@ -120,10 +120,10 @@ class _PaymentProvidersAdminScreenState extends State<PaymentProvidersAdminScree
   }
 
   void _createProvider() {
-    final _idCtrl = TextEditingController();
-    final _nameCtrl = TextEditingController();
-    final _envCtrl = TextEditingController(text: 'production');
-    final _configCtrl = TextEditingController(text: '{}');
+    final idCtrl = TextEditingController();
+    final nameCtrl = TextEditingController();
+    final envCtrl = TextEditingController(text: 'production');
+    final configCtrl = TextEditingController(text: '{}');
 
     showDialog(
       context: context,
@@ -133,13 +133,13 @@ class _PaymentProvidersAdminScreenState extends State<PaymentProvidersAdminScree
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TextFormField(controller: _idCtrl, decoration: const InputDecoration(labelText: 'ID')),
+              TextFormField(controller: idCtrl, decoration: const InputDecoration(labelText: 'ID')),
               const SizedBox(height: 8),
-              TextFormField(controller: _nameCtrl, decoration: const InputDecoration(labelText: 'Provider Name')),
+              TextFormField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Provider Name')),
               const SizedBox(height: 8),
-              TextFormField(controller: _envCtrl, decoration: const InputDecoration(labelText: 'Environment')),
+              TextFormField(controller: envCtrl, decoration: const InputDecoration(labelText: 'Environment')),
               const SizedBox(height: 8),
-              TextFormField(controller: _configCtrl, decoration: const InputDecoration(labelText: 'Config (JSON)')),
+              TextFormField(controller: configCtrl, decoration: const InputDecoration(labelText: 'Config (JSON)')),
             ],
           ),
         ),
@@ -148,15 +148,15 @@ class _PaymentProvidersAdminScreenState extends State<PaymentProvidersAdminScree
           FilledButton(
             onPressed: () async {
               try {
-                final id = _idCtrl.text.trim();
-                final name = _nameCtrl.text.trim();
+                final id = idCtrl.text.trim();
+                final name = nameCtrl.text.trim();
                 dynamic cfg = {};
                 try {
-                  cfg = jsonDecode(_configCtrl.text.trim());
+                  cfg = jsonDecode(configCtrl.text.trim());
                 } catch (_) {
                   cfg = {};
                 }
-                await _service.createGateway({'id': id, 'provider_name': name, 'environment': _envCtrl.text.trim(), 'config': cfg, 'enabled': false});
+                await _service.createGateway({'id': id, 'provider_name': name, 'environment': envCtrl.text.trim(), 'config': cfg, 'enabled': false});
                 await _loadProviders();
                 if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Provider created')));
                 Navigator.of(context).pop();
@@ -172,8 +172,8 @@ class _PaymentProvidersAdminScreenState extends State<PaymentProvidersAdminScree
   }
 
   void _editProvider(PaymentGatewayModel p) {
-    final _envCtrl = TextEditingController(text: p.environment);
-    final _configCtrl = TextEditingController(text: jsonEncode(p.config));
+    final envCtrl = TextEditingController(text: p.environment);
+    final configCtrl = TextEditingController(text: jsonEncode(p.config));
 
     showDialog(
       context: context,
@@ -183,9 +183,9 @@ class _PaymentProvidersAdminScreenState extends State<PaymentProvidersAdminScree
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TextFormField(controller: _envCtrl, decoration: const InputDecoration(labelText: 'Environment')),
+              TextFormField(controller: envCtrl, decoration: const InputDecoration(labelText: 'Environment')),
               const SizedBox(height: 8),
-              TextFormField(controller: _configCtrl, decoration: const InputDecoration(labelText: 'Config (JSON)')),            
+              TextFormField(controller: configCtrl, decoration: const InputDecoration(labelText: 'Config (JSON)')),            
             ],
           ),
         ),
@@ -194,14 +194,14 @@ class _PaymentProvidersAdminScreenState extends State<PaymentProvidersAdminScree
           FilledButton(
             onPressed: () async {
               try {
-                final cfgText = _configCtrl.text.trim();
+                final cfgText = configCtrl.text.trim();
                 dynamic cfg;
                 try {
                   cfg = cfgText.isNotEmpty ? jsonDecode(cfgText) : {};
                 } catch (_) {
                   cfg = {};
                 }
-                await _service.updateGateway(p.id, {'environment': _envCtrl.text.trim(), 'config': cfg});
+                await _service.updateGateway(p.id, {'environment': envCtrl.text.trim(), 'config': cfg});
                 await _loadProviders();
                 if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Provider updated')));
                 Navigator.of(context).pop();

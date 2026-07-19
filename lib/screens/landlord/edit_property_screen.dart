@@ -4,7 +4,6 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_map_cancellable_tile_provider/flutter_map_cancellable_tile_provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:dalali/config/app_theme.dart';
 import 'package:dalali/models/property_model.dart';
 import 'package:dalali/providers/app_state.dart';
 import 'package:dalali/services/storage_service.dart';
@@ -207,7 +206,7 @@ class _EditPropertyScreenState extends State<EditPropertyScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Edit Property'),
-        backgroundColor: AppTheme.primary,
+        backgroundColor: Colors.teal,
         foregroundColor: Colors.white,
       ),
       body: SingleChildScrollView(
@@ -257,7 +256,7 @@ class _EditPropertyScreenState extends State<EditPropertyScreen> {
                 children: [
                   Expanded(
                     child: DropdownButtonFormField<String>(
-                      value: _selectedDistrict,
+                      initialValue: _selectedDistrict,
                       decoration: const InputDecoration(
                         labelText: 'District',
                         border: OutlineInputBorder(),
@@ -277,7 +276,7 @@ class _EditPropertyScreenState extends State<EditPropertyScreen> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: DropdownButtonFormField<String>(
-                      value: _selectedWard,
+                      initialValue: _selectedWard,
                       decoration: const InputDecoration(
                         labelText: 'Ward',
                         border: OutlineInputBorder(),
@@ -368,7 +367,7 @@ class _EditPropertyScreenState extends State<EditPropertyScreen> {
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                         child: Row(
                           children: [
-                            Icon(Icons.map, color: AppTheme.primaryDark, size: 20),
+                            Icon(Icons.map, color: Colors.teal.shade700, size: 20),
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
@@ -378,10 +377,10 @@ class _EditPropertyScreenState extends State<EditPropertyScreen> {
                             ),
                             Text(
                               'Adjust on Map',
-                              style: TextStyle(fontSize: 13, color: AppTheme.primaryDark, fontWeight: FontWeight.w600),
+                              style: TextStyle(fontSize: 13, color: Colors.teal.shade700, fontWeight: FontWeight.w600),
                             ),
                             const SizedBox(width: 4),
-                            Icon(Icons.chevron_right, color: AppTheme.primaryDark, size: 18),
+                            Icon(Icons.chevron_right, color: Colors.teal.shade700, size: 18),
                           ],
                         ),
                       ),
@@ -698,10 +697,10 @@ class _EditPropertyScreenState extends State<EditPropertyScreen> {
                         }
                       });
                     },
-                    selectedColor: AppTheme.primary.withAlpha(26),
-                    checkmarkColor: AppTheme.primary,
+                    selectedColor: Colors.teal.shade100,
+                    checkmarkColor: Colors.teal,
                     labelStyle: TextStyle(
-                      color: selected ? AppTheme.primaryDark : Colors.black,
+                      color: selected ? Colors.teal.shade800 : Colors.black,
                     ),
                   );
                 }).toList(),
@@ -740,17 +739,17 @@ class _EditPropertyScreenState extends State<EditPropertyScreen> {
               ],
               const SizedBox(height: 12),
               Card(
-                color: AppTheme.primary.withAlpha(13),
+                color: Colors.teal.shade50,
                 child: Padding(
                   padding: const EdgeInsets.all(12),
                   child: Row(
                     children: [
-                      Icon(Icons.info_outline, color: AppTheme.primaryDark, size: 20),
+                      Icon(Icons.info_outline, color: Colors.teal.shade700, size: 20),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           'A fixed agency fee of ${Helpers.formatPrice(AppSettings.agencyFee)} applies to all listings.',
-                          style: TextStyle(fontSize: 12, color: AppTheme.primaryDark),
+                          style: TextStyle(fontSize: 12, color: Colors.teal.shade800),
                         ),
                       ),
                     ],
@@ -763,7 +762,7 @@ class _EditPropertyScreenState extends State<EditPropertyScreen> {
                 child: ElevatedButton(
                   onPressed: _isUploading ? null : _submit,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.primary,
+                    backgroundColor: Colors.teal,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
@@ -952,7 +951,7 @@ class _MapPickerScreenState extends State<_MapPickerScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Adjust Pin Location'),
-        backgroundColor: AppTheme.primary,
+        backgroundColor: Colors.teal,
         foregroundColor: Colors.white,
         actions: [
           TextButton(
@@ -988,7 +987,7 @@ class _MapPickerScreenState extends State<_MapPickerScreen> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => Navigator.pop(context, _selected),
-        backgroundColor: AppTheme.primary,
+        backgroundColor: Colors.teal,
         icon: const Icon(Icons.check, color: Colors.white),
         label: const Text('Confirm', style: TextStyle(color: Colors.white)),
       ),
