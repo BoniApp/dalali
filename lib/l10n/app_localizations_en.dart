@@ -749,4 +749,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get heatmapLabel => 'Heatmap';
+
+  @override
+  String get gallery => 'Gallery';
+
+  @override
+  String get camera => 'Camera';
+
+  @override
+  String get photoUploadFailed => 'Couldn\'t upload photo. Try again.';
 }

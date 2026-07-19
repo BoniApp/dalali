@@ -262,5 +262,8 @@
   "locationPermissionDenied": "Location permission denied — showing Dar es Salaam.",
   "openSettings": "Open Settings",
   "enableGps": "Turn on GPS",
-  "heatmapLabel": "Heatmap"
+  "heatmapLabel": "Heatmap",
+  "gallery": "Gallery",
+  "camera": "Camera",
+  "photoUploadFailed": "Couldn't upload photo. Try again."
 }

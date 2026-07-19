@@ -1519,6 +1519,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Heatmap'**
   String get heatmapLabel;
+
+  /// No description provided for @gallery.
+  ///
+  /// In en, this message translates to:
+  /// **'Gallery'**
+  String get gallery;
+
+  /// No description provided for @camera.
+  ///
+  /// In en, this message translates to:
+  /// **'Camera'**
+  String get camera;
+
+  /// No description provided for @photoUploadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t upload photo. Try again.'**
+  String get photoUploadFailed;
 }
 
 class _AppLocalizationsDelegate

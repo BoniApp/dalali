@@ -30,6 +30,10 @@ class DataService {
     return _userFromJson(data);
   }
 
+  Future<void> updateUserProfileImage(String userId, String imageUrl) async {
+    await _db.from('users').update({'profile_image': imageUrl}).eq('id', userId);
+  }
+
   // ═══════════════════════════════════════════════════════════════
   //  PROPERTIES
   // ═══════════════════════════════════════════════════════════════

@@ -1,8 +1,11 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:dalali/config/app_theme.dart';
 import 'package:dalali/l10n/app_localizations.dart';
 import 'package:dalali/models/user_model.dart';
 import 'package:dalali/providers/app_state.dart';
+import 'package:dalali/services/storage_service.dart';
 import 'package:dalali/widgets/verification_badge.dart';
 import 'package:dalali/screens/auth/login_screen.dart';
 import 'package:dalali/screens/move/move_dashboard_screen.dart';
@@ -61,12 +64,38 @@ class ProfileScreen extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            CircleAvatar(
-              radius: 50,
-              backgroundColor: AppTheme.primary.withAlpha(26),
-              child: Text(
-                user.fullName.isNotEmpty ? user.fullName.substring(0, 1) : '?',
-                style: const TextStyle(fontSize: 36, color: AppTheme.primary),
+            GestureDetector(
+              onTap: () => _changeProfilePicture(context),
+              child: Stack(
+                children: [
+                  CircleAvatar(
+                    radius: 50,
+                    backgroundColor: AppTheme.primary.withAlpha(26),
+                    backgroundImage:
+                        user.profileImage != null && user.profileImage!.isNotEmpty
+                            ? NetworkImage(user.profileImage!)
+                            : null,
+                    child: user.profileImage == null || user.profileImage!.isEmpty
+                        ? Text(
+                            user.fullName.isNotEmpty ? user.fullName.substring(0, 1) : '?',
+                            style: const TextStyle(fontSize: 36, color: AppTheme.primary),
+                          )
+                        : null,
+                  ),
+                  Positioned(
+                    bottom: 0,
+                    right: 0,
+                    child: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: AppTheme.primary,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 2),
+                      ),
+                      child: const Icon(Icons.camera_alt, size: 16, color: Colors.white),
+                    ),
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: 16),
@@ -331,6 +360,59 @@ class ProfileScreen extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  /// Gallery/camera → upload to the avatars bucket → save the URL on
+  /// the user row (via AppState, which also refreshes the UI).
+  Future<void> _changeProfilePicture(BuildContext context) async {
+    final l10n = AppLocalizations.of(context)!;
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_library),
+              title: Text(l10n.gallery),
+              onTap: () => Navigator.pop(sheetContext, ImageSource.gallery),
+            ),
+            ListTile(
+              leading: const Icon(Icons.camera_alt),
+              title: Text(l10n.camera),
+              onTap: () => Navigator.pop(sheetContext, ImageSource.camera),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (source == null || !context.mounted) return;
+
+    final picked = await ImagePicker().pickImage(
+      source: source,
+      maxWidth: 512,
+      imageQuality: 80,
+    );
+    if (picked == null || !context.mounted) return;
+
+    final appState = context.read<AppState>();
+    final messenger = ScaffoldMessenger.of(context);
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+    try {
+      final url = await StorageService()
+          .uploadProfileImage(File(picked.path), appState.currentUser!.id);
+      await appState.updateProfileImage(url);
+    } catch (_) {
+      messenger.showSnackBar(
+        SnackBar(content: Text(l10n.photoUploadFailed), backgroundColor: Colors.red),
+      );
+    } finally {
+      if (context.mounted) Navigator.of(context, rootNavigator: true).pop();
+    }
   }
 }
 

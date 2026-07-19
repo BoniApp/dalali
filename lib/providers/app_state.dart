@@ -234,6 +234,15 @@ class AppState extends ChangeNotifier {
         .fold(0, (sum, r) => sum + r.points);
   }
 
+  /// Persists a new profile picture URL and refreshes the local user.
+  Future<void> updateProfileImage(String imageUrl) async {
+    final user = currentUser;
+    if (user == null) return;
+    await _data.updateUserProfileImage(user.id, imageUrl);
+    currentUser = user.copyWith(profileImage: imageUrl);
+    notifyListeners();
+  }
+
   bool isFavorite(String propertyId) {
     if (currentUser == null) return false;
     return _favorites.any((f) => f.userId == currentUser!.id && f.propertyId == propertyId);

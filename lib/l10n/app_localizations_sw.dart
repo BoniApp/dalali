@@ -749,4 +749,13 @@ class AppLocalizationsSw extends AppLocalizations {
 
   @override
   String get heatmapLabel => 'Ramani ya wingi';
+
+  @override
+  String get gallery => 'Matunzio';
+
+  @override
+  String get camera => 'Kamera';
+
+  @override
+  String get photoUploadFailed => 'Imeshindwa kupakia picha. Jaribu tena.';
 }

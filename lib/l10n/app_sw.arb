@@ -254,5 +254,8 @@
   "locationPermissionDenied": "Ruhusa ya eneo imekataliwa — tunaonyesha Dar es Salaam.",
   "openSettings": "Fungua Mipangilio",
   "enableGps": "Washa GPS",
-  "heatmapLabel": "Ramani ya wingi"
+  "heatmapLabel": "Ramani ya wingi",
+  "gallery": "Matunzio",
+  "camera": "Kamera",
+  "photoUploadFailed": "Imeshindwa kupakia picha. Jaribu tena."
 }

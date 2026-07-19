@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:dalali/services/supabase_service.dart';
 
 /// ═══════════════════════════════════════════════════════════════
@@ -28,13 +29,17 @@ class StorageService {
   }
 
   /// Upload a profile image to the 'avatars' bucket.
-  /// Returns the public URL on success, throws on failure.
+  /// Overwrites any previous avatar (upsert) and returns a
+  /// cache-busted public URL so clients show the new image.
+  /// Throws on failure.
   Future<String> uploadProfileImage(File file, String userId) async {
     final path = '$userId/profile.jpg';
     try {
-      await _storage.from(_avatarsBucket).upload(path, file);
-      final url = _storage.from(_avatarsBucket).getPublicUrl(path);
-      return url.split('?').first;
+      await _storage
+          .from(_avatarsBucket)
+          .upload(path, file, fileOptions: const FileOptions(upsert: true));
+      final url = _storage.from(_avatarsBucket).getPublicUrl(path).split('?').first;
+      return '$url?v=${DateTime.now().millisecondsSinceEpoch}';
     } catch (e) {
       print('StorageService.uploadProfileImage ERROR: $e (bucket=$_avatarsBucket, path=$path)');
       rethrow;
