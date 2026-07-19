@@ -20,7 +20,6 @@ class ProfileScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final user = context.watch<AppState>().currentUser;
-    final authMode = context.watch<AppState>().authMode;
     final influencerProfile = context.watch<AppState>().influencerProfile;
     final l10n = AppLocalizations.of(context)!;
 
@@ -88,15 +87,6 @@ class ProfileScreen extends StatelessWidget {
                 ),
               ],
             ),
-            if (authMode == AuthMode.supabase)
-              Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: Chip(
-                  label: const Text('Firebase Account'),
-                  backgroundColor: Colors.orange.shade100,
-                  labelStyle: TextStyle(color: Colors.orange.shade800, fontSize: 12),
-                ),
-              ),
             const SizedBox(height: 8),
             Wrap(
               spacing: 6,
