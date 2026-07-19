@@ -134,8 +134,9 @@ SQL migrations in `supabase/migrations/` are applied in filename order via `supa
 ## CI/CD
 
 - `.github/workflows/build.yml`: on push/PR to `main`/`master`, builds a release Android APK (Flutter 3.44.6, JDK 17, Android platform/build-tools 36, NDK 28.2.13676358, adds swap, `--no-tree-shake-icons`, arm64) and uploads it as an artifact.
+- Android toolchain: Gradle 8.14.3 / AGP 8.11.1 / Kotlin 2.2.20 (in `android/gradle/wrapper/gradle-wrapper.properties` and `android/settings.gradle`). Flutter 3.44.6 hard-fails below Gradle 8.7 / AGP 8.6 / KGP 2.0 — do not downgrade.
 - Release signing: `android/app/build.gradle` signs release builds with the upload keystore described by `android/key.properties` (gitignored) when that file exists; otherwise it falls back to the debug key so CI and local `flutter run --release` keep working.
-- `.github/workflows/deploy_edge_functions.yml`: on push to `main`, runs Deno tests (Deno v2.x, `--allow-env`) for Edge Functions and conditionally deploys them.
+- `.github/workflows/deploy_edge_functions.yml`: on push to `main`, runs Deno tests (Deno 2.9.3, `--allow-env`) for Edge Functions and conditionally deploys them.
 
 ## Key Documentation Files
 

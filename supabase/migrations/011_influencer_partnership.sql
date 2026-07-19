@@ -462,10 +462,11 @@ BEGIN
       + (CASE WHEN i.audience_location IS NOT NULL AND v_target ILIKE '%' || i.audience_location || '%' THEN 20 ELSE 0 END)
       + LEAST(COALESCE(i.followers_count, 0) / 1000.0, 20)
       + (COALESCE(i.total_conversions, 0)::NUMERIC / GREATEST(COALESCE(i.total_registrations, 0), 1)) * 20
-    , 1) AS match_score
+    , 1) AS score
   FROM influencers i
+  
   JOIN users u ON u.id = i.user_id
   WHERE i.status = 'active'
-  ORDER BY match_score DESC;
+  ORDER BY score DESC;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
