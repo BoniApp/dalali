@@ -87,6 +87,12 @@ assets/images/         # Bundled image assets
 - **Fraud**: self-referral/duplicate/suspended-influencer crediting is blocked server-side and logged to `fraud_logs` (admin-visible). `prevent_influencer_tamper` trigger protects `influencers` status/counters/code from client writes.
 - **Client code**: `lib/models/influencer/`, `lib/services/influencer/`, `lib/screens/influencer/` (dashboard, referral link, campaigns, application) + admin screens (`influencers_admin_screen`, `influencer_detail_admin_screen`, `campaigns_admin_screen`, `influencer_reports_admin_screen`) wired into `admin_shell.dart` via `AdminPermissions.canManageInfluencers`.
 
+## Listings Near Me (migration 012)
+
+- **Backend**: `012_nearby_listings.sql` adds a generated PostGIS `geo geography(Point,4326)` column + GIST index on `properties` and the `properties_nearby` RPC (radius/price/bedrooms/type/premium/verified filters; results sorted by distance → featured → newest; paginated via limit/offset). SECURITY INVOKER — visibility matches the app feed (`status='available' AND is_approved=true`). Requires the `postgis` extension.
+- **Client**: `lib/screens/seeker/nearby_map_screen.dart` (full-screen `flutter_map` + `flutter_map_marker_cluster` price-badge markers, radius chips, draggable card sheet, optional heatmap, GPS FAB) backed by `lib/services/nearby_listings_service.dart` (RPC wrapper, smart-radius expansion, 2-min cache, `formatDistanceMeters`/`compactTzs`/`nextRadiusMeters` pure helpers — unit-tested in `test/nearby_listings_test.dart`) and `lib/services/device_location_service.dart` (`geolocator` permission + position stream; distinct from the static-data `LocationService`). Live distances ride on `PropertyModel.distanceMeters` (populated only by geo queries). New-listing alerts use a Realtime `onPostgresChanges` insert subscription on `properties`. Entry point: map icon in the seeker home AppBar.
+- **Permissions**: `ACCESS_FINE/COARSE_LOCATION` (Android) and `NSLocationWhenInUseUsageDescription` (iOS) are declared; keep them if the feature stays.
+
 ## Build & Test Commands
 
 ```bash
@@ -114,7 +120,7 @@ Deploy per `supabase/DEPLOYMENT_GUIDE.md` (Supabase CLI: `supabase db push`, `su
 
 ### Database migrations
 
-SQL migrations in `supabase/migrations/` are applied in filename order via `supabase db push` or `psql -f`. **Caution**: there are two files numbered `001_*` and two numbered `002_*` — check actual file contents before adding a new migration; use the next free number (`012_...`).
+SQL migrations in `supabase/migrations/` are applied in filename order via `supabase db push` or `psql -f`. **Caution**: there are two files numbered `001_*` and two numbered `002_*` — check actual file contents before adding a new migration; use the next free number (`013_...`).
 
 ## Testing Instructions
 

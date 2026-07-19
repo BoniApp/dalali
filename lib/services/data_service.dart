@@ -447,104 +447,8 @@ class DataService {
 
   // ─── Property ────────────────────────────────────────────────
 
-  PropertyModel _propertyFromJson(Map<String, dynamic> json) {
-    return PropertyModel(
-      id: json['id'] ?? '',
-      title: json['title'] ?? '',
-      description: json['description'] ?? '',
-      location: json['location'] ?? '',
-      latitude: (json['latitude'] as num?)?.toDouble() ?? 0.0,
-      longitude: (json['longitude'] as num?)?.toDouble() ?? 0.0,
-      rentPrice: (json['rent_price'] as num?)?.toDouble() ?? 0.0,
-      bedrooms: json['bedrooms'] ?? 0,
-      bathrooms: json['bathrooms'] ?? 0,
-      propertyType: PropertyType.values.firstWhere(
-        (e) => e.name == json['property_type'],
-        orElse: () => PropertyType.apartment,
-      ),
-      isFurnished: json['is_furnished'] ?? false,
-      hasWater: json['has_water'] ?? false,
-      hasParking: json['has_parking'] ?? false,
-      hasSecurity: json['has_security'] ?? false,
-      sharedCompound: json['shared_compound'] ?? false,
-      hasBorehole: json['has_borehole'] ?? false,
-      hasElectricity: json['has_electricity'] ?? true,
-      hasInternet: json['has_internet'] ?? false,
-      hasGym: json['has_gym'] ?? false,
-      hasSwimmingPool: json['has_swimming_pool'] ?? false,
-      hasBalcony: json['has_balcony'] ?? false,
-      hasGarden: json['has_garden'] ?? false,
-      hasBackupGenerator: json['has_backup_generator'] ?? false,
-      hasCctv: json['has_cctv'] ?? false,
-      hasElevator: json['has_elevator'] ?? false,
-      petFriendly: json['pet_friendly'] ?? false,
-      hasAirConditioning: json['has_air_conditioning'] ?? false,
-      hasFittedKitchen: json['has_fitted_kitchen'] ?? false,
-      images: List<String>.from(json['images'] ?? []),
-      videoUrl: json['video_url'],
-      status: PropertyStatus.values.firstWhere(
-        (e) => e.name == json['status'],
-        orElse: () => PropertyStatus.available,
-      ),
-      listingType: ListingType.values.firstWhere(
-        (e) => e.name == json['listing_type'],
-        orElse: () => ListingType.basic,
-      ),
-      sourceType: ListingSource.values.firstWhere(
-        (e) => e.name == json['source_type'],
-        orElse: () => ListingSource.landlordListing,
-      ),
-      landlordId: json['landlord_id'] ?? '',
-      landlordName: json['landlord_name'] ?? '',
-      landlordPhone: json['landlord_phone'] ?? '',
-      isLandlordVerified: json['is_landlord_verified'] ?? false,
-      listingCreatorId: json['listing_creator_id'] ?? '',
-      listingCreatorRole: json['listing_creator_role'] ?? '',
-      registryId: json['registry_id'],
-      agencyFeeEligible: json['agency_fee_eligible'] ?? false,
-      tenancyConfirmed: json['tenancy_confirmed'] ?? false,
-      street: json['street'] ?? '',
-      district: json['district'] ?? '',
-      ward: json['ward'] ?? '',
-      listingStatus: ListingStatus.values.firstWhere(
-        (e) => e.name == json['listing_status'],
-        orElse: () => ListingStatus.draft,
-      ),
-      createdAt: DateTime.tryParse(json['created_at'] ?? '') ?? DateTime.now(),
-      updatedAt: json['updated_at'] != null
-          ? DateTime.tryParse(json['updated_at'])
-          : null,
-      viewCount: json['view_count'] ?? 0,
-      inquiryCount: json['inquiry_count'] ?? 0,
-      isApproved: json['is_approved'] ?? true,
-      rating: (json['rating'] as num?)?.toDouble() ?? 0.0,
-      reviewCount: json['review_count'] ?? 0,
-      isBoosted: json['is_boosted'] ?? false,
-      boostExpiresAt: json['boost_expires_at'] != null
-          ? DateTime.tryParse(json['boost_expires_at'])
-          : null,
-      tags: List<String>.from(json['tags'] ?? []),
-      utilities: _utilitiesFromJson(json['utilities']),
-      safetyScore: (json['safety_score'] as num?)?.toDouble() ?? 80.0,
-      incidentCount: json['incident_count'] ?? 0,
-      rentAmount: (json['rent_amount'] as num?)?.toDouble() ?? 0.0,
-      paymentOptions: (json['payment_options'] as List<dynamic>?)
-              ?.map((e) => PaymentTerm.values.firstWhere(
-                    (t) => t.name == e,
-                    orElse: () => PaymentTerm.monthly,
-                  ))
-              .toList() ??
-          const [PaymentTerm.monthly],
-      minimumAcceptedTerm: json['minimum_accepted_term'] != null
-          ? PaymentTerm.values.firstWhere(
-              (e) => e.name == json['minimum_accepted_term'],
-              orElse: () => PaymentTerm.monthly,
-            )
-          : null,
-      depositRequired: json['deposit_required'] ?? false,
-      depositAmount: (json['deposit_amount'] as num?)?.toDouble() ?? 0.0,
-    );
-  }
+  PropertyModel _propertyFromJson(Map<String, dynamic> json) =>
+      PropertyModel.fromJson(json);
 
   Map<String, dynamic> _propertyToJson(PropertyModel p) {
     final json = <String, dynamic>{
@@ -616,33 +520,6 @@ class DataService {
     if (p.minimumAcceptedTerm != null) json['minimum_accepted_term'] = p.minimumAcceptedTerm!.name;
 
     return json;
-  }
-
-  PropertyUtilities _utilitiesFromJson(dynamic json) {
-    if (json == null || json is! Map) return const PropertyUtilities();
-    final m = json as Map<String, dynamic>;
-    return PropertyUtilities(
-      water: UtilityResponsibility.values.firstWhere(
-        (e) => e.name == m['water'],
-        orElse: () => UtilityResponsibility.shared,
-      ),
-      electricity: UtilityResponsibility.values.firstWhere(
-        (e) => e.name == m['electricity'],
-        orElse: () => UtilityResponsibility.shared,
-      ),
-      internet: InternetType.values.firstWhere(
-        (e) => e.name == m['internet'],
-        orElse: () => InternetType.notAvailable,
-      ),
-      wasteCollection: UtilityResponsibility.values.firstWhere(
-        (e) => e.name == m['wasteCollection'],
-        orElse: () => UtilityResponsibility.shared,
-      ),
-      security: SecurityType.values.firstWhere(
-        (e) => e.name == m['security'],
-        orElse: () => SecurityType.notIncluded,
-      ),
-    );
   }
 
   // ─── Appointment ─────────────────────────────────────────────

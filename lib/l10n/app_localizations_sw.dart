@@ -652,4 +652,98 @@ class AppLocalizationsSw extends AppLocalizations {
 
   @override
   String get nicheOther => 'Nyingine';
+
+  @override
+  String get nearMeTitle => 'Karibu Nami';
+
+  @override
+  String get searchNearbyHint => 'Tafuta nyumba karibu...';
+
+  @override
+  String get entireCity => 'Jiji Lote';
+
+  @override
+  String distanceAway(String distance) {
+    return 'Umbali wa $distance';
+  }
+
+  @override
+  String listingsNearby(int count) {
+    return 'Nyumba $count karibu';
+  }
+
+  @override
+  String get loadMore => 'Onesha zaidi';
+
+  @override
+  String get noListingsNearby => 'Hakuna nyumba karibu.';
+
+  @override
+  String get expandSearchRadius => 'Panua eneo la utafutaji?';
+
+  @override
+  String searchWithinRadius(String radius) {
+    return 'Tafuta $radius';
+  }
+
+  @override
+  String get noMatchingFilters => 'Hakuna nyumba inayolingana na utafutaji.';
+
+  @override
+  String get nearbyLoadError => 'Imeshindwa kupakia orodha za karibu.';
+
+  @override
+  String get retryLabel => 'Jaribu tena';
+
+  @override
+  String get filtersTitle => 'Vichujio';
+
+  @override
+  String get priceRangeTzs => 'Kima cha kodi (TZS)';
+
+  @override
+  String get anyOption => 'Yoyote';
+
+  @override
+  String get bedroomsLabel => 'Vyumba vya kulala';
+
+  @override
+  String get propertyTypeHeader => 'Aina ya Mali';
+
+  @override
+  String get premiumOnly => 'Premium pekee';
+
+  @override
+  String get verifiedOnly => 'Waliothibitishwa pekee';
+
+  @override
+  String get applyFilters => 'Tumia';
+
+  @override
+  String get resetFilters => 'Weka upya';
+
+  @override
+  String newListingNearby(String distance) {
+    return 'Nyumba mpya imeorodheshwa umbali wa $distance.';
+  }
+
+  @override
+  String get viewNow => 'Tazama Sasa';
+
+  @override
+  String get locationServicesOff =>
+      'Huduma za eneo zimezimwa — tunaonyesha Dar es Salaam.';
+
+  @override
+  String get locationPermissionDenied =>
+      'Ruhusa ya eneo imekataliwa — tunaonyesha Dar es Salaam.';
+
+  @override
+  String get openSettings => 'Fungua Mipangilio';
+
+  @override
+  String get enableGps => 'Washa GPS';
+
+  @override
+  String get heatmapLabel => 'Ramani ya wingi';
 }

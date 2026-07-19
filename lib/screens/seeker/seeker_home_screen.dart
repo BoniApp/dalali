@@ -8,6 +8,8 @@ import 'package:dalali/screens/shared/property_detail_screen.dart';
 import 'package:dalali/screens/move/start_move_screen.dart';
 import 'package:dalali/screens/move/move_dashboard_screen.dart';
 import 'package:dalali/screens/safety/neighbourhood_safety_screen.dart';
+import 'package:dalali/screens/seeker/nearby_map_screen.dart';
+import 'package:dalali/l10n/app_localizations.dart';
 import 'package:dalali/models/move_listing_model.dart';
 import 'package:dalali/widgets/notification_bell.dart';
 import 'package:provider/provider.dart';
@@ -70,6 +72,14 @@ class _SeekerHomeScreenState extends State<SeekerHomeScreen> {
         foregroundColor: Colors.white,
         actions: [
           const NotificationBell(iconColor: Colors.white),
+          IconButton(
+            icon: const Icon(Icons.map_outlined),
+            tooltip: AppLocalizations.of(context)!.nearMeTitle,
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const NearbyMapScreen()),
+            ),
+          ),
           IconButton(
             icon: const Icon(Icons.filter_list),
             onPressed: () {

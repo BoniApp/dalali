@@ -652,4 +652,98 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get nicheOther => 'Other';
+
+  @override
+  String get nearMeTitle => 'Near Me';
+
+  @override
+  String get searchNearbyHint => 'Search nearby homes...';
+
+  @override
+  String get entireCity => 'Entire City';
+
+  @override
+  String distanceAway(String distance) {
+    return '$distance away';
+  }
+
+  @override
+  String listingsNearby(int count) {
+    return '$count listings nearby';
+  }
+
+  @override
+  String get loadMore => 'Load more';
+
+  @override
+  String get noListingsNearby => 'No listings nearby.';
+
+  @override
+  String get expandSearchRadius => 'Expand search radius?';
+
+  @override
+  String searchWithinRadius(String radius) {
+    return 'Search $radius';
+  }
+
+  @override
+  String get noMatchingFilters => 'No listings match your search.';
+
+  @override
+  String get nearbyLoadError => 'Couldn\'t load nearby listings.';
+
+  @override
+  String get retryLabel => 'Retry';
+
+  @override
+  String get filtersTitle => 'Filters';
+
+  @override
+  String get priceRangeTzs => 'Price range (TZS)';
+
+  @override
+  String get anyOption => 'Any';
+
+  @override
+  String get bedroomsLabel => 'Bedrooms';
+
+  @override
+  String get propertyTypeHeader => 'Property Type';
+
+  @override
+  String get premiumOnly => 'Premium only';
+
+  @override
+  String get verifiedOnly => 'Verified only';
+
+  @override
+  String get applyFilters => 'Apply';
+
+  @override
+  String get resetFilters => 'Reset';
+
+  @override
+  String newListingNearby(String distance) {
+    return 'A new apartment has been listed $distance away.';
+  }
+
+  @override
+  String get viewNow => 'View Now';
+
+  @override
+  String get locationServicesOff =>
+      'Location services are off — showing Dar es Salaam.';
+
+  @override
+  String get locationPermissionDenied =>
+      'Location permission denied — showing Dar es Salaam.';
+
+  @override
+  String get openSettings => 'Open Settings';
+
+  @override
+  String get enableGps => 'Turn on GPS';
+
+  @override
+  String get heatmapLabel => 'Heatmap';
 }

@@ -1345,6 +1345,174 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Other'**
   String get nicheOther;
+
+  /// No description provided for @nearMeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Near Me'**
+  String get nearMeTitle;
+
+  /// No description provided for @searchNearbyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search nearby homes...'**
+  String get searchNearbyHint;
+
+  /// No description provided for @entireCity.
+  ///
+  /// In en, this message translates to:
+  /// **'Entire City'**
+  String get entireCity;
+
+  /// No description provided for @distanceAway.
+  ///
+  /// In en, this message translates to:
+  /// **'{distance} away'**
+  String distanceAway(String distance);
+
+  /// No description provided for @listingsNearby.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} listings nearby'**
+  String listingsNearby(int count);
+
+  /// No description provided for @loadMore.
+  ///
+  /// In en, this message translates to:
+  /// **'Load more'**
+  String get loadMore;
+
+  /// No description provided for @noListingsNearby.
+  ///
+  /// In en, this message translates to:
+  /// **'No listings nearby.'**
+  String get noListingsNearby;
+
+  /// No description provided for @expandSearchRadius.
+  ///
+  /// In en, this message translates to:
+  /// **'Expand search radius?'**
+  String get expandSearchRadius;
+
+  /// No description provided for @searchWithinRadius.
+  ///
+  /// In en, this message translates to:
+  /// **'Search {radius}'**
+  String searchWithinRadius(String radius);
+
+  /// No description provided for @noMatchingFilters.
+  ///
+  /// In en, this message translates to:
+  /// **'No listings match your search.'**
+  String get noMatchingFilters;
+
+  /// No description provided for @nearbyLoadError.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load nearby listings.'**
+  String get nearbyLoadError;
+
+  /// No description provided for @retryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get retryLabel;
+
+  /// No description provided for @filtersTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Filters'**
+  String get filtersTitle;
+
+  /// No description provided for @priceRangeTzs.
+  ///
+  /// In en, this message translates to:
+  /// **'Price range (TZS)'**
+  String get priceRangeTzs;
+
+  /// No description provided for @anyOption.
+  ///
+  /// In en, this message translates to:
+  /// **'Any'**
+  String get anyOption;
+
+  /// No description provided for @bedroomsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Bedrooms'**
+  String get bedroomsLabel;
+
+  /// No description provided for @propertyTypeHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Property Type'**
+  String get propertyTypeHeader;
+
+  /// No description provided for @premiumOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Premium only'**
+  String get premiumOnly;
+
+  /// No description provided for @verifiedOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Verified only'**
+  String get verifiedOnly;
+
+  /// No description provided for @applyFilters.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply'**
+  String get applyFilters;
+
+  /// No description provided for @resetFilters.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset'**
+  String get resetFilters;
+
+  /// No description provided for @newListingNearby.
+  ///
+  /// In en, this message translates to:
+  /// **'A new apartment has been listed {distance} away.'**
+  String newListingNearby(String distance);
+
+  /// No description provided for @viewNow.
+  ///
+  /// In en, this message translates to:
+  /// **'View Now'**
+  String get viewNow;
+
+  /// No description provided for @locationServicesOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Location services are off — showing Dar es Salaam.'**
+  String get locationServicesOff;
+
+  /// No description provided for @locationPermissionDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Location permission denied — showing Dar es Salaam.'**
+  String get locationPermissionDenied;
+
+  /// No description provided for @openSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Settings'**
+  String get openSettings;
+
+  /// No description provided for @enableGps.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn on GPS'**
+  String get enableGps;
+
+  /// No description provided for @heatmapLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Heatmap'**
+  String get heatmapLabel;
 }
 
 class _AppLocalizationsDelegate
