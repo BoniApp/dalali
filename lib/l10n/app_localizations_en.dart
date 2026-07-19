@@ -487,6 +487,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get influencerProgram => 'Influencer Program';
 
   @override
+  String get influencer => 'Influencer';
+
+  @override
   String get applyToEarnCommissions => 'Apply to earn commissions';
 
   @override

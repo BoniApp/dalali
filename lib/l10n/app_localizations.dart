@@ -1028,6 +1028,12 @@ abstract class AppLocalizations {
   /// **'Influencer Program'**
   String get influencerProgram;
 
+  /// No description provided for @influencer.
+  ///
+  /// In en, this message translates to:
+  /// **'Influencer'**
+  String get influencer;
+
   /// No description provided for @applyToEarnCommissions.
   ///
   /// In en, this message translates to:

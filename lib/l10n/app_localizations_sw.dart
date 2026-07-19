@@ -487,6 +487,9 @@ class AppLocalizationsSw extends AppLocalizations {
   String get influencerProgram => 'Mpango wa Washawishi';
 
   @override
+  String get influencer => 'Mshawishi';
+
+  @override
   String get applyToEarnCommissions => 'Jisajili ili kupata kamisheni';
 
   @override
