@@ -243,6 +243,38 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Re-fetches the current user row — e.g. after the server
+  /// updates verification_status during KYC completion.
+  Future<void> refreshCurrentUser() async {
+    final user = currentUser;
+    if (user == null) return;
+    final fresh = await _data.getUserById(user.id);
+    if (fresh != null) {
+      currentUser = fresh;
+      notifyListeners();
+    }
+  }
+
+  /// Re-fetch all realtime subscriptions (pull-to-refresh).
+  /// Re-subscribing re-queries every table; completes once the
+  /// properties feed has delivered fresh data (5s timeout fallback
+  /// so the refresh spinner never hangs).
+  Future<void> refreshData() async {
+    if (currentUser == null) return;
+    final delivered = Completer<void>();
+    final probe = _data.getProperties(limit: 100).listen((_) {
+      if (!delivered.isCompleted) delivered.complete();
+    }, onError: (_) {
+      if (!delivered.isCompleted) delivered.complete();
+    });
+    _subscribeToDatabase();
+    await delivered.future.timeout(
+      const Duration(seconds: 5),
+      onTimeout: () {},
+    );
+    await probe.cancel();
+  }
+
   bool isFavorite(String propertyId) {
     if (currentUser == null) return false;
     return _favorites.any((f) => f.userId == currentUser!.id && f.propertyId == propertyId);

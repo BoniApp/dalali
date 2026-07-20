@@ -121,8 +121,12 @@ class _SeekerHomeScreenState extends State<SeekerHomeScreen> {
             ),
           ),
           Expanded(
-            child: CustomScrollView(
-              slivers: [
+            child: RefreshIndicator(
+              color: AppTheme.primary,
+              onRefresh: () => context.read<AppState>().refreshData(),
+              child: CustomScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                slivers: [
                 if (featured.isNotEmpty && _searchController.text.isEmpty && _filters.isEmpty)
                   SliverToBoxAdapter(
                     child: Column(
@@ -205,6 +209,7 @@ class _SeekerHomeScreenState extends State<SeekerHomeScreen> {
                     ),
                   ),
               ],
+              ),
             ),
           ),
         ],

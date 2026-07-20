@@ -42,7 +42,7 @@ serve(async (req) => {
           const secret = cfg?.api_secret || cfg?.secret || null
           const signatureHeader = req.headers.get('x-selcom-signature') || req.headers.get('x-signature')
           if (secret && signatureHeader) {
-            const { computeHmacHex } = await import('./_shared/hmac.ts')
+            const { computeHmacHex } = await import('../_shared/hmac.ts')
             const sigHex = await computeHmacHex(secret, body)
             if (sigHex !== signatureHeader) {
               return new Response('Invalid signature', { status: 401 })

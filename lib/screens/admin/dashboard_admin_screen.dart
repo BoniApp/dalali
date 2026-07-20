@@ -24,48 +24,57 @@ class DashboardAdminScreen extends StatelessWidget {
             Text('Real-time platform metrics', style: TextStyle(fontSize: 14, color: Colors.grey[600])),
             const SizedBox(height: 24),
 
-            // ─── Metrics Cards ──────────────────────────────────────
-            Wrap(
-              spacing: 16,
-              runSpacing: 16,
-              children: [
-                _MetricCard(
-                  label: 'Total Users',
-                  stream: adminService.getTotalUsersCount(),
-                  icon: Icons.people,
-                  color: Colors.blue,
-                ),
-                _MetricCard(
-                  label: 'Active Today',
-                  stream: adminService.getActiveUsersToday(),
-                  icon: Icons.trending_up,
-                  color: Colors.green,
-                ),
-                _MetricCard(
-                  label: 'Active Listings',
-                  stream: adminService.getActiveListingsCount(),
-                  icon: Icons.home_work,
-                  color: AppTheme.primary,
-                ),
-                _MetricCard(
-                  label: 'Pending Listings',
-                  stream: adminService.getPendingListingsCount(),
-                  icon: Icons.pending_actions,
-                  color: Colors.orange,
-                ),
-                _MetricCard(
-                  label: 'Completed Deals',
-                  stream: adminService.getCompletedTransactionsCount(),
-                  icon: Icons.check_circle,
-                  color: Colors.purple,
-                ),
-                _MetricCard(
-                  label: 'Pending Withdrawals',
-                  stream: adminService.getPendingWithdrawalsCount(),
-                  icon: Icons.account_balance,
-                  color: Colors.red,
-                ),
-              ],
+            // ─── Metrics Cards — 2×3 tile grid ─────────────────────
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final columns = constraints.maxWidth >= 700 ? 3 : 2;
+                return GridView.count(
+                  crossAxisCount: columns,
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  mainAxisSpacing: 16,
+                  crossAxisSpacing: 16,
+                  mainAxisExtent: 150,
+                  children: [
+                    _MetricCard(
+                      label: 'Total Users',
+                      stream: adminService.getTotalUsersCount(),
+                      icon: Icons.people,
+                      color: Colors.blue,
+                    ),
+                    _MetricCard(
+                      label: 'Active Today',
+                      stream: adminService.getActiveUsersToday(),
+                      icon: Icons.trending_up,
+                      color: Colors.green,
+                    ),
+                    _MetricCard(
+                      label: 'Active Listings',
+                      stream: adminService.getActiveListingsCount(),
+                      icon: Icons.home_work,
+                      color: AppTheme.primary,
+                    ),
+                    _MetricCard(
+                      label: 'Pending Listings',
+                      stream: adminService.getPendingListingsCount(),
+                      icon: Icons.pending_actions,
+                      color: Colors.orange,
+                    ),
+                    _MetricCard(
+                      label: 'Completed Deals',
+                      stream: adminService.getCompletedTransactionsCount(),
+                      icon: Icons.check_circle,
+                      color: Colors.purple,
+                    ),
+                    _MetricCard(
+                      label: 'Pending Withdrawals',
+                      stream: adminService.getPendingWithdrawalsCount(),
+                      icon: Icons.account_balance,
+                      color: Colors.red,
+                    ),
+                  ],
+                );
+              },
             ),
             const SizedBox(height: 24),
 
@@ -103,42 +112,44 @@ class _MetricCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 220,
-      child: Card(
-        elevation: 2,
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: StreamBuilder<int>(
-            stream: stream,
-            builder: (context, snapshot) {
-              final value = snapshot.data ?? 0;
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
-                        child: Icon(icon, color: color, size: 20),
-                      ),
-                      if (snapshot.connectionState == ConnectionState.waiting)
-                        SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: color)),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    '$value',
-                    style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(label, style: TextStyle(fontSize: 13, color: Colors.grey[600])),
-                ],
-              );
-            },
-          ),
+    return Card(
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: StreamBuilder<int>(
+          stream: stream,
+          builder: (context, snapshot) {
+            final value = snapshot.data ?? 0;
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
+                      child: Icon(icon, color: color, size: 20),
+                    ),
+                    if (snapshot.connectionState == ConnectionState.waiting)
+                      SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: color)),
+                  ],
+                ),
+                const Spacer(),
+                Text(
+                  '$value',
+                  style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  label,
+                  style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            );
+          },
         ),
       ),
     );

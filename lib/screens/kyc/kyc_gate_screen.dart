@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:dalali/models/kyc/kyc_session_model.dart';
 import 'package:dalali/services/kyc/kyc_service.dart';
+import 'package:dalali/services/data_service.dart';
 import 'package:dalali/screens/kyc/consent_screen.dart';
 import 'package:dalali/screens/kyc/kyc_status_screen.dart';
 
@@ -53,8 +54,14 @@ class KycGateScreen extends StatelessWidget {
   }
 
   Future<KycSessionModel?> _resolveSession() async {
-    // In production: fetch from Supabase 'kyc_sessions' table
-    // For now, check in-memory service
+    // Prefer the persisted session (survives restarts); fall back
+    // to the in-memory one mid-flow.
+    try {
+      final row = await DataService().getKycSessionByUser(userId);
+      if (row != null) {
+        return KycSessionModel.fromJson(Map<String, dynamic>.from(row as Map));
+      }
+    } catch (_) {}
     return KycService().currentSession;
   }
 }

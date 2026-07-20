@@ -3,6 +3,7 @@ import 'package:dalali/config/app_theme.dart';
 import 'package:dalali/models/user_model.dart';
 import 'package:dalali/services/auth_service.dart';
 import 'package:dalali/services/influencer/influencer_service.dart';
+import 'package:dalali/screens/shared/legal_screens.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -228,6 +229,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
+                const _AcceptTermsNotice(),
+                const SizedBox(height: 16),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -243,6 +246,49 @@ class _RegisterScreenState extends State<RegisterScreen> {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// "By creating an account, you agree to our Terms and Conditions
+/// and Privacy Policy." — the links open the in-app legal documents.
+/// Uses WidgetSpan + GestureDetector so there are no
+/// TapGestureRecognizers to dispose.
+class _AcceptTermsNotice extends StatelessWidget {
+  const _AcceptTermsNotice();
+
+  @override
+  Widget build(BuildContext context) {
+    const linkStyle = TextStyle(
+      fontSize: 13,
+      color: AppTheme.primary,
+      fontWeight: FontWeight.w600,
+      decoration: TextDecoration.underline,
+    );
+
+    InlineSpan link(String label, Widget screen) {
+      return WidgetSpan(
+        alignment: PlaceholderAlignment.baseline,
+        baseline: TextBaseline.alphabetic,
+        child: GestureDetector(
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => screen)),
+          child: Text(label, style: linkStyle),
+        ),
+      );
+    }
+
+    return Text.rich(
+      TextSpan(
+        style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+        children: [
+          const TextSpan(text: 'By creating an account, you agree to our '),
+          link('Terms and Conditions', const TermsScreen()),
+          const TextSpan(text: ' and '),
+          link('Privacy Policy', const PrivacyPolicyScreen()),
+          const TextSpan(text: '.'),
+        ],
+      ),
+      textAlign: TextAlign.center,
     );
   }
 }

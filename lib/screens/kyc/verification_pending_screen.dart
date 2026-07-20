@@ -1,19 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:dalali/models/kyc/kyc_session_model.dart';
-import 'package:dalali/models/kyc/verification_result_model.dart';
+import 'package:provider/provider.dart';
+import 'package:dalali/providers/app_state.dart';
 import 'package:dalali/services/kyc/kyc_service.dart';
-import 'package:dalali/services/kyc/nida_integration_service.dart';
-import 'package:dalali/services/kyc/aml_screening_service.dart';
 import 'package:dalali/screens/kyc/kyc_status_screen.dart';
 
 /// ═══════════════════════════════════════════════════════════════
 /// VERIFICATION PENDING SCREEN
 /// ═══════════════════════════════════════════════════════════════
 ///
-/// Orchestrates the backend verification pipeline:
-/// NIDA ID → NIDA API + AML screening → status assignment;
-/// other documents (voter's ID, driver's licence, passport,
-/// ZanID) → AML screening → manual review.
+/// Hands the session to the server pipeline
+/// (process-kyc-verification): the edge function verifies NIDA
+/// documents or routes other documents (voter's ID, driver's
+/// licence, passport, ZanID) to manual review, then mirrors the
+/// outcome onto users.verification_status.
 ///
 class VerificationPendingScreen extends StatefulWidget {
   final String userId;
@@ -27,6 +26,7 @@ class VerificationPendingScreen extends StatefulWidget {
 class _VerificationPendingScreenState extends State<VerificationPendingScreen> {
   String _statusMessage = 'Submitting your documents...';
   bool _done = false;
+  bool _failed = false;
 
   @override
   void initState() {
@@ -39,67 +39,40 @@ class _VerificationPendingScreenState extends State<VerificationPendingScreen> {
     final session = kyc.currentSession;
     if (session == null) return;
 
-    final docType = session.selectedDocumentType ?? IdDocumentType.nidaId;
-    final KycSessionModel finalSession;
+    try {
+      final status = await kyc.submitForServerVerification();
 
-    if (docType == IdDocumentType.nidaId) {
-      // Step 1: NIDA API verification (stub)
-      setState(() => _statusMessage = 'Verifying with NIDA...');
-      await Future.delayed(const Duration(seconds: 2));
-      final nidaResult = await NidaIntegrationService().verifyIdentity(
-        nin: '12345678901234567890',
-        dateOfBirth: DateTime(1990, 5, 15),
-        correlationId: session.correlationId ?? '',
-        verificationReason: 'fintech_onboarding',
-      );
+      setState(() => _statusMessage = 'Finalizing verification...');
+      final finalSession = kyc.applyServerOutcome(status);
 
-      // Step 2: AML screening (stub)
-      setState(() => _statusMessage = 'Running security checks...');
+      // Refresh the signed-in user so the profile badge and the
+      // withdrawal gate reflect the new status immediately.
+      if (mounted) {
+        try {
+          await context.read<AppState>().refreshCurrentUser();
+        } catch (_) {}
+      }
+
+      setState(() {
+        _statusMessage = finalSession.status.name;
+        _done = true;
+      });
+
       await Future.delayed(const Duration(seconds: 1));
-      final amlResult = await AmlScreeningService().screenName(
-        fullName: 'John Doe',
-        dateOfBirth: '1990-05-15',
-        sessionId: session.sessionId,
-      );
 
-      // Step 3: Finalize — liveness outcome recorded by
-      // LivenessCheckScreen (proof of life) gates verification.
-      finalSession = await kyc.finalize(
-        nidaMatch: nidaResult.isSuccessful,
-        livenessPass: kyc.livenessResult?.isSuccessful ?? false,
-        amlClear: amlResult.isSuccessful,
-        riskLevel: amlResult.assessedRisk ?? RiskLevel.low,
-      );
-    } else {
-      // Voter's ID, driver's licence, passport and ZanID have no
-      // instant verification API in Tanzania — run the security
-      // screening, then route to manual review.
-      setState(() => _statusMessage = 'Running security checks...');
-      await Future.delayed(const Duration(seconds: 1));
-      await AmlScreeningService().screenName(
-        fullName: 'John Doe',
-        dateOfBirth: '1990-05-15',
-        sessionId: session.sessionId,
-      );
-
-      setState(() => _statusMessage = 'Submitting your documents for review...');
-      finalSession = await kyc.submitForManualReview();
-    }
-
-    setState(() {
-      _statusMessage = finalSession.status.name;
-      _done = true;
-    });
-
-    await Future.delayed(const Duration(seconds: 1));
-
-    if (mounted) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => KycStatusScreen(session: finalSession),
-        ),
-      );
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => KycStatusScreen(session: finalSession),
+          ),
+        );
+      }
+    } catch (e) {
+      setState(() {
+        _failed = true;
+        _statusMessage = 'Verification could not be completed: $e';
+      });
     }
   }
 
@@ -113,7 +86,9 @@ class _VerificationPendingScreenState extends State<VerificationPendingScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                if (!_done)
+                if (_failed)
+                  const Icon(Icons.error_outline, size: 64, color: Colors.red)
+                else if (!_done)
                   const SizedBox(
                     width: 64,
                     height: 64,
@@ -123,7 +98,11 @@ class _VerificationPendingScreenState extends State<VerificationPendingScreen> {
                   const Icon(Icons.check_circle, size: 64, color: Colors.green),
                 const SizedBox(height: 24),
                 Text(
-                  _done ? 'Verification Complete' : 'Verifying...',
+                  _failed
+                      ? 'Something went wrong'
+                      : _done
+                          ? 'Verification Complete'
+                          : 'Verifying...',
                   style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 12),
@@ -132,6 +111,13 @@ class _VerificationPendingScreenState extends State<VerificationPendingScreen> {
                   textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                 ),
+                if (_failed) ...[
+                  const SizedBox(height: 24),
+                  OutlinedButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Go Back'),
+                  ),
+                ],
               ],
             ),
           ),
