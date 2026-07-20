@@ -290,6 +290,24 @@ abstract class AppLocalizations {
   /// **'Messages'**
   String get messages;
 
+  /// No description provided for @noConversationsYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No conversations yet. Open a property and tap the chat icon to message the landlord or agent.'**
+  String get noConversationsYet;
+
+  /// No description provided for @noMessagesYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No messages yet. Say hello!'**
+  String get noMessagesYet;
+
+  /// No description provided for @typeMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Type a message'**
+  String get typeMessage;
+
   /// No description provided for @profile.
   ///
   /// In en, this message translates to:
@@ -767,7 +785,7 @@ abstract class AppLocalizations {
   /// No description provided for @nidaRequired.
   ///
   /// In en, this message translates to:
-  /// **'National ID (NIDA)'**
+  /// **'National ID (NIDA), Voter\'s Card or Driver\'s Licence'**
   String get nidaRequired;
 
   /// No description provided for @phoneVerificationRequired.
@@ -1163,8 +1181,20 @@ abstract class AppLocalizations {
   /// No description provided for @referralShareMessage.
   ///
   /// In en, this message translates to:
-  /// **'Join Dalali with my referral code {code}: {url}'**
+  /// **'Looking for a house to rent in Tanzania? 🏠 Dalali connects you with verified landlords and agents — browse listings, book a viewing, and move in without the hassle. Sign up with my referral code {code} and get started today: {url}'**
   String referralShareMessage(String code, String url);
+
+  /// No description provided for @shareTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Share to'**
+  String get shareTo;
+
+  /// No description provided for @sharePasteHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Message copied — paste it in your {platform} post.'**
+  String sharePasteHint(String platform);
 
   /// No description provided for @campaignLinks.
   ///

@@ -93,6 +93,13 @@ assets/images/         # Bundled image assets
 - **Client**: `lib/screens/seeker/nearby_map_screen.dart` (full-screen `flutter_map` + `flutter_map_marker_cluster` price-badge markers, radius chips, draggable card sheet, optional heatmap, GPS FAB) backed by `lib/services/nearby_listings_service.dart` (RPC wrapper, smart-radius expansion, 2-min cache, `formatDistanceMeters`/`compactTzs`/`nextRadiusMeters` pure helpers — unit-tested in `test/nearby_listings_test.dart`) and `lib/services/device_location_service.dart` (`geolocator` permission + position stream; distinct from the static-data `LocationService`). Live distances ride on `PropertyModel.distanceMeters` (populated only by geo queries). New-listing alerts use a Realtime `onPostgresChanges` insert subscription on `properties`. Entry point: map icon in the seeker home AppBar.
 - **Permissions**: `ACCESS_FINE/COARSE_LOCATION` (Android) and `NSLocationWhenInUseUsageDescription` (iOS) are declared; keep them if the feature stays.
 
+## Chat & Broadcast (migration 017)
+
+- **Tables**: `conversations` (one per user pair, enforced by a `LEAST/GREATEST` unique index; participant names denormalized because `users` RLS only exposes one's own row; optional `property_id` context) and `messages`. RLS: participants can read/create; clients get **no UPDATE** — `last_message_*` and the per-participant `unread_a/b` counters are maintained only by the `handle_new_chat_message` trigger (which also fans out a `notifications` row, `type='message'`), and read-marking goes through the `mark_conversation_read(uuid)` RPC only.
+- **Client**: `lib/models/chat_models.dart` + `lib/services/chat_service.dart` (singleton, `.stream(primaryKey:)` realtime; the stream builder has no `.or()`, so `watchConversations` streams unfiltered — RLS scopes the rows — and filters client-side). UI: `lib/screens/shared/conversations_screen.dart` (list + unread pills) and `chat_screen.dart` (WhatsApp-style bubbles; marks read via RPC when open). Entry points: Messages tab in `main_navigation.dart` (all 4 roles, `Badge` over the icon via `watchTotalUnread`) and the chat icon on the landlord card in `property_detail_screen.dart` (targets `listingCreatorId` else `landlordId`).
+- **Admin broadcast**: `supabase/functions/admin-broadcast` (admin JWT or `x-admin-secret` + `admin_user_id`; targets `all|seeker|landlord|agent|influencer`; non-admin recipients only) fans out admin↔user conversations + messages; `lib/screens/admin/broadcast_admin_screen.dart` composes it (permission `AdminPermissions.canBroadcast` = superAdmin/supportAgent). Replies surface in the admin shell "Messages" item, which reuses `ConversationsScreen`.
+- `notifications.type` CHECK was extended with `'message'` and `'broadcast'` — keep them if you re-create the constraint.
+
 ## Build & Test Commands
 
 ```bash
@@ -135,6 +142,7 @@ SQL migrations in `supabase/migrations/` are applied in filename order via `supa
 - **Anti-tamper**: Postgres triggers (`prevent_property_tamper`, `prevent_influencer_tamper`) block clients from modifying moderation fields like `is_approved`, `view_count`, ratings, safety scores, influencer status/counters/referral_code. Don't attempt to write these from the client.
 - **Payments**: Webhook Edge Functions (`payment_webhook`, `selcom-webhook`) verify provider signatures/HMAC (see `_shared/hmac.ts`). Preserve signature verification when editing payment flows. Commission crediting happens server-side only; wallet mutations are service-role only (`USING (false)` client policies).
 - **KYC**: Sensitive identity data (NIDA integration, OCR, liveness) flows through `lib/services/kyc/` and the `process-kyc-verification` function; location data collection is opt-in and requires explicit user consent.
+- **Withdrawals require KYC**: only users with `users.verification_status = 'verified'` can request a withdrawal — enforced by the `trg_withdrawal_verification` trigger (migration 016) on `withdrawals` INSERT; `withdrawal_screen.dart` shows a verify prompt instead of the form for unverified users.
 - New properties default to unapproved (`is_approved: false` / `listing_status: 'draft'`) pending admin moderation.
 
 ## CI/CD

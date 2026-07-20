@@ -20,7 +20,9 @@ import 'package:dalali/screens/admin/agency_fees_admin_screen.dart';
 import 'package:dalali/screens/admin/influencers_admin_screen.dart';
 import 'package:dalali/screens/admin/campaigns_admin_screen.dart';
 import 'package:dalali/screens/admin/influencer_reports_admin_screen.dart';
+import 'package:dalali/screens/admin/broadcast_admin_screen.dart';
 import 'package:dalali/screens/admin/login_admin_screen.dart';
+import 'package:dalali/screens/shared/conversations_screen.dart';
 import 'package:dalali/services/supabase_service.dart';
 
 class AdminShell extends StatefulWidget {
@@ -123,6 +125,12 @@ class _AdminShellState extends State<AdminShell> {
       adminName: widget.adminName,
       adminRole: widget.adminRole,
     )),
+    _NavItem(icon: Icons.campaign_outlined, label: 'Broadcast', screenBuilder: () => BroadcastAdminScreen(
+      adminId: widget.adminId,
+    )),
+    _NavItem(icon: Icons.chat_bubble_outline, label: 'Messages', screenBuilder: () => ConversationsScreen(
+      userId: widget.adminId,
+    )),
   ];
 
   List<_NavItem> get _visibleItems {
@@ -156,6 +164,8 @@ class _AdminShellState extends State<AdminShell> {
         case 'Campaigns':
         case 'Influencer Reports':
           return AdminPermissions.canManageInfluencers(widget.adminRole);
+        case 'Broadcast':
+          return AdminPermissions.canBroadcast(widget.adminRole);
         default:
           return true;
       }

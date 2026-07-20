@@ -16,6 +16,8 @@ import 'package:dalali/screens/wallet/payment_screen.dart';
 import 'package:dalali/screens/landlord/edit_property_screen.dart';
 import 'package:dalali/services/data_service.dart';
 import 'package:dalali/services/app_settings.dart';
+import 'package:dalali/services/chat_service.dart';
+import 'package:dalali/screens/shared/chat_screen.dart';
 import 'package:dalali/widgets/safety_badge.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -323,6 +325,10 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
                             icon: const Icon(Icons.message, color: AppTheme.primary),
                             onPressed: () => _sms(p.landlordPhone),
                           ),
+                          IconButton(
+                            icon: const Icon(Icons.chat_bubble_outline, color: AppTheme.primary),
+                            onPressed: () => _openChat(context, p),
+                          ),
                         ],
                       ),
                     ),
@@ -494,6 +500,40 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
   Future<void> _sms(String phone) async {
     final uri = Uri.parse('sms:$phone');
     if (await canLaunchUrl(uri)) await launchUrl(uri);
+  }
+
+  /// Open (creating if needed) the in-app chat with the listing's
+  /// contact — the listing creator (agent) when set, else the landlord.
+  Future<void> _openChat(BuildContext context, PropertyModel p) async {
+    final user = context.read<AppState>().currentUser;
+    if (user == null) return;
+    final targetId = p.listingCreatorId.isNotEmpty ? p.listingCreatorId : p.landlordId;
+    if (targetId.isEmpty || targetId == user.id) return;
+
+    try {
+      final conversation = await ChatService().findOrCreateConversation(
+        myId: user.id,
+        myName: user.fullName,
+        otherId: targetId,
+        otherName: p.landlordName,
+        propertyId: p.id,
+        propertyTitle: p.title,
+      );
+      if (context.mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ChatScreen(conversation: conversation, myId: user.id),
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not open chat: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
   }
 
   void _showScheduleDialog(BuildContext context, PropertyModel property) {

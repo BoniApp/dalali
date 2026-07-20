@@ -45,11 +45,11 @@ function randomSuffix(len: number): string {
 }
 
 // deno-lint-ignore no-explicit-any
-async function mintCode(supabase: any, fullName: string): Promise<string> {
-  const base =
-    (fullName || "").replace(/[^a-zA-Z]/g, "").toUpperCase().slice(0, 8) || "DALALI";
-  for (let i = 0; i < 6; i++) {
-    const candidate = `${base}${randomSuffix(4)}`;
+async function mintCode(supabase: any): Promise<string> {
+  // Short human-friendly codes: exactly 5 chars from an unambiguous
+  // alphabet (no 0/O/1/I) — ~33.6M combinations, collisions retried.
+  for (let i = 0; i < 12; i++) {
+    const candidate = randomSuffix(5);
     const { data: clash } = await supabase
       .from("influencers")
       .select("user_id")
@@ -57,7 +57,7 @@ async function mintCode(supabase: any, fullName: string): Promise<string> {
       .maybeSingle();
     if (!clash) return candidate;
   }
-  return `${base}${Date.now().toString(36).toUpperCase()}`;
+  return randomSuffix(5);
 }
 
 serve(async (req) => {
@@ -119,7 +119,7 @@ serve(async (req) => {
       .select("referral_code")
       .eq("user_id", app.user_id)
       .maybeSingle();
-    const code = existing?.referral_code ?? (await mintCode(supabase, app.full_name));
+    const code = existing?.referral_code ?? (await mintCode(supabase));
     const now = new Date().toISOString();
 
     await supabase.from("influencers").upsert({

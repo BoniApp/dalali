@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer' show log;
 import 'package:dalali/services/supabase_service.dart';
 import 'package:dalali/models/user_model.dart';
 import 'package:dalali/models/property_model.dart';
@@ -82,7 +83,7 @@ class DataService {
     try {
       await _db.from('properties').insert(json);
     } catch (e) {
-      print('addProperty error: $e');
+      log('addProperty error: $e');
       rethrow;
     }
   }

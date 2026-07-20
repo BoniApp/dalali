@@ -204,7 +204,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   decoration: InputDecoration(
                     labelText: 'Referral Code (Optional)',
                     prefixIcon: const Icon(Icons.card_giftcard),
-                    hintText: 'e.g. JUMA2024',
+                    hintText: 'e.g. K7X2M',
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                 ),

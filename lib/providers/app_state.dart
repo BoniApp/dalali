@@ -257,7 +257,7 @@ class AppState extends ChangeNotifier {
       _favorites.removeAt(existing);
       if (_isFirebase) {
         _data.removeFavorite(currentUser!.id, propertyId).catchError((e) {
-          print('removeFavorite error: $e');
+          debugPrint('removeFavorite error: $e');
         });
       }
     } else {
@@ -269,7 +269,7 @@ class AppState extends ChangeNotifier {
       ));
       if (_isFirebase) {
         _data.addFavorite(currentUser!.id, propertyId).catchError((e) {
-          print('addFavorite error: $e');
+          debugPrint('addFavorite error: $e');
         });
       }
     }
@@ -523,7 +523,7 @@ class AppState extends ChangeNotifier {
     _reviews.add(review);
     if (_isFirebase) {
       _data.addReview(review).catchError((e) {
-        print('addReview error: $e');
+        debugPrint('addReview error: $e');
       });
     }
     // Update property review count + average rating (simplified)
@@ -538,7 +538,7 @@ class AppState extends ChangeNotifier {
       );
       if (_isFirebase) {
         _data.updateProperty(_properties[pIdx]).catchError((e) {
-          print('updateProperty error: $e');
+          debugPrint('updateProperty error: $e');
         });
       }
     }
@@ -551,7 +551,7 @@ class AppState extends ChangeNotifier {
     _neighbourhoodReports.add(report);
     if (_isFirebase) {
       _data.addNeighbourhoodReport(report).catchError((e) {
-        print('addNeighbourhoodReport error: $e');
+        debugPrint('addNeighbourhoodReport error: $e');
       });
     }
     // Recompute safety scores for nearby properties
@@ -595,7 +595,7 @@ class AppState extends ChangeNotifier {
     _tenancyApplications.add(application);
     if (_isFirebase) {
       _data.addTenancyApplication(application).catchError((e) {
-        print('addTenancyApplication error: $e');
+        debugPrint('addTenancyApplication error: $e');
       });
       // Notify landlord
       NotificationService.notifyUser(
@@ -620,7 +620,7 @@ class AppState extends ChangeNotifier {
       );
       if (_isFirebase) {
         _data.updateApplicationStatus(applicationId, ApplicationStatus.approved).catchError((e) {
-          print('updateApplicationStatus error: $e');
+          debugPrint('updateApplicationStatus error: $e');
         });
         // Notify tenant
         NotificationService.notifyUser(
@@ -653,7 +653,7 @@ class AppState extends ChangeNotifier {
       _tenancies.add(tenancy);
       if (_isFirebase) {
         _data.addTenancy(tenancy).catchError((e) {
-          print('addTenancy error: $e');
+          debugPrint('addTenancy error: $e');
         });
       }
       // Mark property reserved
@@ -662,7 +662,7 @@ class AppState extends ChangeNotifier {
         _properties[pIdx] = property.copyWith(status: PropertyStatus.pending);
         if (_isFirebase) {
           _data.updateProperty(_properties[pIdx]).catchError((e) {
-            print('updateProperty error: $e');
+            debugPrint('updateProperty error: $e');
           });
         }
       }
@@ -681,7 +681,7 @@ class AppState extends ChangeNotifier {
       );
       if (_isFirebase) {
         _data.updateApplicationStatus(applicationId, ApplicationStatus.rejected).catchError((e) {
-          print('updateApplicationStatus error: $e');
+          debugPrint('updateApplicationStatus error: $e');
         });
         // Notify tenant
         NotificationService.notifyUser(
@@ -707,7 +707,7 @@ class AppState extends ChangeNotifier {
       );
       if (_isFirebase) {
         _data.updateTenancyStatus(tenancyId, TenancyStatus.active).catchError((e) {
-          print('updateTenancyStatus error: $e');
+          debugPrint('updateTenancyStatus error: $e');
         });
       }
       // Mark property occupied
@@ -716,7 +716,7 @@ class AppState extends ChangeNotifier {
         _properties[pIdx] = _properties[pIdx].copyWith(status: PropertyStatus.occupied);
         if (_isFirebase) {
           _data.updateProperty(_properties[pIdx]).catchError((e) {
-            print('updateProperty error: $e');
+            debugPrint('updateProperty error: $e');
           });
         }
       }
@@ -734,7 +734,7 @@ class AppState extends ChangeNotifier {
       );
       if (_isFirebase) {
         _data.updateTenancyStatus(tenancyId, TenancyStatus.completed).catchError((e) {
-          print('updateTenancyStatus error: $e');
+          debugPrint('updateTenancyStatus error: $e');
         });
       }
       // Mark property available again
@@ -743,7 +743,7 @@ class AppState extends ChangeNotifier {
         _properties[pIdx] = _properties[pIdx].copyWith(status: PropertyStatus.available);
         if (_isFirebase) {
           _data.updateProperty(_properties[pIdx]).catchError((e) {
-            print('updateProperty error: $e');
+            debugPrint('updateProperty error: $e');
           });
         }
       }
@@ -755,7 +755,7 @@ class AppState extends ChangeNotifier {
     _maintenanceRequests.add(request);
     if (_isFirebase) {
       _data.addMaintenanceRequest(request).catchError((e) {
-        print('addMaintenanceRequest error: $e');
+        debugPrint('addMaintenanceRequest error: $e');
       });
       // Notify landlord
       NotificationService.notifyUser(
@@ -781,7 +781,7 @@ class AppState extends ChangeNotifier {
       );
       if (_isFirebase) {
         _data.updateMaintenanceStatus(requestId, status, resolutionNotes: resolutionNotes).catchError((e) {
-          print('updateMaintenanceStatus error: $e');
+          debugPrint('updateMaintenanceStatus error: $e');
         });
         if (status == MaintenanceStatus.resolved) {
           NotificationService.notifyUser(
@@ -813,7 +813,7 @@ class AppState extends ChangeNotifier {
       );
       if (_isFirebase) {
         _data.markRentPaid(scheduleId).catchError((e) {
-          print('markRentPaid error: $e');
+          debugPrint('markRentPaid error: $e');
         });
       }
       notifyListeners();
@@ -883,7 +883,7 @@ class AppState extends ChangeNotifier {
     _appointments.add(appointment);
     if (_isFirebase) {
       _data.addAppointment(appointment).catchError((e) {
-        print('addAppointment error: $e');
+        debugPrint('addAppointment error: $e');
       });
       // Notify landlord
       NotificationService.notifyUser(
@@ -917,7 +917,7 @@ class AppState extends ChangeNotifier {
       );
       if (_isFirebase) {
         _data.updateAppointmentStatus(id, status).catchError((e) {
-          print('updateAppointmentStatus error: $e');
+          debugPrint('updateAppointmentStatus error: $e');
         });
       }
       notifyListeners();
@@ -1000,7 +1000,7 @@ class AppState extends ChangeNotifier {
       );
       if (_isFirebase) {
         _data.markInquiryRead(id).catchError((e) {
-          print('markInquiryRead error: $e');
+          debugPrint('markInquiryRead error: $e');
         });
       }
       notifyListeners();

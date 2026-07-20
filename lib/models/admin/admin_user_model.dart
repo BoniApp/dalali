@@ -202,4 +202,7 @@ class AdminPermissions {
       role == AdminRole.financeAdmin ||
       role == AdminRole.supportAgent ||
       role == AdminRole.fraudAnalyst;
+
+  static bool canBroadcast(AdminRole role) =>
+      role == AdminRole.superAdmin || role == AdminRole.supportAgent;
 }

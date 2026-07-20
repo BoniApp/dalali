@@ -105,6 +105,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get messages => 'Messages';
 
   @override
+  String get noConversationsYet =>
+      'No conversations yet. Open a property and tap the chat icon to message the landlord or agent.';
+
+  @override
+  String get noMessagesYet => 'No messages yet. Say hello!';
+
+  @override
+  String get typeMessage => 'Type a message';
+
+  @override
   String get profile => 'Profile';
 
   @override
@@ -353,7 +363,8 @@ class AppLocalizationsEn extends AppLocalizations {
       'To verify your account, you need to provide:';
 
   @override
-  String get nidaRequired => 'National ID (NIDA)';
+  String get nidaRequired =>
+      'National ID (NIDA), Voter\'s Card or Driver\'s Licence';
 
   @override
   String get phoneVerificationRequired => 'Phone number verification';
@@ -557,7 +568,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String referralShareMessage(String code, String url) {
-    return 'Join Dalali with my referral code $code: $url';
+    return 'Looking for a house to rent in Tanzania? 🏠 Dalali connects you with verified landlords and agents — browse listings, book a viewing, and move in without the hassle. Sign up with my referral code $code and get started today: $url';
+  }
+
+  @override
+  String get shareTo => 'Share to';
+
+  @override
+  String sharePasteHint(String platform) {
+    return 'Message copied — paste it in your $platform post.';
   }
 
   @override

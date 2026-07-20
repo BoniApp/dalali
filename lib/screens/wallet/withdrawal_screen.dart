@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:dalali/config/app_theme.dart';
+import 'package:dalali/models/user_model.dart';
 import 'package:dalali/models/wallet_model.dart';
 import 'package:dalali/providers/app_state.dart';
 import 'package:dalali/services/wallet_service.dart';
+import 'package:dalali/screens/kyc/kyc_gate_screen.dart';
 import 'package:dalali/utils/helpers.dart';
 import 'package:provider/provider.dart';
 
@@ -104,7 +106,12 @@ class _WithdrawalScreenState extends State<WithdrawalScreen> {
       ),
       body: user == null
           ? const Center(child: Text('Please log in'))
-          : StreamBuilder<WalletModel?>(
+          : user.verificationStatus != VerificationStatus.verified
+              ? _VerificationRequired(
+                  userId: user.id,
+                  isPending: user.verificationStatus == VerificationStatus.pending,
+                )
+              : StreamBuilder<WalletModel?>(
               stream: WalletService().getWallet(user.id),
               builder: (context, snapshot) {
                 final wallet = snapshot.data;
@@ -238,5 +245,57 @@ class _WithdrawalScreenState extends State<WithdrawalScreen> {
       case PaymentProvider.bankTransfer:
         return 'Bank';
     }
+  }
+}
+
+/// Shown instead of the withdrawal form when the account is not
+/// verified. The hard block is the trg_withdrawal_verification DB
+/// trigger (migration 016); this is the friendly client-side gate.
+class _VerificationRequired extends StatelessWidget {
+  final String userId;
+  final bool isPending;
+
+  const _VerificationRequired({required this.userId, required this.isPending});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              isPending ? Icons.hourglass_top : Icons.verified_user_outlined,
+              size: 72,
+              color: isPending ? Colors.orange.withAlpha(120) : AppTheme.primary.withAlpha(51),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              isPending
+                  ? 'Your account verification is under review. You will be able to withdraw funds once it is approved.'
+                  : 'You need to verify your account before you can withdraw funds. It only takes a few minutes.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+            ),
+            if (!isPending) ...[
+              const SizedBox(height: 24),
+              ElevatedButton.icon(
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => KycGateScreen(userId: userId)),
+                ),
+                icon: const Icon(Icons.verified_user),
+                label: const Text('Verify My Account'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primary,
+                  foregroundColor: Colors.white,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
   }
 }

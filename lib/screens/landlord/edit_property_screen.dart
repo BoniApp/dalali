@@ -834,7 +834,7 @@ class _EditPropertyScreenState extends State<EditPropertyScreen> {
           imageUrls.add(url);
         } catch (e) {
           uploadError ??= 'Photo ${i + 1} failed: $e';
-          print('Image upload failed for index ${startIndex + i}: $e');
+          debugPrint('Image upload failed for index ${startIndex + i}: $e');
         }
       }
     }
@@ -889,38 +889,40 @@ class _EditPropertyScreenState extends State<EditPropertyScreen> {
 
     setState(() => _isUploading = false);
 
-    if (mounted) {
-      try {
-        await context.read<AppState>().updateProperty(updatedProperty);
+    if (!mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    final appState = context.read<AppState>();
 
-        final uploadedCount = imageUrls.where(
-          (u) => !u.contains('wikipedia.org'),
-        ).length;
+    try {
+      await appState.updateProperty(updatedProperty);
 
-        ScaffoldMessenger.of(context).showSnackBar(
+      final uploadedCount = imageUrls.where(
+        (u) => !u.contains('wikipedia.org'),
+      ).length;
+
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(uploadedCount > 0
+              ? 'Property updated with $uploadedCount photo${uploadedCount > 1 ? 's' : ''}!'
+              : 'Property updated successfully!'),
+        ),
+      );
+
+      if (uploadError != null) {
+        messenger.showSnackBar(
           SnackBar(
-            content: Text(uploadedCount > 0
-                ? 'Property updated with $uploadedCount photo${uploadedCount > 1 ? 's' : ''}!'
-                : 'Property updated successfully!'),
+            content: Text('Photo upload issue: $uploadError'),
+            backgroundColor: Colors.orange.shade800,
+            duration: const Duration(seconds: 6),
           ),
         );
-
-        if (uploadError != null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Photo upload issue: $uploadError'),
-              backgroundColor: Colors.orange.shade800,
-              duration: const Duration(seconds: 6),
-            ),
-          );
-        }
-
-        Navigator.pop(context, updatedProperty);
-      } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error saving property: $e'), backgroundColor: Colors.red),
-        );
       }
+
+      if (mounted) Navigator.pop(context, updatedProperty);
+    } catch (e) {
+      messenger.showSnackBar(
+        SnackBar(content: Text('Error saving property: $e'), backgroundColor: Colors.red),
+      );
     }
   }
 }

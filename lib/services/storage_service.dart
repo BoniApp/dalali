@@ -1,3 +1,4 @@
+import 'dart:developer' show log;
 import 'dart:io';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:dalali/services/supabase_service.dart';
@@ -23,7 +24,7 @@ class StorageService {
       // Supabase sometimes returns a URL with trailing '?' — clean it up
       return url.split('?').first;
     } catch (e) {
-      print('StorageService.uploadPropertyImage ERROR: $e (bucket=$_propertiesBucket, path=$path)');
+      log('StorageService.uploadPropertyImage ERROR: $e (bucket=$_propertiesBucket, path=$path)');
       rethrow;
     }
   }
@@ -41,7 +42,7 @@ class StorageService {
       final url = _storage.from(_avatarsBucket).getPublicUrl(path).split('?').first;
       return '$url?v=${DateTime.now().millisecondsSinceEpoch}';
     } catch (e) {
-      print('StorageService.uploadProfileImage ERROR: $e (bucket=$_avatarsBucket, path=$path)');
+      log('StorageService.uploadProfileImage ERROR: $e (bucket=$_avatarsBucket, path=$path)');
       rethrow;
     }
   }
@@ -54,7 +55,7 @@ class StorageService {
         await _storage.from(_propertiesBucket).remove(['$propertyId/${file.name}']);
       }
     } catch (e) {
-      print('StorageService.deletePropertyImages ERROR: $e');
+      log('StorageService.deletePropertyImages ERROR: $e');
       // Non-fatal — property may have no images
     }
   }

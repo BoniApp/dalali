@@ -1,4 +1,7 @@
 {
     "java.configuration.updateBuildConfiguration": "interactive",
-    "cmake.sourceDirectory": "C:/Users/Hp/dalali/linux"
+    "cmake.sourceDirectory": "C:/Users/Hp/dalali/linux",
+    "arb-editor.suppressedWarnings": [
+        "missing_metadata_for_key"
+    ]
 }

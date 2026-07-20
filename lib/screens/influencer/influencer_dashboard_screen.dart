@@ -87,37 +87,48 @@ class InfluencerDashboardScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    GridView.count(
-                      crossAxisCount: 2,
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      mainAxisSpacing: 8,
-                      crossAxisSpacing: 8,
-                      childAspectRatio: 1.6,
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _StatCard(
-                          label: l10n.totalClicks,
-                          value: '${profile.totalClicks}',
-                          icon: Icons.touch_app,
-                          color: Colors.blue,
+                        Expanded(
+                          child: _StatCard(
+                            label: l10n.totalClicks,
+                            value: '${profile.totalClicks}',
+                            icon: Icons.touch_app,
+                            color: Colors.blue,
+                          ),
                         ),
-                        _StatCard(
-                          label: l10n.registrations,
-                          value: '${profile.totalRegistrations}',
-                          icon: Icons.person_add,
-                          color: Colors.purple,
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: _StatCard(
+                            label: l10n.registrations,
+                            value: '${profile.totalRegistrations}',
+                            icon: Icons.person_add,
+                            color: Colors.purple,
+                          ),
                         ),
-                        _StatCard(
-                          label: l10n.conversions,
-                          value: '${profile.totalConversions}',
-                          icon: Icons.check_circle,
-                          color: Colors.orange,
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: _StatCard(
+                            label: l10n.conversions,
+                            value: '${profile.totalConversions}',
+                            icon: Icons.check_circle,
+                            color: Colors.orange,
+                          ),
                         ),
-                        _StatCard(
-                          label: l10n.totalEarnings,
-                          value: Helpers.formatPrice(profile.totalEarnings),
-                          icon: Icons.account_balance_wallet,
-                          color: Colors.green,
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: _StatCard(
+                            label: l10n.totalEarnings,
+                            value: Helpers.formatPrice(profile.totalEarnings),
+                            icon: Icons.account_balance_wallet,
+                            color: Colors.green,
+                          ),
                         ),
                       ],
                     ),
@@ -292,7 +303,7 @@ class _StatCard extends StatelessWidget {
         padding: const EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
             Container(
               width: 36,
@@ -303,12 +314,18 @@ class _StatCard extends StatelessWidget {
               ),
               child: Icon(icon, color: color, size: 20),
             ),
-            const Spacer(),
-            Text(label, style: TextStyle(fontSize: 11, color: Colors.grey[600])),
+            const SizedBox(height: 12),
+            Text(
+              label,
+              style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
             const SizedBox(height: 2),
             Text(
               value,
               style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+              maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
           ],

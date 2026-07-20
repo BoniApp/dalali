@@ -105,6 +105,16 @@ class AppLocalizationsSw extends AppLocalizations {
   String get messages => 'Ujumbe';
 
   @override
+  String get noConversationsYet =>
+      'Hakuna mazungumzo bado. Fungua tangazo kisha gusa alama ya gumzo kutuma ujumbe kwa mmiliki au wakala.';
+
+  @override
+  String get noMessagesYet => 'Hakuna ujumbe bado. Anza kwa salamu!';
+
+  @override
+  String get typeMessage => 'Andika ujumbe';
+
+  @override
   String get profile => 'Wasifu';
 
   @override
@@ -353,7 +363,8 @@ class AppLocalizationsSw extends AppLocalizations {
       'Ili kuthibitisha akaunti yako, unahitaji kutoa:';
 
   @override
-  String get nidaRequired => 'Kitambulisho cha Taifa (NIDA)';
+  String get nidaRequired =>
+      'Kitambulisho cha Taifa (NIDA), Kadi ya Kura au Leseni ya Udereva';
 
   @override
   String get phoneVerificationRequired => 'Uthibitisho wa namba ya simu';
@@ -557,7 +568,15 @@ class AppLocalizationsSw extends AppLocalizations {
 
   @override
   String referralShareMessage(String code, String url) {
-    return 'Jiunge na Dalali kwa msimbo wangu wa rufaa $code: $url';
+    return 'Unatafuta nyumba ya kupanga Tanzania? 🏠 Dalali inakuunganisha na wamiliki na mawakala waliothibitishwa — tafuta nyumba, weka miadi ya kutazama, na uhamie bila msongo. Jiunge kwa msimbo wangu wa rufaa $code uanze leo: $url';
+  }
+
+  @override
+  String get shareTo => 'Sambaza kwa';
+
+  @override
+  String sharePasteHint(String platform) {
+    return 'Ujumbe umenakiliwa — ubandike kwenye chapisho lako la $platform.';
   }
 
   @override

@@ -2,7 +2,6 @@ import 'dart:developer' show log;
 import 'package:dalali/models/move_listing_model.dart';
 import 'package:dalali/models/property_model.dart';
 import 'package:dalali/models/user_model.dart';
-import 'package:dalali/services/data_service.dart';
 import 'package:dalali/services/supabase_service.dart';
 
 /// Orchestrates the "I'm Moving" flow:
@@ -11,7 +10,6 @@ import 'package:dalali/services/supabase_service.dart';
 /// 3. User finds new home → marks move complete
 /// 4. System awards points
 class MoveEngineService {
-  final DataService _data = DataService();
   final _db = SupabaseService.client;
 
   /// Starts a new move for the user.

@@ -27,7 +27,10 @@ class NidaIntegrationService {
       return; // Token still valid
     }
 
-    // TODO: Replace with actual client_id / client_secret from secure vault
+    // Go-live note: these are placeholder credentials. Real NIDA
+    // client_id / client_secret must never ship inside the app —
+    // move this call behind an Edge Function and read them from
+    // function secrets (see AGENTS.md security rules).
     const clientId = 'DALALI_PROD_CLIENT';
     const clientSecret = '<VAULT_SECRET>';
 

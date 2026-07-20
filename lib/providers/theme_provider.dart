@@ -15,7 +15,6 @@ extension AppThemeModeX on AppThemeMode {
 class ThemeProvider extends ChangeNotifier {
   AppThemeMode _themeMode = AppThemeMode.light;
   static const String _prefsKey = 'app_theme_mode';
-  static const String _firestoreField = 'preferences.theme';
 
   AppThemeMode get themeMode => _themeMode;
   ThemeMode get flutterThemeMode => _themeMode.flutterThemeMode;

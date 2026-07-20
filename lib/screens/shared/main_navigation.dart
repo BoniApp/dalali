@@ -16,6 +16,8 @@ import 'package:dalali/screens/opportunity/opportunity_feed_screen.dart';
 import 'package:dalali/screens/influencer/influencer_dashboard_screen.dart';
 import 'package:dalali/screens/influencer/referral_link_screen.dart';
 import 'package:dalali/screens/influencer/influencer_campaigns_screen.dart';
+import 'package:dalali/screens/shared/conversations_screen.dart';
+import 'package:dalali/services/chat_service.dart';
 
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
@@ -35,8 +37,8 @@ class _MainNavigationState extends State<MainNavigation> {
       return const LoginScreen();
     }
 
-    final screens = _getScreens(user.role);
-    final items = _getNavItems(context, user.role);
+    final screens = _getScreens(user.role, user.id);
+    final items = _getNavItems(context, user.role, user.id);
 
     return Scaffold(
       body: screens[_currentIndex],
@@ -48,44 +50,66 @@ class _MainNavigationState extends State<MainNavigation> {
     );
   }
 
-  List<Widget> _getScreens(UserRole role) {
+  List<Widget> _getScreens(UserRole role, String userId) {
     switch (role) {
       case UserRole.seeker:
-        return const [
-          SeekerHomeScreen(),
-          OpportunityFeedScreen(),
-          EarningsScreen(),
-          MoveDashboardScreen(),
-          ProfileScreen(),
+        return [
+          const SeekerHomeScreen(),
+          const OpportunityFeedScreen(),
+          const EarningsScreen(),
+          const MoveDashboardScreen(),
+          ConversationsScreen(userId: userId),
+          const ProfileScreen(),
         ];
       case UserRole.landlord:
-        return const [
-          LandlordDashboardScreen(),
-          AddPropertyScreen(),
-          OpportunityFeedScreen(),
-          EarningsScreen(),
-          ProfileScreen(),
+        return [
+          const LandlordDashboardScreen(),
+          const AddPropertyScreen(),
+          const OpportunityFeedScreen(),
+          const EarningsScreen(),
+          ConversationsScreen(userId: userId),
+          const ProfileScreen(),
         ];
       case UserRole.agent:
-        return const [
-          AgentDashboardScreen(),
-          AddPropertyScreen(),
-          OpportunityFeedScreen(),
-          EarningsScreen(),
-          ProfileScreen(),
+        return [
+          const AgentDashboardScreen(),
+          const AddPropertyScreen(),
+          const OpportunityFeedScreen(),
+          const EarningsScreen(),
+          ConversationsScreen(userId: userId),
+          const ProfileScreen(),
         ];
       case UserRole.influencer:
-        return const [
-          InfluencerDashboardScreen(),
-          ReferralLinkScreen(),
-          InfluencerCampaignsScreen(),
-          EarningsScreen(),
-          ProfileScreen(),
+        return [
+          const InfluencerDashboardScreen(),
+          const ReferralLinkScreen(),
+          const InfluencerCampaignsScreen(),
+          const EarningsScreen(),
+          ConversationsScreen(userId: userId),
+          const ProfileScreen(),
         ];
     }
   }
 
-  List<NavigationDestination> _getNavItems(BuildContext context, UserRole role) {
+  /// Messages tab icon with a live unread-count badge.
+  NavigationDestination _messagesDestination(String userId, String label) {
+    return NavigationDestination(
+      icon: StreamBuilder<int>(
+        stream: ChatService().watchTotalUnread(userId),
+        builder: (context, snapshot) {
+          final count = snapshot.data ?? 0;
+          return Badge(
+            isLabelVisible: count > 0,
+            label: Text('$count'),
+            child: const Icon(Icons.chat_bubble_outline),
+          );
+        },
+      ),
+      label: label,
+    );
+  }
+
+  List<NavigationDestination> _getNavItems(BuildContext context, UserRole role, String userId) {
     final l10n = AppLocalizations.of(context)!;
     switch (role) {
       case UserRole.seeker:
@@ -94,6 +118,7 @@ class _MainNavigationState extends State<MainNavigation> {
           NavigationDestination(icon: const Icon(Icons.trending_up), label: l10n.opportunities),
           NavigationDestination(icon: const Icon(Icons.account_balance_wallet), label: l10n.earnings),
           NavigationDestination(icon: const Icon(Icons.local_shipping), label: l10n.myMove),
+          _messagesDestination(userId, l10n.messages),
           NavigationDestination(icon: const Icon(Icons.person), label: l10n.profile),
         ];
       case UserRole.landlord:
@@ -102,6 +127,7 @@ class _MainNavigationState extends State<MainNavigation> {
           NavigationDestination(icon: const Icon(Icons.add_home), label: l10n.add),
           NavigationDestination(icon: const Icon(Icons.trending_up), label: l10n.opportunities),
           NavigationDestination(icon: const Icon(Icons.account_balance_wallet), label: l10n.earnings),
+          _messagesDestination(userId, l10n.messages),
           NavigationDestination(icon: const Icon(Icons.person), label: l10n.profile),
         ];
       case UserRole.agent:
@@ -110,6 +136,7 @@ class _MainNavigationState extends State<MainNavigation> {
           NavigationDestination(icon: const Icon(Icons.add_home), label: l10n.add),
           NavigationDestination(icon: const Icon(Icons.trending_up), label: l10n.opportunities),
           NavigationDestination(icon: const Icon(Icons.account_balance_wallet), label: l10n.earnings),
+          _messagesDestination(userId, l10n.messages),
           NavigationDestination(icon: const Icon(Icons.person), label: l10n.profile),
         ];
       case UserRole.influencer:
@@ -118,6 +145,7 @@ class _MainNavigationState extends State<MainNavigation> {
           NavigationDestination(icon: const Icon(Icons.link), label: l10n.referral),
           NavigationDestination(icon: const Icon(Icons.campaign), label: l10n.campaigns),
           NavigationDestination(icon: const Icon(Icons.account_balance_wallet), label: l10n.earnings),
+          _messagesDestination(userId, l10n.messages),
           NavigationDestination(icon: const Icon(Icons.person), label: l10n.profile),
         ];
     }

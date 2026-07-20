@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dalali/models/kyc/kyc_session_model.dart';
 import 'package:dalali/models/kyc/verification_result_model.dart';
 import 'package:dalali/services/kyc/kyc_service.dart';
 import 'package:dalali/services/kyc/nida_integration_service.dart';
@@ -10,7 +11,9 @@ import 'package:dalali/screens/kyc/kyc_status_screen.dart';
 /// ═══════════════════════════════════════════════════════════════
 ///
 /// Orchestrates the backend verification pipeline:
-/// NIDA API → AML Screening → Risk Scoring → Status Assignment.
+/// NIDA ID → NIDA API + AML screening → status assignment;
+/// other documents (voter's ID, driver's licence, passport,
+/// ZanID) → AML screening → manual review.
 ///
 class VerificationPendingScreen extends StatefulWidget {
   final String userId;
@@ -36,32 +39,52 @@ class _VerificationPendingScreenState extends State<VerificationPendingScreen> {
     final session = kyc.currentSession;
     if (session == null) return;
 
-    // Step 1: NIDA API verification (stub)
-    setState(() => _statusMessage = 'Verifying with NIDA...');
-    await Future.delayed(const Duration(seconds: 2));
-    final nidaResult = await NidaIntegrationService().verifyIdentity(
-      nin: '12345678901234567890',
-      dateOfBirth: DateTime(1990, 5, 15),
-      correlationId: session.correlationId ?? '',
-      verificationReason: 'fintech_onboarding',
-    );
+    final docType = session.selectedDocumentType ?? IdDocumentType.nidaId;
+    final KycSessionModel finalSession;
 
-    // Step 2: AML screening (stub)
-    setState(() => _statusMessage = 'Running security checks...');
-    await Future.delayed(const Duration(seconds: 1));
-    final amlResult = await AmlScreeningService().screenName(
-      fullName: 'John Doe',
-      dateOfBirth: '1990-05-15',
-      sessionId: session.sessionId,
-    );
+    if (docType == IdDocumentType.nidaId) {
+      // Step 1: NIDA API verification (stub)
+      setState(() => _statusMessage = 'Verifying with NIDA...');
+      await Future.delayed(const Duration(seconds: 2));
+      final nidaResult = await NidaIntegrationService().verifyIdentity(
+        nin: '12345678901234567890',
+        dateOfBirth: DateTime(1990, 5, 15),
+        correlationId: session.correlationId ?? '',
+        verificationReason: 'fintech_onboarding',
+      );
 
-    // Step 3: Finalize
-    final finalSession = await kyc.finalize(
-      nidaMatch: nidaResult.isSuccessful,
-      livenessPass: true,
-      amlClear: amlResult.isSuccessful,
-      riskLevel: amlResult.assessedRisk ?? RiskLevel.low,
-    );
+      // Step 2: AML screening (stub)
+      setState(() => _statusMessage = 'Running security checks...');
+      await Future.delayed(const Duration(seconds: 1));
+      final amlResult = await AmlScreeningService().screenName(
+        fullName: 'John Doe',
+        dateOfBirth: '1990-05-15',
+        sessionId: session.sessionId,
+      );
+
+      // Step 3: Finalize — liveness outcome recorded by
+      // LivenessCheckScreen (proof of life) gates verification.
+      finalSession = await kyc.finalize(
+        nidaMatch: nidaResult.isSuccessful,
+        livenessPass: kyc.livenessResult?.isSuccessful ?? false,
+        amlClear: amlResult.isSuccessful,
+        riskLevel: amlResult.assessedRisk ?? RiskLevel.low,
+      );
+    } else {
+      // Voter's ID, driver's licence, passport and ZanID have no
+      // instant verification API in Tanzania — run the security
+      // screening, then route to manual review.
+      setState(() => _statusMessage = 'Running security checks...');
+      await Future.delayed(const Duration(seconds: 1));
+      await AmlScreeningService().screenName(
+        fullName: 'John Doe',
+        dateOfBirth: '1990-05-15',
+        sessionId: session.sessionId,
+      );
+
+      setState(() => _statusMessage = 'Submitting your documents for review...');
+      finalSession = await kyc.submitForManualReview();
+    }
 
     setState(() {
       _statusMessage = finalSession.status.name;

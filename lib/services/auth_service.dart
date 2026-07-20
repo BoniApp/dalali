@@ -148,29 +148,6 @@ class AuthService {
 
   // ─── Serialization ──────────────────────────────────────────
 
-  Map<String, dynamic> _userToJson(UserModel user) {
-    return {
-      'id': user.id,
-      'full_name': user.fullName,
-      'email': user.email,
-      'phone': user.phone,
-      'role': user.role.name,
-      'verification_status': user.verificationStatus.name,
-      'is_phone_verified': user.isPhoneVerified,
-      'profile_image': user.profileImage,
-      'created_at': user.createdAt.toIso8601String(),
-      'national_id': user.nationalId,
-      'agent_license': user.agentLicense,
-      'subscription_tier': user.subscriptionTier,
-      'is_verified_landlord': user.isVerifiedLandlord,
-      'saved_searches': user.savedSearches,
-      'preferred_locations': user.preferredLocations,
-      'move_mode': user.moveMode.name,
-      'active_move_listing_id': user.activeMoveListingId,
-      'total_reward_points': user.totalRewardPoints,
-    };
-  }
-
   UserModel _userFromJson(Map<String, dynamic> json, String uid) {
     return UserModel(
       id: uid,

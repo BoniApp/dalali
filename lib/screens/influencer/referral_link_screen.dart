@@ -20,9 +20,35 @@ class ReferralLinkScreen extends StatelessWidget {
     );
   }
 
-  Future<void> _shareWhatsApp(BuildContext context, String message) async {
-    final uri = Uri.parse('https://wa.me/?text=${Uri.encodeComponent(message)}');
-    if (await canLaunchUrl(uri)) await launchUrl(uri);
+  Future<void> _launchExternal(String url) async {
+    try {
+      await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+    } catch (_) {
+      // No browser/app available — ignore.
+    }
+  }
+
+  Future<void> _shareWhatsApp(String message) {
+    return _launchExternal('https://wa.me/?text=${Uri.encodeComponent(message)}');
+  }
+
+  /// Facebook, TikTok, Instagram and YouTube have no URL-based way to
+  /// prefill post text — copy the message first so the influencer can
+  /// paste it into their post, bio or video description, then open
+  /// the platform.
+  Future<void> _copyAndOpen(
+    BuildContext context,
+    String message,
+    String url,
+    String platform,
+  ) async {
+    final l10n = AppLocalizations.of(context)!;
+    await Clipboard.setData(ClipboardData(text: message));
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(l10n.sharePasteHint(platform))),
+    );
+    await _launchExternal(url);
   }
 
   @override
@@ -82,6 +108,7 @@ class ReferralLinkScreen extends StatelessWidget {
 
     final service = InfluencerService();
     final referralUrl = service.buildReferralUrl(profile.referralCode);
+    final shareMessage = l10n.referralShareMessage(profile.referralCode, referralUrl);
 
     return Scaffold(
       appBar: AppBar(
@@ -121,36 +148,88 @@ class ReferralLinkScreen extends StatelessWidget {
                       style: const TextStyle(fontSize: 12, color: Colors.white70),
                     ),
                     const SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        ElevatedButton.icon(
-                          onPressed: () => _copy(context, referralUrl),
-                          icon: const Icon(Icons.copy, size: 18),
-                          label: Text(l10n.copy),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.white,
-                            foregroundColor: AppTheme.primary,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        ElevatedButton.icon(
-                          onPressed: () => _shareWhatsApp(
-                            context,
-                            l10n.referralShareMessage(profile.referralCode, referralUrl),
-                          ),
-                          icon: const Icon(Icons.share, size: 18),
-                          label: Text(l10n.share),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.green,
-                            foregroundColor: Colors.white,
-                          ),
-                        ),
-                      ],
+                    ElevatedButton.icon(
+                      onPressed: () => _copy(context, referralUrl),
+                      icon: const Icon(Icons.copy, size: 18),
+                      label: Text(l10n.copy),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        foregroundColor: AppTheme.primary,
+                      ),
                     ),
                   ],
                 ),
               ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              l10n.shareTo,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 4,
+              runSpacing: 4,
+              children: [
+                _ShareTarget(
+                  icon: Icons.chat,
+                  color: const Color(0xFF25D366),
+                  label: 'WhatsApp',
+                  onTap: () => _shareWhatsApp(shareMessage),
+                ),
+                _ShareTarget(
+                  icon: Icons.facebook,
+                  color: const Color(0xFF1877F2),
+                  label: 'Facebook',
+                  onTap: () => _copyAndOpen(
+                    context,
+                    shareMessage,
+                    'https://www.facebook.com/sharer/sharer.php?u=${Uri.encodeComponent(referralUrl)}',
+                    'Facebook',
+                  ),
+                ),
+                _ShareTarget(
+                  icon: Icons.alternate_email,
+                  color: Colors.black,
+                  label: 'Threads',
+                  onTap: () => _launchExternal(
+                    'https://www.threads.net/intent/post?text=${Uri.encodeComponent(shareMessage)}',
+                  ),
+                ),
+                _ShareTarget(
+                  icon: Icons.music_note,
+                  color: Colors.black,
+                  label: 'TikTok',
+                  onTap: () => _copyAndOpen(
+                    context,
+                    shareMessage,
+                    'https://www.tiktok.com',
+                    'TikTok',
+                  ),
+                ),
+                _ShareTarget(
+                  icon: Icons.camera_alt,
+                  color: const Color(0xFFE1306C),
+                  label: 'Instagram',
+                  onTap: () => _copyAndOpen(
+                    context,
+                    shareMessage,
+                    'https://www.instagram.com',
+                    'Instagram',
+                  ),
+                ),
+                _ShareTarget(
+                  icon: Icons.play_circle_fill,
+                  color: const Color(0xFFFF0000),
+                  label: 'YouTube',
+                  onTap: () => _copyAndOpen(
+                    context,
+                    shareMessage,
+                    'https://www.youtube.com',
+                    'YouTube',
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 24),
             Text(
@@ -193,6 +272,43 @@ class ReferralLinkScreen extends StatelessWidget {
                 );
               },
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// A branded social-platform share button: tinted circle icon + label.
+class _ShareTarget extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final String label;
+  final VoidCallback onTap;
+
+  const _ShareTarget({
+    required this.icon,
+    required this.color,
+    required this.label,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.all(8),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircleAvatar(
+              backgroundColor: Colors.grey[100],
+              child: Icon(icon, color: color),
+            ),
+            const SizedBox(height: 4),
+            Text(label, style: const TextStyle(fontSize: 11)),
           ],
         ),
       ),

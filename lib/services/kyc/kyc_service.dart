@@ -21,6 +21,17 @@ class KycService {
   KycSessionModel? _currentSession;
   KycSessionModel? get currentSession => _currentSession;
 
+  VerificationResultModel? _livenessResult;
+
+  /// Outcome of the proof-of-life check for the current session.
+  /// Null until LivenessCheckScreen records a result.
+  VerificationResultModel? get livenessResult => _livenessResult;
+
+  /// Record the proof-of-life outcome for the current session.
+  void recordLivenessResult(VerificationResultModel result) {
+    _livenessResult = result;
+  }
+
   /// Initialize or resume a KYC session for a user.
   Future<KycSessionModel> startSession(String userId) async {
     final session = KycSessionModel(
@@ -60,22 +71,6 @@ class KycService {
     return document;
   }
 
-  /// Run liveness + face match check.
-  Future<VerificationResultModel> runLivenessCheck({
-    required String selfieImagePath,
-    required String documentPhotoUrl,
-  }) async {
-    // Stub: in production, call native liveness SDK
-    return VerificationResultModel(
-      resultId: 'liveness_${DateTime.now().millisecondsSinceEpoch}',
-      sessionId: _currentSession?.sessionId ?? '',
-      source: 'liveness_check',
-      outcome: VerificationOutcome.match,
-      matchScore: 0.94,
-      checkedAt: DateTime.now(),
-    );
-  }
-
   /// Finalize verification and assign tier.
   Future<KycSessionModel> finalize({
     required bool nidaMatch,
@@ -108,6 +103,22 @@ class KycService {
     );
 
     _statusController.add(newStatus);
+    return _currentSession!;
+  }
+
+  /// Submit the session for manual review.
+  ///
+  /// Used for document types with no instant verification API in
+  /// Tanzania (voter's ID, driver's licence, passport, ZanID) — a
+  /// reviewer verifies the captured document manually. Liveness has
+  /// already passed by this point in the flow.
+  Future<KycSessionModel> submitForManualReview() async {
+    if (_currentSession == null) throw StateError('No active session');
+    _currentSession = _currentSession!.copyWith(
+      status: KycStatus.pendingReview,
+      submittedAt: DateTime.now(),
+    );
+    _statusController.add(KycStatus.pendingReview);
     return _currentSession!;
   }
 

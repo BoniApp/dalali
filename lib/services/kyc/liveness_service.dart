@@ -1,95 +1,82 @@
 import 'package:dalali/models/kyc/verification_result_model.dart';
 
 /// ═══════════════════════════════════════════════════════════════
-/// LIVENESS SERVICE
+/// LIVENESS SERVICE — Proof of Life
 /// ═══════════════════════════════════════════════════════════════
 ///
-/// Abstraction over native liveness detection SDKs.
-/// Supports both passive (blink detection) and active
-/// (challenge-response) modes.
+/// Evaluates proof-of-life evidence captured by
+/// LivenessCheckScreen: two distinct LIVE front-camera captures
+/// (plain selfie + random challenge-response selfie) completed
+/// within a bounded time window. Gallery picks are not accepted
+/// by the capture flow — a photo from storage is exactly the
+/// spoof vector proof of life exists to defeat.
 ///
-/// In production, integrate:
-///   • Google ML Kit Face Detection
-///   • AWS Rekognition Face Liveness
-///   • Or a custom TFLite model
+/// What this guarantees without an ML SDK: the applicant held the
+/// phone and performed a prompted action at verification time.
+/// What it does NOT guarantee: that the face matches the document
+/// photo — for that, integrate a face-embedding/ML liveness SDK
+/// (Google ML Kit, AWS Rekognition Face Liveness, custom TFLite)
+/// behind [evaluateProofOfLife] without changing the UI flow.
 ///
 class LivenessService {
-  static const double _livenessThreshold = 0.92;
-  static const double _faceMatchThreshold = 0.85;
+  /// Maximum time allowed for the whole proof-of-life sequence.
+  static const Duration maxElapsed = Duration(seconds: 60);
 
-  /// Run passive liveness detection on a selfie.
-  /// Returns confidence score 0.0–1.0
-  Future<double> detectPassiveLiveness(String imagePath) async {
-    // Stub: in production, analyze eye aspect ratio, depth, texture
-    return 0.96;
-  }
-
-  /// Run active liveness challenge.
-  /// Challenges: turn left, turn right, smile, blink.
-  Future<LivenessChallengeResult> runActiveChallenge({
-    required List<String> videoFramePaths,
-    required List<String> expectedActions,
-  }) async {
-    // Stub: in production, compare frame sequence against expected actions
-    return LivenessChallengeResult(
-      allActionsDetected: true,
-      confidence: 0.94,
-    );
-  }
-
-  /// Compare document photo against selfie using face embedding.
-  Future<VerificationResultModel> matchFace({
-    required String documentPhotoUrl,
-    required String selfieImagePath,
+  /// Evaluate captured proof-of-life evidence. Pure logic — no I/O.
+  VerificationResultModel evaluateProofOfLife({
+    required LivenessProof proof,
     required String sessionId,
-  }) async {
-    // Stub: in production, compute face embedding cosine similarity
-    const similarity = 0.91;
-    final matched = similarity >= _faceMatchThreshold;
+  }) {
+    final failures = <String>[];
 
-    return VerificationResultModel(
-      resultId: 'face_${DateTime.now().millisecondsSinceEpoch}',
-      sessionId: sessionId,
-      source: 'face_match',
-      outcome: matched ? VerificationOutcome.match : VerificationOutcome.mismatch,
-      matchScore: similarity,
-      checkedAt: DateTime.now(),
-    );
-  }
-
-  /// Full liveness + face-match pipeline.
-  Future<VerificationResultModel> runFullLivenessCheck({
-    required String documentPhotoUrl,
-    required String selfieImagePath,
-    required String sessionId,
-  }) async {
-    final livenessScore = await detectPassiveLiveness(selfieImagePath);
-    if (livenessScore < _livenessThreshold) {
-      return VerificationResultModel(
-        resultId: 'liveness_${DateTime.now().millisecondsSinceEpoch}',
-        sessionId: sessionId,
-        source: 'liveness_check',
-        outcome: VerificationOutcome.mismatch,
-        matchScore: livenessScore,
-        flags: ['LIVENESS_FAILED'],
-        checkedAt: DateTime.now(),
-      );
+    if (proof.selfiePath.isEmpty || proof.challengeSelfiePath.isEmpty) {
+      failures.add('MISSING_CAPTURE');
+    }
+    if (proof.selfiePath.isNotEmpty &&
+        proof.selfiePath == proof.challengeSelfiePath) {
+      failures.add('DUPLICATE_CAPTURE');
+    }
+    if (proof.elapsed > maxElapsed) {
+      failures.add('CHALLENGE_EXPIRED');
     }
 
-    return matchFace(
-      documentPhotoUrl: documentPhotoUrl,
-      selfieImagePath: selfieImagePath,
+    final passed = failures.isEmpty;
+    return VerificationResultModel(
+      resultId: 'liveness_${DateTime.now().millisecondsSinceEpoch}',
       sessionId: sessionId,
+      source: 'liveness_check',
+      outcome: passed ? VerificationOutcome.match : VerificationOutcome.mismatch,
+      flags: passed
+          ? ['PROOF_OF_LIFE_CAPTURED', 'CHALLENGE_${proof.challenge.name.toUpperCase()}']
+          : ['LIVENESS_FAILED', ...failures],
+      checkedAt: DateTime.now(),
     );
   }
 }
 
-class LivenessChallengeResult {
-  final bool allActionsDetected;
-  final double confidence;
+/// The active challenge presented to the user between the two
+/// captures. Chosen at random by the screen.
+enum LivenessChallenge { smile, turnLeft, turnRight, blink }
 
-  const LivenessChallengeResult({
-    required this.allActionsDetected,
-    required this.confidence,
+/// Evidence of a live capture sequence, produced by
+/// LivenessCheckScreen and evaluated by [LivenessService].
+class LivenessProof {
+  /// Path of the first live selfie (plain).
+  final String selfiePath;
+
+  /// Path of the second live selfie (after performing [challenge]).
+  final String challengeSelfiePath;
+
+  /// The challenge the user was asked to perform.
+  final LivenessChallenge challenge;
+
+  /// Total time the sequence took, from screen open to second capture.
+  final Duration elapsed;
+
+  const LivenessProof({
+    required this.selfiePath,
+    required this.challengeSelfiePath,
+    required this.challenge,
+    required this.elapsed,
   });
 }

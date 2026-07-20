@@ -15,6 +15,7 @@ import 'package:dalali/screens/tenancy/my_tenancies_screen.dart';
 import 'package:dalali/screens/tenancy/reservation_requests_screen.dart';
 import 'package:dalali/screens/influencer/influencer_application_screen.dart';
 import 'package:dalali/screens/influencer/influencer_dashboard_screen.dart';
+import 'package:dalali/screens/kyc/kyc_gate_screen.dart';
 import 'package:provider/provider.dart';
 
 class ProfileScreen extends StatelessWidget {
@@ -301,7 +302,7 @@ class ProfileScreen extends StatelessWidget {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
-                  onPressed: () => _showVerificationDialog(context),
+                  onPressed: () => _showVerificationDialog(context, user.id),
                   icon: const Icon(Icons.verified_user),
                   label: Text(l10n.verifyMyAccount),
                   style: ElevatedButton.styleFrom(
@@ -328,11 +329,11 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  void _showVerificationDialog(BuildContext context) {
+  void _showVerificationDialog(BuildContext context, String userId) {
     final l10n = AppLocalizations.of(context)!;
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: Text(l10n.accountVerification),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -347,12 +348,13 @@ class ProfileScreen extends StatelessWidget {
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: Text(l10n.later)),
+          TextButton(onPressed: () => Navigator.pop(dialogContext), child: Text(l10n.later)),
           ElevatedButton(
             onPressed: () {
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(l10n.verificationSubmitted)),
+              Navigator.pop(dialogContext);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => KycGateScreen(userId: userId)),
               );
             },
             child: Text(l10n.startVerification),

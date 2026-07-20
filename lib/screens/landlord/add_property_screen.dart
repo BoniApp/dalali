@@ -763,7 +763,7 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
           imageUrls.add(url);
         } catch (e) {
           uploadError ??= 'Photo ${i + 1} failed: $e';
-          print('Image upload failed for index $i: $e');
+          debugPrint('Image upload failed for index $i: $e');
         }
       }
     }
@@ -887,40 +887,42 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
 
     setState(() => _isUploading = false);
 
-    if (mounted) {
-      try {
-        await context.read<AppState>().addProperty(property);
+    if (!mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    final appState = context.read<AppState>();
 
-        final uploadedCount = imageUrls.where(
-          (u) => !u.contains('wikipedia.org'),
-        ).length;
+    try {
+      await appState.addProperty(property);
 
-        ScaffoldMessenger.of(context).showSnackBar(
+      final uploadedCount = imageUrls.where(
+        (u) => !u.contains('wikipedia.org'),
+      ).length;
+
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(uploadedCount > 0
+              ? 'Property with $uploadedCount photo${uploadedCount > 1 ? 's' : ''} submitted for approval!'
+              : 'Property submitted for approval (photos could not be uploaded).'),
+          backgroundColor: uploadedCount > 0 ? null : Colors.orange,
+        ),
+      );
+
+      // Warn user if uploads failed
+      if (uploadError != null) {
+        messenger.showSnackBar(
           SnackBar(
-            content: Text(uploadedCount > 0
-                ? 'Property with $uploadedCount photo${uploadedCount > 1 ? 's' : ''} submitted for approval!'
-                : 'Property submitted for approval (photos could not be uploaded).'),
-            backgroundColor: uploadedCount > 0 ? null : Colors.orange,
+            content: Text('Photo upload issue: $uploadError. You can add photos later by editing the property.'),
+            backgroundColor: Colors.orange.shade800,
+            duration: const Duration(seconds: 6),
           ),
         );
-
-        // Warn user if uploads failed
-        if (uploadError != null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Photo upload issue: $uploadError. You can add photos later by editing the property.'),
-              backgroundColor: Colors.orange.shade800,
-              duration: const Duration(seconds: 6),
-            ),
-          );
-        }
-
-        Navigator.pop(context);
-      } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error saving property: $e'), backgroundColor: Colors.red),
-        );
       }
+
+      if (mounted) Navigator.pop(context);
+    } catch (e) {
+      messenger.showSnackBar(
+        SnackBar(content: Text('Error saving property: $e'), backgroundColor: Colors.red),
+      );
     }
   }
 }

@@ -97,12 +97,13 @@ class _PaymentProvidersAdminScreenState extends State<PaymentProvidersAdminScree
                                   icon: const Icon(Icons.delete, color: Colors.red),
                                   tooltip: 'Disable',
                                   onPressed: () async {
+                                    final messenger = ScaffoldMessenger.of(context);
                                     try {
                                       await _service.updateGateway(p.id, {'enabled': false});
                                       await _loadProviders();
-                                      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Provider disabled')));
+                                      messenger.showSnackBar(const SnackBar(content: Text('Provider disabled')));
                                     } catch (e) {
-                                      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+                                      messenger.showSnackBar(SnackBar(content: Text('Error: $e')));
                                     }
                                   },
                                 ),
@@ -147,6 +148,8 @@ class _PaymentProvidersAdminScreenState extends State<PaymentProvidersAdminScree
           TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancel')),
           FilledButton(
             onPressed: () async {
+              final messenger = ScaffoldMessenger.of(context);
+              final navigator = Navigator.of(context);
               try {
                 final id = idCtrl.text.trim();
                 final name = nameCtrl.text.trim();
@@ -158,10 +161,10 @@ class _PaymentProvidersAdminScreenState extends State<PaymentProvidersAdminScree
                 }
                 await _service.createGateway({'id': id, 'provider_name': name, 'environment': envCtrl.text.trim(), 'config': cfg, 'enabled': false});
                 await _loadProviders();
-                if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Provider created')));
-                Navigator.of(context).pop();
+                messenger.showSnackBar(const SnackBar(content: Text('Provider created')));
+                navigator.pop();
               } catch (e) {
-                if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+                messenger.showSnackBar(SnackBar(content: Text('Error: $e')));
               }
             },
             child: const Text('Create'),
@@ -193,6 +196,8 @@ class _PaymentProvidersAdminScreenState extends State<PaymentProvidersAdminScree
           TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancel')),
           FilledButton(
             onPressed: () async {
+              final messenger = ScaffoldMessenger.of(context);
+              final navigator = Navigator.of(context);
               try {
                 final cfgText = configCtrl.text.trim();
                 dynamic cfg;
@@ -203,10 +208,10 @@ class _PaymentProvidersAdminScreenState extends State<PaymentProvidersAdminScree
                 }
                 await _service.updateGateway(p.id, {'environment': envCtrl.text.trim(), 'config': cfg});
                 await _loadProviders();
-                if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Provider updated')));
-                Navigator.of(context).pop();
+                messenger.showSnackBar(const SnackBar(content: Text('Provider updated')));
+                navigator.pop();
               } catch (e) {
-                if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+                messenger.showSnackBar(SnackBar(content: Text('Error: $e')));
               }
             },
             child: const Text('Save'),
