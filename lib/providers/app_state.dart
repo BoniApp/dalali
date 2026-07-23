@@ -29,10 +29,7 @@ import 'package:dalali/services/safety_engine.dart';
 import 'package:dalali/services/earnings_service.dart';
 import 'package:dalali/services/influencer/influencer_service.dart';
 
-enum AuthMode { supabase }
-
 class AppState extends ChangeNotifier with WidgetsBindingObserver {
-  AuthMode _authMode = AuthMode.supabase;
   UserModel? currentUser;
   InfluencerModel? influencerProfile;
   List<PropertyModel> _properties = [];
@@ -69,8 +66,6 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
   AppLifecycleState _lifecycleState = AppLifecycleState.resumed;
   bool _notificationsPrimed = false;
 
-  AuthMode get authMode => _authMode;
-
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     _lifecycleState = state;
@@ -88,7 +83,6 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
     _authService.authStateChanges.listen((AuthState state) async {
       final user = state.session?.user;
       if (user != null) {
-        _authMode = AuthMode.supabase;
         // Load user profile from database
         final userDoc = await _data.getUserById(user.id);
         if (userDoc != null) {
@@ -305,11 +299,9 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
     );
     if (existing >= 0) {
       _favorites.removeAt(existing);
-      if (_isFirebase) {
-        _data.removeFavorite(currentUser!.id, propertyId).catchError((e) {
-          debugPrint('removeFavorite error: $e');
-        });
-      }
+      _data.removeFavorite(currentUser!.id, propertyId).catchError((e) {
+        debugPrint('removeFavorite error: $e');
+      });
     } else {
       _favorites.add(FavoriteModel(
         id: 'f${DateTime.now().millisecondsSinceEpoch}',
@@ -317,11 +309,9 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
         propertyId: propertyId,
         createdAt: DateTime.now(),
       ));
-      if (_isFirebase) {
-        _data.addFavorite(currentUser!.id, propertyId).catchError((e) {
-          debugPrint('addFavorite error: $e');
-        });
-      }
+      _data.addFavorite(currentUser!.id, propertyId).catchError((e) {
+        debugPrint('addFavorite error: $e');
+      });
     }
     notifyListeners();
   }
@@ -567,8 +557,6 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
     );
   }
 
-  bool get _isFirebase => _authMode == AuthMode.supabase;
-
   // ─── Move Engine (Demo Mode) ────────────────────────────────
 
   void startMove(MoveListingModel move) {
@@ -628,11 +616,9 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
 
   void addReview(ReviewModel review) {
     _reviews.add(review);
-    if (_isFirebase) {
-      _data.addReview(review).catchError((e) {
-        debugPrint('addReview error: $e');
-      });
-    }
+    _data.addReview(review).catchError((e) {
+      debugPrint('addReview error: $e');
+    });
     // Update property review count + average rating (simplified)
     final pIdx = _properties.indexWhere((p) => p.id == review.propertyId);
     if (pIdx >= 0) {
@@ -643,11 +629,9 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
         reviewCount: newCount,
         rating: newRating,
       );
-      if (_isFirebase) {
-        _data.updateProperty(_properties[pIdx]).catchError((e) {
-          debugPrint('updateProperty error: $e');
-        });
-      }
+      _data.updateProperty(_properties[pIdx]).catchError((e) {
+        debugPrint('updateProperty error: $e');
+      });
     }
     notifyListeners();
   }
@@ -656,11 +640,9 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
 
   void addNeighbourhoodReport(NeighbourhoodReportModel report) {
     _neighbourhoodReports.add(report);
-    if (_isFirebase) {
-      _data.addNeighbourhoodReport(report).catchError((e) {
-        debugPrint('addNeighbourhoodReport error: $e');
-      });
-    }
+    _data.addNeighbourhoodReport(report).catchError((e) {
+      debugPrint('addNeighbourhoodReport error: $e');
+    });
     // Recompute safety scores for nearby properties
     _recomputeSafetyScores();
     notifyListeners();
@@ -706,11 +688,9 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
 
   void applyForTenancy(TenancyApplicationModel application) {
     _tenancyApplications.add(application);
-    if (_isFirebase) {
-      _data.addTenancyApplication(application).catchError((e) {
-        debugPrint('addTenancyApplication error: $e');
-      });
-    }
+    _data.addTenancyApplication(application).catchError((e) {
+      debugPrint('addTenancyApplication error: $e');
+    });
     notifyListeners();
   }
 
@@ -722,11 +702,9 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
         status: ApplicationStatus.approved,
         resolvedAt: DateTime.now(),
       );
-      if (_isFirebase) {
-        _data.updateApplicationStatus(applicationId, ApplicationStatus.approved).catchError((e) {
-          debugPrint('updateApplicationStatus error: $e');
-        });
-      }
+      _data.updateApplicationStatus(applicationId, ApplicationStatus.approved).catchError((e) {
+        debugPrint('updateApplicationStatus error: $e');
+      });
       notifyListeners();
     }
   }
@@ -740,11 +718,9 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
         resolvedAt: DateTime.now(),
         notes: reason,
       );
-      if (_isFirebase) {
-        _data.updateApplicationStatus(applicationId, ApplicationStatus.rejected, notes: reason).catchError((e) {
-          debugPrint('updateApplicationStatus error: $e');
-        });
-      }
+      _data.updateApplicationStatus(applicationId, ApplicationStatus.rejected, notes: reason).catchError((e) {
+        debugPrint('updateApplicationStatus error: $e');
+      });
       notifyListeners();
     }
   }
@@ -757,11 +733,9 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
         status: TenancyStatus.active,
         activatedAt: DateTime.now(),
       );
-      if (_isFirebase) {
-        _data.updateTenancyStatus(tenancyId, TenancyStatus.active).catchError((e) {
-          debugPrint('updateTenancyStatus error: $e');
-        });
-      }
+      _data.updateTenancyStatus(tenancyId, TenancyStatus.active).catchError((e) {
+        debugPrint('updateTenancyStatus error: $e');
+      });
       notifyListeners();
     }
   }
@@ -774,31 +748,41 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
         status: TenancyStatus.completed,
         completedAt: DateTime.now(),
       );
-      if (_isFirebase) {
-        _data.updateTenancyStatus(tenancyId, TenancyStatus.completed).catchError((e) {
-          debugPrint('updateTenancyStatus error: $e');
-        });
-      }
+      _data.updateTenancyStatus(tenancyId, TenancyStatus.completed).catchError((e) {
+        debugPrint('updateTenancyStatus error: $e');
+      });
       notifyListeners();
     }
   }
 
+  /// Relist a property that left the market (status 'unlisted' after a
+  /// tenancy ended — see migration 021). Explicit landlord action; the
+  /// server never auto-relists.
+  void relistProperty(String propertyId) {
+    final idx = _myProperties.indexWhere((p) => p.id == propertyId);
+    if (idx >= 0) {
+      _myProperties[idx] = _myProperties[idx].copyWith(status: PropertyStatus.available);
+    }
+    _data.updatePropertyStatus(propertyId, PropertyStatus.available).catchError((e) {
+      debugPrint('relistProperty error: $e');
+    });
+    notifyListeners();
+  }
+
   void addMaintenanceRequest(MaintenanceRequestModel request) {
     _maintenanceRequests.add(request);
-    if (_isFirebase) {
-      _data.addMaintenanceRequest(request).catchError((e) {
-        debugPrint('addMaintenanceRequest error: $e');
-      });
-      // Notify landlord
-      NotificationService.notifyUser(
-        userId: request.landlordId,
-        type: NotificationType.maintenanceUpdate,
-        title: 'New Maintenance Request',
-        body: '${request.tenantName} reported: ${request.description}',
-        targetId: request.id,
-        targetCollection: 'maintenance_requests',
-      ).catchError((e) => debugPrint('notifyUser error: $e'));
-    }
+    _data.addMaintenanceRequest(request).catchError((e) {
+      debugPrint('addMaintenanceRequest error: $e');
+    });
+    // Notify landlord
+    NotificationService.notifyUser(
+      userId: request.landlordId,
+      type: NotificationType.maintenanceUpdate,
+      title: 'New Maintenance Request',
+      body: '${request.tenantName} reported: ${request.description}',
+      targetId: request.id,
+      targetCollection: 'maintenance_requests',
+    ).catchError((e) => debugPrint('notifyUser error: $e'));
     notifyListeners();
   }
 
@@ -811,20 +795,18 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
         resolvedAt: status == MaintenanceStatus.resolved ? DateTime.now() : null,
         resolutionNotes: resolutionNotes,
       );
-      if (_isFirebase) {
-        _data.updateMaintenanceStatus(requestId, status, resolutionNotes: resolutionNotes).catchError((e) {
-          debugPrint('updateMaintenanceStatus error: $e');
-        });
-        if (status == MaintenanceStatus.resolved) {
-          NotificationService.notifyUser(
-            userId: request.tenantId,
-            type: NotificationType.maintenanceUpdate,
-            title: 'Maintenance Resolved',
-            body: 'Your request for ${request.propertyTitle} has been resolved.',
-            targetId: request.id,
-            targetCollection: 'maintenance_requests',
-          ).catchError((e) => debugPrint('notifyUser error: $e'));
-        }
+      _data.updateMaintenanceStatus(requestId, status, resolutionNotes: resolutionNotes).catchError((e) {
+        debugPrint('updateMaintenanceStatus error: $e');
+      });
+      if (status == MaintenanceStatus.resolved) {
+        NotificationService.notifyUser(
+          userId: request.tenantId,
+          type: NotificationType.maintenanceUpdate,
+          title: 'Maintenance Resolved',
+          body: 'Your request for ${request.propertyTitle} has been resolved.',
+          targetId: request.id,
+          targetCollection: 'maintenance_requests',
+        ).catchError((e) => debugPrint('notifyUser error: $e'));
       }
       notifyListeners();
     }
@@ -843,11 +825,9 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
         status: PaymentStatus.paid,
         paidAt: DateTime.now(),
       );
-      if (_isFirebase) {
-        _data.markRentPaid(scheduleId).catchError((e) {
-          debugPrint('markRentPaid error: $e');
-        });
-      }
+      _data.markRentPaid(scheduleId).catchError((e) {
+        debugPrint('markRentPaid error: $e');
+      });
       notifyListeners();
     }
   }
@@ -867,11 +847,9 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
           items: items,
           updatedAt: DateTime.now(),
         );
-        if (_isFirebase) {
-          _data.updateMoveChecklist(_moveChecklists[cIdx]).catchError((e) {
-            debugPrint('updateMoveChecklist error: $e');
-          });
-        }
+        _data.updateMoveChecklist(_moveChecklists[cIdx]).catchError((e) {
+          debugPrint('updateMoveChecklist error: $e');
+        });
         notifyListeners();
       }
     }
@@ -898,9 +876,7 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
   // ─── Legacy property/appointment/inquiry ────────────────────
 
   Future<void> addProperty(PropertyModel property) async {
-    if (_isFirebase) {
-      await _data.addProperty(property);
-    }
+    await _data.addProperty(property);
     _properties.add(property);
     notifyListeners();
   }
@@ -908,9 +884,7 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
   Future<void> updateProperty(PropertyModel property) async {
     final index = _properties.indexWhere((p) => p.id == property.id);
     if (index >= 0) {
-      if (_isFirebase) {
-        await _data.updateProperty(property);
-      }
+      await _data.updateProperty(property);
       _properties[index] = property;
       notifyListeners();
     }
@@ -918,20 +892,18 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
 
   void addAppointment(AppointmentModel appointment) {
     _appointments.add(appointment);
-    if (_isFirebase) {
-      _data.addAppointment(appointment).catchError((e) {
-        debugPrint('addAppointment error: $e');
-      });
-      // Notify landlord
-      NotificationService.notifyUser(
-        userId: appointment.landlordId,
-        type: NotificationType.appointment,
-        title: 'New Viewing Request',
-        body: '${appointment.seekerName} wants to view ${appointment.propertyTitle}',
-        targetId: appointment.id,
-        targetCollection: 'appointments',
-      ).catchError((e) => debugPrint('notifyUser error: $e'));
-    }
+    _data.addAppointment(appointment).catchError((e) {
+      debugPrint('addAppointment error: $e');
+    });
+    // Notify landlord
+    NotificationService.notifyUser(
+      userId: appointment.landlordId,
+      type: NotificationType.appointment,
+      title: 'New Viewing Request',
+      body: '${appointment.seekerName} wants to view ${appointment.propertyTitle}',
+      targetId: appointment.id,
+      targetCollection: 'appointments',
+    ).catchError((e) => debugPrint('notifyUser error: $e'));
     notifyListeners();
   }
 
@@ -952,11 +924,9 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
         status: status,
         createdAt: old.createdAt,
       );
-      if (_isFirebase) {
-        _data.updateAppointmentStatus(id, status).catchError((e) {
-          debugPrint('updateAppointmentStatus error: $e');
-        });
-      }
+      _data.updateAppointmentStatus(id, status).catchError((e) {
+        debugPrint('updateAppointmentStatus error: $e');
+      });
       notifyListeners();
     }
   }
@@ -972,26 +942,24 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
       );
     }
 
-    if (_isFirebase) {
-      _data.addInquiry(inquiry).catchError((e) {
-        debugPrint('addInquiry error: $e');
+    _data.addInquiry(inquiry).catchError((e) {
+      debugPrint('addInquiry error: $e');
+    });
+    // Also sync inquiry count to DB
+    if (pIdx >= 0) {
+      _data.incrementPropertyInquiryCount(inquiry.propertyId, _properties[pIdx].inquiryCount - 1).catchError((e) {
+        debugPrint('incrementPropertyInquiryCount error: $e');
       });
-      // Also sync inquiry count to DB
-      if (pIdx >= 0) {
-        _data.incrementPropertyInquiryCount(inquiry.propertyId, _properties[pIdx].inquiryCount - 1).catchError((e) {
-          debugPrint('incrementPropertyInquiryCount error: $e');
-        });
-      }
-      // Notify landlord
-      NotificationService.notifyUser(
-        userId: inquiry.landlordId,
-        type: NotificationType.inquiry,
-        title: 'New Inquiry',
-        body: '${inquiry.seekerName}: ${inquiry.message}',
-        targetId: inquiry.propertyId,
-        targetCollection: 'properties',
-      ).catchError((e) => debugPrint('notifyUser error: $e'));
     }
+    // Notify landlord
+    NotificationService.notifyUser(
+      userId: inquiry.landlordId,
+      type: NotificationType.inquiry,
+      title: 'New Inquiry',
+      body: '${inquiry.seekerName}: ${inquiry.message}',
+      targetId: inquiry.propertyId,
+      targetCollection: 'properties',
+    ).catchError((e) => debugPrint('notifyUser error: $e'));
     notifyListeners();
   }
 
@@ -1037,11 +1005,9 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
         createdAt: old.createdAt,
         isRead: true,
       );
-      if (_isFirebase) {
-        _data.markInquiryRead(id).catchError((e) {
-          debugPrint('markInquiryRead error: $e');
-        });
-      }
+      _data.markInquiryRead(id).catchError((e) {
+        debugPrint('markInquiryRead error: $e');
+      });
       notifyListeners();
     }
   }

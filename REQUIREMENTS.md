@@ -65,7 +65,7 @@ This makes HTN far more than a rental app — it becomes a complete housing and 
 - `LanguageProvider` supporting English (`en`) and Kiswahili (`sw`)
 - ARB localization files (`app_en.arb`, `app_sw.arb`)
 - `SettingsScreen` for theme and language selection
-- Firestore sync for cross-device preference persistence
+- Supabase sync for cross-device preference persistence
 
 ---
 
@@ -98,7 +98,7 @@ Implement phone location integration throughout the application.
 Store for **all properties**:
 - `latitude` — double
 - `longitude` — double
-- `geohash` — string (for Firestore geospatial indexing and radius queries)
+- `geohash` — string (for geospatial indexing and radius queries)
 
 Store for **users** (optional, with consent):
 - `lastKnownLatitude`
@@ -117,8 +117,8 @@ Create the following screens:
 
 ### Architecture
 - **Google Maps Flutter** (`google_maps_flutter`) for primary map rendering on mobile
-- **Geohash** encoding (`geohash` package or custom impl) for scalable Firestore queries
-- **Firestore queries** using geohash prefix range scans for sub-second radius searches
+- **Geohash** encoding (`geohash` package or custom impl) for scalable geo queries
+- **Database queries** using geohash prefix range scans for sub-second radius searches
 - **Fallback**: OpenStreetMap + `flutter_map` for web or where Google Maps is unavailable
 - **Permissions**: `geolocator` package for cross-platform location permission handling
 
@@ -126,7 +126,7 @@ Create the following screens:
 
 ## 🛡️ Security & Compliance
 
-- Firestore security rules with role-based access control
+- Row Level Security (RLS) with role-based access control
 - Anti-tamper fields (clients cannot write `isApproved`, `isBoosted`, `viewCount`, `inquiryCount`, `rating`, `reviewCount`, `safetyScore`, `incidentCount`)
 - New properties default to `isApproved: false`
 - Location data collection requires explicit user consent and must be opt-in
@@ -149,7 +149,7 @@ Create the following screens:
 
 ---
 
-## 🗄️ Firestore Collections
+## 🗄️ Data Collections
 
 | Collection | Purpose |
 |---|---|

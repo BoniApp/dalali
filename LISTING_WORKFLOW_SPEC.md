@@ -36,7 +36,7 @@ Property (listing)          Appointment (viewing)        TenancyApplication ("re
   listing_status ✅                                                        │
   is_approved ✅                                                           ▼
         ▲                            Deal ✅ ──────────► Tenancy ✅ (migration 019)
-        └──── side effects pending → occupied → available, trigger-owned (migration 019)
+        └──── side effects pending → occupied → unlisted (manual relist), trigger-owned (migrations 019/021)
 ```
 
 - **Property** — `properties.status`: `available | occupied | pending` ✅ (DB CHECK);
@@ -131,8 +131,8 @@ Property (listing)          Appointment (viewing)        TenancyApplication ("re
 - **Tenancy follow-on** (from T2③): `upcoming → active` via landlord's **Confirm Move-in**
   button (`activateTenancy`; `handle_tenancy_status_change` trigger flips
   `properties.status → 'occupied'`); `active → completed` via **End Tenancy**
-  (`completeTenancy`; trigger flips `properties.status → 'available'` — listing re-enters
-  the feed). Transition legality and timestamps are guard-enforced. `terminated` is accepted
+  (`completeTenancy`; trigger parks `properties.status → 'unlisted'` — the listing leaves
+  the market until the landlord explicitly relists, migration 021). Transition legality and timestamps are guard-enforced. `terminated` is accepted
   by the DB (`upcoming`/`active → terminated`) but **no UI path sets it yet** ❌.
 
 ---
@@ -147,7 +147,7 @@ There is **no reservation entity**. "Reservation" is emergent behavior:
 |---|---|
 | Creation | Implicit — a reservation *is* an approved application (the `handle_application_resolution` trigger sets `properties.status='pending'` atomically, migration 019) |
 | Hold condition | None. The property sits at `pending` indefinitely; it vanishes from the feed but is not bound to any expiry, payment, or confirmation |
-| Release | Only forward: `activateTenancy` (`pending → occupied`) or `completeTenancy` (`→ available`). **No path reverts `pending → available`** if the deal falls through ❌ |
+| Release | Only forward: `activateTenancy` (`pending → occupied`) or `completeTenancy` (`→ unlisted`). **No path reverts `pending → available`** if the deal falls through ❌ |
 | Expiration | None. A listing can be stuck at `pending` forever, invisible and unbookable ❌ |
 | UI | `ReservationRequestsScreen` ("Reservation Approvals" / "My Applications") — renders the (unpersisted) application lists |
 
@@ -221,8 +221,8 @@ happens to the rest of the graph:
 | Reservation | `expired` / `released` / `cancelled` / `converted` | §3.2 | Property status reconciled automatically | 🆕 |
 | Deal | `closed` | `closeDeal` after fee settlement | End of agency-fee pipeline (`agencyFeePaid → closed`) | ✅ |
 | Deal | **Collapsed** 🆕 | No cancel path exists today ❌ — a deal whose seeker walks away sits in `negotiating` forever | 🆕 add `cancelled` with reason + property rollback | 🆕 |
-| Tenancy | `completed` | `completeTenancy` | Property returns to `available` — **the cycle restarts** (only designed loop-back) | 🟡 |
-| Tenancy | `terminated` | Early exit — enum value exists, **no setter** ❌ | 🆕 wire to a "Terminate" flow with handover report; property → `available` | ❌ |
+| Tenancy | `completed` | `completeTenancy` | Property parks at `unlisted`; the landlord relists explicitly (migration 021) — **no auto-relist** | ✅ |
+| Tenancy | `terminated` | Early exit — enum value exists, **no setter** ❌ | 🆕 wire to a "Terminate" flow with handover report; property → `unlisted` (021 already handles the DB side) | ❌ |
 
 **Dead-end invariants to enforce** 🆕
 

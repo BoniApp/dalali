@@ -6,7 +6,7 @@
 -- ═══════════════════════════════════════════════════════════════
 
 -- ─── 1. USERS TABLE ───────────────────────────────────────────
--- Mirrors Firebase Auth + Firestore users collection
+-- Mirrors Supabase Auth users
 
 CREATE TABLE IF NOT EXISTS users (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -90,7 +90,7 @@ CREATE TRIGGER on_auth_user_created
 -- Authentication → Providers → Email → Enable "Confirm email"
 
 -- ─── 4. SYSTEM SETTINGS ─────────────────────────────────────
--- Global app configuration (replaces Firestore systemSettings doc)
+-- Global app configuration (single-row settings)
 
 CREATE TABLE IF NOT EXISTS system_settings (
   id TEXT PRIMARY KEY DEFAULT 'default',

@@ -27,7 +27,7 @@ class MoveEngineService {
   }) async {
     // 1. Create move listing
     final move = MoveListingModel(
-      id: '', // Firestore will assign
+      id: '', // server assigns
       userId: user.id,
       userName: user.fullName,
       currentPropertyTitle: currentPropertyTitle,

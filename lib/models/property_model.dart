@@ -1,5 +1,5 @@
 enum PropertyType { apartment, house, villa, bedsitter, office, shop, room, selfContainedRoom, plot, frame }
-enum PropertyStatus { available, occupied, pending }
+enum PropertyStatus { available, occupied, pending, unlisted }
 enum ListingType { basic, featured }
 enum ListingSource { landlordListing, userMoveListing, agentListing }
 enum ListingStatus { draft, active, viewing, negotiating, tenancyConfirmed, closed }

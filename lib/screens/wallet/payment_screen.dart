@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:dalali/config/app_theme.dart';
 import 'package:dalali/models/property_model.dart';
+import 'package:dalali/models/wallet_model.dart';
 import 'package:dalali/providers/app_state.dart';
 import 'package:dalali/services/app_settings.dart';
 import 'package:dalali/services/selcom_service.dart';
+import 'package:dalali/services/wallet_service.dart';
 import 'package:dalali/utils/helpers.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -38,6 +40,26 @@ class _PaymentScreenState extends State<PaymentScreen> {
     try {
       final orderId = SelcomService.generateOrderId('DAL');
       final selcom = SelcomService();
+
+      // Record the payment intent FIRST: selcom-webhook settles the
+      // agent/platform split and the influencer commission by looking
+      // this order up via idempotency_key — without the row, a paid
+      // order credits nobody. If this fails, abort before ordering so
+      // no unsettled payment can happen.
+      await WalletService().createTransaction(TransactionModel(
+        id: '', // DB assigns
+        type: TransactionType.agencyFee,
+        status: TransactionStatus.pending,
+        amount: AppSettings.agencyFee,
+        payerId: user.id,
+        payeeId: widget.property.listingCreatorId.isNotEmpty
+            ? widget.property.listingCreatorId
+            : widget.property.landlordId,
+        propertyId: widget.property.id,
+        propertyTitle: widget.property.title,
+        idempotencyKey: orderId,
+        createdAt: DateTime.now(),
+      ));
 
       final response = await selcom.createPaymentOrder(
         amount: AppSettings.agencyFee,

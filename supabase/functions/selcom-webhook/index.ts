@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { computeAgencyFeeSplit } from "../_shared/agency_fee_split.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -87,8 +88,19 @@ async function handlePaymentSuccess(supabase: any, event: any) {
     return;
   }
 
-  const agentShare = tx.amount * 0.60;
-  const platformShare = tx.amount * 0.40;
+  // Split rule (see _shared/agency_fee_split.ts): agents earn 60% for
+  // the listings they source; landlords list for free, so when the
+  // payee is a landlord the platform keeps 100% of the fee.
+  let payeeRole: string | null = null;
+  if (tx.payee_id) {
+    const { data: payee } = await supabase
+      .from("users")
+      .select("role")
+      .eq("id", tx.payee_id)
+      .maybeSingle();
+    payeeRole = payee?.role ?? null;
+  }
+  const { payeeShare, platformShare } = computeAgencyFeeSplit(tx.amount, payeeRole);
 
   // Update transaction
   await supabase
@@ -97,13 +109,13 @@ async function handlePaymentSuccess(supabase: any, event: any) {
       status: "processing",
       selcom_transaction_id: selcomTxId,
       processed_at: new Date().toISOString(),
-      split: { agent: agentShare, platform: platformShare },
+      split: { agent: payeeShare, platform: platformShare },
     })
     .eq("id", tx.id);
 
-  // Credit agent's pending balance
-  if (tx.payee_id) {
-    await creditWallet(supabase, tx.payee_id, "pending_balance", agentShare, "total_earned");
+  // Credit the payee's pending balance (agent-sourced listings only)
+  if (tx.payee_id && payeeShare > 0) {
+    await creditWallet(supabase, tx.payee_id, "pending_balance", payeeShare, "total_earned");
   }
 
   // Credit platform

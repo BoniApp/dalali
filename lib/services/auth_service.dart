@@ -5,7 +5,7 @@ import 'package:dalali/services/supabase_service.dart';
 /// ═══════════════════════════════════════════════════════════════
 /// AUTH SERVICE — Supabase Auth wrapper
 ///
-/// Replaces FirebaseAuthService. Handles sign-in, registration,
+/// Handles sign-in, registration,
 /// password reset, and user profile fetching.
 /// ═══════════════════════════════════════════════════════════════
 class AuthService {

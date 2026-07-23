@@ -10,7 +10,7 @@ enum WithdrawalStatus { pending, processing, completed, failed }
 /// Supported mobile money / bank providers for payouts.
 enum PaymentProvider { mpesa, airtelMoney, tigoPesa, haloPesa, bankTransfer }
 
-/// User wallet document stored in Firestore.
+/// User wallet row (Supabase `wallets` table).
 class WalletModel {
   final String userId;
   final double availableBalance;

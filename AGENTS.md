@@ -14,10 +14,9 @@ Guidance for AI coding agents working in this repository. This file assumes no p
 
 ### Backend: Supabase (migrated from Firebase)
 
-The current backend is **Supabase** (Postgres + Auth + Storage + Realtime + Edge Functions). The app was previously built on Firebase/Firestore, and several docs are stale:
+The current backend is **Supabase** (Postgres + Auth + Storage + Realtime + Edge Functions). The app was previously built on Firebase/Firestore; all Firebase artefacts (packages, configs, the old `FIREBASE_SETUP.md`/`DEPLOY.md` docs) have been removed.
 
-- **`FIREBASE_SETUP.md` and `DEPLOY.md` describe the old Firebase setup and are outdated** — no Firebase packages remain in `pubspec.yaml`. Do not follow them.
-- `REQUIREMENTS.md` still references Firestore collections; treat it as a module/feature spec, not a schema reference. The authoritative schema is in `supabase/migrations/*.sql` and `SUPABASE_SCHEMA_UPGRADE.md`.
+- `REQUIREMENTS.md` describes planned modules/features; treat it as a spec, not a schema reference. The authoritative schema is in `supabase/migrations/*.sql` and `SUPABASE_SCHEMA_UPGRADE.md`.
 - Supabase connection details live in `lib/config/supabase_config.dart` (project URL + anon key, currently hardcoded).
 
 ---
@@ -40,7 +39,7 @@ lib/
     admin/             #   ~22 admin screens (users, wallets, withdrawals, fraud, influencers, ...)
   services/            # Business logic + Supabase access
     supabase_service.dart   # Singleton wrapper (SupabaseService.client)
-    data_service.dart       # CRUD for core tables (replaces old FirestoreService)
+    data_service.dart       # CRUD for core tables
     auth_service.dart, payment_service.dart, wallet_service.dart,
     selcom_service.dart (payment gateway), earnings_service.dart, deal_service.dart,
     property_registry_service.dart, matching_engine.dart, recommendation_engine.dart,
@@ -51,7 +50,7 @@ lib/
   utils/helpers.dart   # Formatting helpers (TZS currency, dates)
   l10n/                # ARB files (app_en.arb, app_sw.arb) + generated localizations
 supabase/
-  migrations/          # Numbered SQL migrations (001–020; note there are two 001_* and two 002_* files)
+  migrations/          # Numbered SQL migrations (001–021; note there are two 001_* and two 002_* files)
   functions/           # Deno/TypeScript Edge Functions (payment webhooks, withdrawals, KYC, influencer commissions, ...)
   DEPLOYMENT_GUIDE.md  # How to run migrations & deploy edge functions (current, use this one)
 test/                  # flutter_test widget + unit tests (widget_test.dart, influencer_models_test.dart)
@@ -69,7 +68,7 @@ assets/images/         # Bundled image assets
   - Admin dashboard: `lib/main_admin.dart` — run with `flutter run -t lib/main_admin.dart -d chrome`
 - **Roles**: Seeker, Landlord, Agent, Influencer, plus Admin (admin shell under `lib/screens/admin/`, gated by `users.is_admin` in RLS policies). `UserRole` lives in `lib/models/user_model.dart`; `lib/screens/shared/main_navigation.dart` has exhaustive switches over it (adding a role breaks compilation until extended — intended). Influencer role is granted by admin approval (edge function flips `users.role`), not picked at signup.
 - **Localization**: English (`en`) and Kiswahili (`sw`) via ARB files. `l10n.yaml` outputs generated code into `lib/l10n` (`generate: true` in `pubspec.yaml`). When adding user-facing strings, add keys to **both** `app_en.arb` and `app_sw.arb`, then run `flutter gen-l10n` (or `flutter pub get` / any build, which triggers generation). Admin screens conventionally hardcode English.
-- **Money**: TZS; agency fee is a fixed 20,000 TZS per confirmed tenancy. Prices formatted with `Helpers.formatPrice` (`sw_TZ` locale).
+- **Money**: TZS; agency fee is a fixed 20,000 TZS per confirmed tenancy. Split rule (`supabase/functions/_shared/agency_fee_split.ts`): agent-sourced listings earn the agent 60% / platform 40% (wallet split in `selcom-webhook`, payout ledger rows in `confirm-tenancy-deal`); **landlord-sourced listings are 100% platform revenue** — landlords list for free and get no agency-fee share, no `agency_fees`/`earnings` rows. The payment flow (`payment_screen.dart`) inserts a **pending `transactions` intent row first** (payer = tenant, payee = listing creator, `idempotency_key` = Selcom order id; RLS allows client inserts of own pending intents) — `selcom-webhook` settles by that key, so never create a Selcom order without the intent row. Prices formatted with `Helpers.formatPrice` (`sw_TZ` locale).
 - **Maps**: `flutter_map` + OpenStreetMap (chosen deliberately to avoid Google Maps API keys). Haversine-based distance/safety scoring in `safety_engine.dart` / `property_registry_service.dart`.
 - **Comment style**: Services and important files use boxed banner comments (`/// ═══...═══`) — match this when editing those files.
 - **Notifications & app badge**: `NotificationService` wraps `flutter_local_notifications` (channel `dalali_channel`). The unread-notification count is mirrored to the launcher icon: iOS via the `dalali/app_badge` MethodChannel in `ios/Runner/AppDelegate.swift` (`NotificationService.updateAppBadge`), Android via the automatic launcher dot from the background summary alert (fixed id `NotificationService.newNotificationsId`, posted only while the app is backgrounded and cancelled when all notifications are read). Sync logic lives in `AppState._syncNotificationBadge` (called from the notifications stream, read-marking, and logout, which clears it). Android 13+ requires `POST_NOTIFICATIONS` — declared in `android/app/src/main/AndroidManifest.xml` and requested at runtime in `NotificationService.initialize()`; keep both.
@@ -105,7 +104,7 @@ assets/images/         # Bundled image assets
 
 - "Reservations" in the UI (`ReservationRequestsScreen`) are `tenancy_applications` rows: `pending → approved | rejected`, then terminal. Transition legality, field immutability, and `resolved_at` stamping are enforced by the `tenancy_application_guard` trigger; a partial unique index (`uniq_open_application`) allows only one open application per seeker per property.
 - **All side effects are server-trigger-owned** — never duplicate them client-side: application INSERT → landlord notification; approval → tenancy creation + property `status='pending'` (atomic `WHERE status='available'` guard aborts double-bookings) + tenant notification; rejection → tenant notification. Clients only write `status` via `DataService.updateApplicationStatus` / `updateTenancyStatus`; realtime streams reconcile `AppState`.
-- `tenancies`: `upcoming → active → completed | terminated` (guard-enforced; `upcoming → terminated` is the early-exit path). `handle_tenancy_status_change` reconciles the listing: active → `occupied`, completed/terminated → `available`. Tenancy rows are created only by the approval trigger (no client INSERT policy).
+- `tenancies`: `upcoming → active → completed | terminated` (guard-enforced; `upcoming → terminated` is the early-exit path). `handle_tenancy_status_change` reconciles the listing: active → `occupied`, completed/terminated → `unlisted` (migration 021 — **no auto-relist**; the landlord relists explicitly via `AppState.relistProperty` → `DataService.updatePropertyStatus`, which flips `status` back to `'available'`). Tenancy rows are created only by the approval trigger (no client INSERT policy).
 - Full state machines, dead ends, and the remaining gap register (G2–G10) are documented in `LISTING_WORKFLOW_SPEC.md`.
 
 ## Move Checklists & Rent Schedules (migration 020)
@@ -142,7 +141,7 @@ Deploy per `supabase/DEPLOYMENT_GUIDE.md` (Supabase CLI: `supabase db push`, `su
 
 ### Database migrations
 
-SQL migrations in `supabase/migrations/` are applied in filename order via `supabase db push` or `psql -f`. **Caution**: there are two files numbered `001_*` and two numbered `002_*` — check actual file contents before adding a new migration; use the next free number (`021_...`).
+SQL migrations in `supabase/migrations/` are applied in filename order via `supabase db push` or `psql -f`. **Caution**: there are two files numbered `001_*` and two numbered `002_*` — check actual file contents before adding a new migration; use the next free number (`022_...`).
 
 ## Testing Instructions
 
@@ -169,8 +168,7 @@ SQL migrations in `supabase/migrations/` are applied in filename order via `supa
 
 ## Key Documentation Files
 
-- `REQUIREMENTS.md` — module/feature specification (partially stale: says Firestore; backend is now Supabase)
+- `REQUIREMENTS.md` — module/feature specification (planned vision; backend reality is Supabase)
 - `SUPABASE_SCHEMA_UPGRADE.md` — schema for property registry, deals, agency fees, earnings + RLS examples
 - `KYC_MODULE_DESIGN.md` — KYC module design
-- `supabase/DEPLOYMENT_GUIDE.md` — current backend deployment guide (use this, not root `DEPLOY.md`)
-- `DEPLOY.md`, `FIREBASE_SETUP.md` — **outdated** Firebase-era docs
+- `supabase/DEPLOYMENT_GUIDE.md` — current backend deployment guide

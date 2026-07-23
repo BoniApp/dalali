@@ -5,7 +5,7 @@ import 'package:http/http.dart' as http;
 
 /// Selcom API configuration.
 /// In production, these should come from environment variables
-/// or Firebase Remote Config, NOT hardcoded.
+/// or a secure remote config store, NOT hardcoded.
 class SelcomConfig {
   static const String baseUrl = 'https://api.selcommobile.com/v1';
   static const String apiKey = 'YOUR_SELCOM_API_KEY';
@@ -109,7 +109,7 @@ class SelcomService {
         },
         'redirect_url': redirectUrl,
         'cancel_url': cancelUrl,
-        'webhook': 'https://your-firebase-function-url.com/selcomWebhook',
+        'webhook': 'https://your-project.supabase.co/functions/v1/selcom-webhook',
         'metadata': {
           'description': description,
         },
@@ -211,7 +211,7 @@ class SelcomService {
   /// ─── 5. VERIFY WEBHOOK SIGNATURE ───────────────────────────────────
   ///
   /// Validates that a webhook payload came from Selcom.
-  /// This MUST be called on the backend (Firebase Functions).
+  /// This MUST be called on the backend (Supabase Edge Functions).
   bool verifyWebhookSignature(String payload, String signature) {
     final computed = _sign(payload);
     return computed == signature;

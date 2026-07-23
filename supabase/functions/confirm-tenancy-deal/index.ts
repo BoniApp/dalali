@@ -6,8 +6,9 @@
 /// Triggered when tenant OR landlord confirms a deal.
 /// When BOTH confirm:
 ///   - Deal status -> tenancyConfirmed
-///   - Agency fee record created (20,000 TZS)
-///   - Earnings entry created for listing creator
+///   - Agency fee + earnings records created (20,000 TZS) — only for
+///     agent-sourced listings; landlords list for free and the
+///     platform retains 100% of the fee on their listings
 ///   - Property status -> closed
 ///
 /// Invocation:
@@ -98,32 +99,45 @@ serve(async (req) => {
         })
         .eq('deal_id', deal_id)
 
-      // Create agency fee record
-      await supabaseClient
-        .from('agency_fees')
-        .insert({
-          deal_id,
-          property_id: updatedDeal.property_id,
-          listing_creator_id: updatedDeal.listing_creator_id,
-          amount: 20000,
-          currency: 'TZS',
-          status: 'pending',
-          created_at: now,
-        })
+      // Payout/ledger rows only for agent-sourced listings: landlords
+      // list for free, so the platform retains 100% of the fee on
+      // their listings (see _shared/agency_fee_split.ts; the wallet
+      // split itself happens in selcom-webhook). No agency_fees row
+      // for landlords either — that table is the payout queue.
+      const { data: creator } = await supabaseClient
+        .from('users')
+        .select('role')
+        .eq('id', updatedDeal.listing_creator_id)
+        .maybeSingle()
 
-      // Create earnings entry
-      await supabaseClient
-        .from('earnings')
-        .insert({
-          user_id: updatedDeal.listing_creator_id,
-          deal_id,
-          property_id: updatedDeal.property_id,
-          type: 'agencyFee',
-          status: 'pending',
-          amount: 20000,
-          currency: 'TZS',
-          created_at: now,
-        })
+      if (creator?.role === 'agent') {
+        // Create agency fee record (admin payout queue)
+        await supabaseClient
+          .from('agency_fees')
+          .insert({
+            deal_id,
+            property_id: updatedDeal.property_id,
+            listing_creator_id: updatedDeal.listing_creator_id,
+            amount: 20000,
+            currency: 'TZS',
+            status: 'pending',
+            created_at: now,
+          })
+
+        // Create earnings entry
+        await supabaseClient
+          .from('earnings')
+          .insert({
+            user_id: updatedDeal.listing_creator_id,
+            deal_id,
+            property_id: updatedDeal.property_id,
+            type: 'agencyFee',
+            status: 'pending',
+            amount: 20000,
+            currency: 'TZS',
+            created_at: now,
+          })
+      }
 
       // Update property status
       await supabaseClient

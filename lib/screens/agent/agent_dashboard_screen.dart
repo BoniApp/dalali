@@ -264,6 +264,10 @@ class _StatusChip extends StatelessWidget {
         color = Colors.orange;
         label = 'Pending';
         break;
+      case PropertyStatus.unlisted:
+        color = Colors.grey;
+        label = 'Unlisted';
+        break;
     }
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),

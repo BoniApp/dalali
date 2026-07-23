@@ -159,6 +159,14 @@ class LandlordDashboardScreen extends StatelessWidget {
                                     padding: EdgeInsets.zero,
                                     constraints: const BoxConstraints(),
                                   ),
+                                  if (p.status == PropertyStatus.unlisted)
+                                    IconButton(
+                                      icon: const Icon(Icons.replay, size: 18, color: Colors.green),
+                                      onPressed: () => context.read<AppState>().relistProperty(p.id),
+                                      tooltip: 'Relist property',
+                                      padding: EdgeInsets.zero,
+                                      constraints: const BoxConstraints(),
+                                    ),
                                 ],
                               ),
                             ],
@@ -225,6 +233,10 @@ class _StatusChip extends StatelessWidget {
       case PropertyStatus.pending:
         color = Colors.orange;
         label = 'Pending';
+        break;
+      case PropertyStatus.unlisted:
+        color = Colors.grey;
+        label = 'Unlisted';
         break;
     }
     return Container(

@@ -19,7 +19,7 @@ import 'package:dalali/models/rent_schedule_model.dart';
 /// ═══════════════════════════════════════════════════════════════
 /// DATA SERVICE — Supabase PostgreSQL wrapper
 ///
-/// Replaces FirestoreService. Provides CRUD operations for all
+/// Provides CRUD operations for all
 /// core data collections using Supabase PostgREST + Realtime.
 /// ═══════════════════════════════════════════════════════════════
 class DataService {
@@ -455,6 +455,13 @@ class DataService {
   /// Timestamps and the property status flip are trigger-maintained.
   Future<void> updateTenancyStatus(String id, TenancyStatus status) async {
     await _db.from('tenancies').update({'status': status.name}).eq('id', id);
+  }
+
+  /// Flip a property's market status (e.g. relist: unlisted → available).
+  /// Tenancy end parks listings at 'unlisted' (migration 021); relisting
+  /// is an explicit landlord action, never a trigger side effect.
+  Future<void> updatePropertyStatus(String propertyId, PropertyStatus status) async {
+    await _db.from('properties').update({'status': status.name}).eq('id', propertyId);
   }
 
   // ═══════════════════════════════════════════════════════════════
