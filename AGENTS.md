@@ -51,7 +51,7 @@ lib/
   utils/helpers.dart   # Formatting helpers (TZS currency, dates)
   l10n/                # ARB files (app_en.arb, app_sw.arb) + generated localizations
 supabase/
-  migrations/          # Numbered SQL migrations (001–011; note there are two 001_* and two 002_* files)
+  migrations/          # Numbered SQL migrations (001–019; note there are two 001_* and two 002_* files)
   functions/           # Deno/TypeScript Edge Functions (payment webhooks, withdrawals, KYC, influencer commissions, ...)
   DEPLOYMENT_GUIDE.md  # How to run migrations & deploy edge functions (current, use this one)
 test/                  # flutter_test widget + unit tests (widget_test.dart, influencer_models_test.dart)
@@ -100,6 +100,13 @@ assets/images/         # Bundled image assets
 - **Admin broadcast**: `supabase/functions/admin-broadcast` (admin JWT or `x-admin-secret` + `admin_user_id`; targets `all|seeker|landlord|agent|influencer`; non-admin recipients only) fans out admin↔user conversations + messages; `lib/screens/admin/broadcast_admin_screen.dart` composes it (permission `AdminPermissions.canBroadcast` = superAdmin/supportAgent). Replies surface in the admin shell "Messages" item, which reuses `ConversationsScreen`.
 - `notifications.type` CHECK was extended with `'message'` and `'broadcast'` — keep them if you re-create the constraint.
 
+## Tenancy Applications & Tenancies (migration 019)
+
+- "Reservations" in the UI (`ReservationRequestsScreen`) are `tenancy_applications` rows: `pending → approved | rejected`, then terminal. Transition legality, field immutability, and `resolved_at` stamping are enforced by the `tenancy_application_guard` trigger; a partial unique index (`uniq_open_application`) allows only one open application per seeker per property.
+- **All side effects are server-trigger-owned** — never duplicate them client-side: application INSERT → landlord notification; approval → tenancy creation + property `status='pending'` (atomic `WHERE status='available'` guard aborts double-bookings) + tenant notification; rejection → tenant notification. Clients only write `status` via `DataService.updateApplicationStatus` / `updateTenancyStatus`; realtime streams reconcile `AppState`.
+- `tenancies`: `upcoming → active → completed | terminated` (guard-enforced; `upcoming → terminated` is the early-exit path). `handle_tenancy_status_change` reconciles the listing: active → `occupied`, completed/terminated → `available`. Tenancy rows are created only by the approval trigger (no client INSERT policy).
+- Full state machines, dead ends, and the remaining gap register (G2–G10) are documented in `LISTING_WORKFLOW_SPEC.md`.
+
 ## Build & Test Commands
 
 ```bash
@@ -127,7 +134,7 @@ Deploy per `supabase/DEPLOYMENT_GUIDE.md` (Supabase CLI: `supabase db push`, `su
 
 ### Database migrations
 
-SQL migrations in `supabase/migrations/` are applied in filename order via `supabase db push` or `psql -f`. **Caution**: there are two files numbered `001_*` and two numbered `002_*` — check actual file contents before adding a new migration; use the next free number (`013_...`).
+SQL migrations in `supabase/migrations/` are applied in filename order via `supabase db push` or `psql -f`. **Caution**: there are two files numbered `001_*` and two numbered `002_*` — check actual file contents before adding a new migration; use the next free number (`020_...`).
 
 ## Testing Instructions
 

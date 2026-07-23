@@ -11,6 +11,8 @@ import 'package:dalali/models/property_claim_model.dart';
 import 'package:dalali/models/deal_model.dart';
 import 'package:dalali/models/agency_fee_model.dart';
 import 'package:dalali/models/earnings_model.dart';
+import 'package:dalali/models/tenancy_application_model.dart';
+import 'package:dalali/models/tenancy_model.dart';
 
 /// ═══════════════════════════════════════════════════════════════
 /// DATA SERVICE — Supabase PostgreSQL wrapper
@@ -381,15 +383,84 @@ class DataService {
   }
 
   // ═══════════════════════════════════════════════════════════════
-  //  STUBS — Phase 3 & 4 (Reviews, Reports, Tenancy, etc.)
+  //  TENANCY APPLICATIONS & TENANCIES (migration 019)
+  //
+  //  These methods only write/read rows. All side effects —
+  //  landlord/tenant notifications, tenancy creation on approval,
+  //  property status reconciliation, transition enforcement — live in
+  //  server-side triggers (see 019_tenancy_applications_and_tenancies.sql).
+  // ═══════════════════════════════════════════════════════════════
+
+  Stream<List<TenancyApplicationModel>> getApplicationsForLandlord(String landlordId) {
+    return _db
+        .from('tenancy_applications')
+        .stream(primaryKey: ['id'])
+        .eq('landlord_id', landlordId)
+        .map((rows) => rows.map(_applicationFromJson).toList());
+  }
+
+  Stream<List<TenancyApplicationModel>> getApplicationsForTenant(String tenantId) {
+    return _db
+        .from('tenancy_applications')
+        .stream(primaryKey: ['id'])
+        .eq('tenant_id', tenantId)
+        .map((rows) => rows.map(_applicationFromJson).toList());
+  }
+
+  Future<void> addTenancyApplication(TenancyApplicationModel application) async {
+    // id/created_at are DB-generated; the INSERT trigger notifies the landlord.
+    await _db.from('tenancy_applications').insert({
+      'property_id': application.propertyId,
+      'property_title': application.propertyTitle,
+      'tenant_id': application.tenantId,
+      'tenant_name': application.tenantName,
+      'tenant_phone': application.tenantPhone,
+      'landlord_id': application.landlordId,
+      'landlord_name': application.landlordName,
+      'status': application.status.name,
+      'notes': application.notes,
+    });
+  }
+
+  /// Landlord resolves an application. `resolved_at` is stamped by the
+  /// tenancy_application_guard trigger; on approval the
+  /// handle_application_resolution() trigger creates the tenancy,
+  /// reserves the property, and notifies the tenant.
+  Future<void> updateApplicationStatus(String id, ApplicationStatus status, {String? notes}) async {
+    await _db.from('tenancy_applications').update({
+      'status': status.name,
+      if (notes != null) 'notes': notes,
+    }).eq('id', id);
+  }
+
+  Stream<List<TenancyModel>> getTenanciesForLandlord(String landlordId) {
+    return _db
+        .from('tenancies')
+        .stream(primaryKey: ['id'])
+        .eq('landlord_id', landlordId)
+        .map((rows) => rows.map(_tenancyFromJson).toList());
+  }
+
+  Stream<List<TenancyModel>> getTenanciesForTenant(String tenantId) {
+    return _db
+        .from('tenancies')
+        .stream(primaryKey: ['id'])
+        .eq('tenant_id', tenantId)
+        .map((rows) => rows.map(_tenancyFromJson).toList());
+  }
+
+  /// Landlord advances the lifecycle (upcoming → active → completed).
+  /// Timestamps and the property status flip are trigger-maintained.
+  Future<void> updateTenancyStatus(String id, TenancyStatus status) async {
+    await _db.from('tenancies').update({'status': status.name}).eq('id', id);
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  //  STUBS — Phase 3 & 4 (Reviews, Reports, Maintenance, etc.)
   // ═══════════════════════════════════════════════════════════════
 
   Future<void> addReview(dynamic review) async {}
   Future<void> addNeighbourhoodReport(dynamic report) async {}
-  Future<void> addTenancyApplication(dynamic application) async {}
-  Future<void> updateApplicationStatus(String id, dynamic status) async {}
-  Future<void> addTenancy(dynamic tenancy) async {}
-  Future<void> updateTenancyStatus(String id, dynamic status) async {}
   Future<void> addMaintenanceRequest(dynamic request) async {}
   Future<void> updateMaintenanceStatus(String id, dynamic status, {String? resolutionNotes}) async {}
   Future<void> markRentPaid(String scheduleId) async {}
@@ -397,10 +468,6 @@ class DataService {
   Stream<List<dynamic>> getMoveListingsByUser(String userId) => const Stream.empty();
   Stream<List<dynamic>> getRewardsForUser(String userId) => const Stream.empty();
   Stream<List<dynamic>> getNeighbourhoodReports({int limit = 200}) => const Stream.empty();
-  Stream<List<dynamic>> getApplicationsForLandlord(String id) => const Stream.empty();
-  Stream<List<dynamic>> getApplicationsForTenant(String id) => const Stream.empty();
-  Stream<List<dynamic>> getTenanciesForLandlord(String id) => const Stream.empty();
-  Stream<List<dynamic>> getTenanciesForTenant(String id) => const Stream.empty();
   Stream<List<dynamic>> getMaintenanceForLandlord(String id) => const Stream.empty();
   Stream<List<dynamic>> getMaintenanceForTenant(String id) => const Stream.empty();
   Stream<List<dynamic>> getRentSchedulesForTenant(String id) => const Stream.empty();
@@ -594,6 +661,61 @@ class DataService {
       'created_at': i.createdAt.toIso8601String(),
       'is_read': i.isRead,
     };
+  }
+
+  // ─── Tenancy Application ───────────────────────────────────────
+
+  TenancyApplicationModel _applicationFromJson(Map<String, dynamic> json) {
+    return TenancyApplicationModel(
+      id: json['id'] ?? '',
+      propertyId: json['property_id'] ?? '',
+      propertyTitle: json['property_title'] ?? '',
+      tenantId: json['tenant_id'] ?? '',
+      tenantName: json['tenant_name'] ?? '',
+      tenantPhone: json['tenant_phone'] ?? '',
+      landlordId: json['landlord_id'] ?? '',
+      landlordName: json['landlord_name'] ?? '',
+      status: ApplicationStatus.values.firstWhere(
+        (e) => e.name == json['status'],
+        orElse: () => ApplicationStatus.pending,
+      ),
+      createdAt: DateTime.tryParse(json['created_at'] ?? '') ?? DateTime.now(),
+      resolvedAt: json['resolved_at'] != null
+          ? DateTime.tryParse(json['resolved_at'])
+          : null,
+      notes: json['notes'],
+    );
+  }
+
+  // ─── Tenancy ───────────────────────────────────────────────────
+
+  TenancyModel _tenancyFromJson(Map<String, dynamic> json) {
+    return TenancyModel(
+      id: json['id'] ?? '',
+      tenantId: json['tenant_id'] ?? '',
+      tenantName: json['tenant_name'] ?? '',
+      landlordId: json['landlord_id'] ?? '',
+      landlordName: json['landlord_name'] ?? '',
+      propertyId: json['property_id'] ?? '',
+      propertyTitle: json['property_title'] ?? '',
+      propertyLocation: json['property_location'] ?? '',
+      moveInDate: DateTime.tryParse(json['move_in_date'] ?? '') ?? DateTime.now(),
+      expectedMoveOutDate:
+          DateTime.tryParse(json['expected_move_out_date'] ?? '') ?? DateTime.now(),
+      rentAmount: (json['rent_amount'] as num?)?.toDouble() ?? 0,
+      depositAmount: (json['deposit_amount'] as num?)?.toDouble() ?? 0,
+      status: TenancyStatus.values.firstWhere(
+        (e) => e.name == json['status'],
+        orElse: () => TenancyStatus.upcoming,
+      ),
+      createdAt: DateTime.tryParse(json['created_at'] ?? '') ?? DateTime.now(),
+      activatedAt: json['activated_at'] != null
+          ? DateTime.tryParse(json['activated_at'])
+          : null,
+      completedAt: json['completed_at'] != null
+          ? DateTime.tryParse(json['completed_at'])
+          : null,
+    );
   }
 
   // ─── Notification ────────────────────────────────────────────

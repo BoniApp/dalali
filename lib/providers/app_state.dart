@@ -622,6 +622,12 @@ class AppState extends ChangeNotifier {
   // ─── Rewards ────────────────────────────────────────────────
 
   // ─── Tenancy Lifecycle Mutations ────────────────────────────
+  //
+  // These methods write the status field only. All side effects —
+  // landlord/tenant notifications, tenancy creation on approval,
+  // property reservation/occupancy/re-listing — are handled by
+  // migration 019 server-side triggers; the realtime streams
+  // reconcile local state.
 
   void applyForTenancy(TenancyApplicationModel application) {
     _tenancyApplications.add(application);
@@ -629,15 +635,6 @@ class AppState extends ChangeNotifier {
       _data.addTenancyApplication(application).catchError((e) {
         debugPrint('addTenancyApplication error: $e');
       });
-      // Notify landlord
-      NotificationService.notifyUser(
-        userId: application.landlordId,
-        type: NotificationType.tenancyApplication,
-        title: 'New Tenancy Application',
-        body: '${application.tenantName} applied for ${application.propertyTitle}',
-        targetId: application.id,
-        targetCollection: 'tenancy_applications',
-      ).catchError((e) => debugPrint('notifyUser error: $e'));
     }
     notifyListeners();
   }
@@ -654,49 +651,6 @@ class AppState extends ChangeNotifier {
         _data.updateApplicationStatus(applicationId, ApplicationStatus.approved).catchError((e) {
           debugPrint('updateApplicationStatus error: $e');
         });
-        // Notify tenant
-        NotificationService.notifyUser(
-          userId: app.tenantId,
-          type: NotificationType.tenancyApproved,
-          title: 'Application Approved',
-          body: 'Your application for ${app.propertyTitle} was approved!',
-          targetId: app.id,
-          targetCollection: 'tenancy_applications',
-        ).catchError((e) => debugPrint('notifyUser error: $e'));
-      }
-      // Create tenancy record
-      final property = _properties.firstWhere((p) => p.id == app.propertyId);
-      final tenancy = TenancyModel(
-        id: 't${DateTime.now().millisecondsSinceEpoch}',
-        tenantId: app.tenantId,
-        tenantName: app.tenantName,
-        landlordId: app.landlordId,
-        landlordName: app.landlordName,
-        propertyId: app.propertyId,
-        propertyTitle: app.propertyTitle,
-        propertyLocation: property.location,
-        moveInDate: DateTime.now().add(const Duration(days: 14)),
-        expectedMoveOutDate: DateTime.now().add(const Duration(days: 374)),
-        rentAmount: property.rentPrice,
-        depositAmount: property.rentPrice * 2,
-        status: TenancyStatus.upcoming,
-        createdAt: DateTime.now(),
-      );
-      _tenancies.add(tenancy);
-      if (_isFirebase) {
-        _data.addTenancy(tenancy).catchError((e) {
-          debugPrint('addTenancy error: $e');
-        });
-      }
-      // Mark property reserved
-      final pIdx = _properties.indexWhere((p) => p.id == app.propertyId);
-      if (pIdx >= 0) {
-        _properties[pIdx] = property.copyWith(status: PropertyStatus.pending);
-        if (_isFirebase) {
-          _data.updateProperty(_properties[pIdx]).catchError((e) {
-            debugPrint('updateProperty error: $e');
-          });
-        }
       }
       notifyListeners();
     }
@@ -712,18 +666,9 @@ class AppState extends ChangeNotifier {
         notes: reason,
       );
       if (_isFirebase) {
-        _data.updateApplicationStatus(applicationId, ApplicationStatus.rejected).catchError((e) {
+        _data.updateApplicationStatus(applicationId, ApplicationStatus.rejected, notes: reason).catchError((e) {
           debugPrint('updateApplicationStatus error: $e');
         });
-        // Notify tenant
-        NotificationService.notifyUser(
-          userId: app.tenantId,
-          type: NotificationType.system,
-          title: 'Application Rejected',
-          body: 'Your application for ${app.propertyTitle} was not approved.',
-          targetId: app.id,
-          targetCollection: 'tenancy_applications',
-        ).catchError((e) => debugPrint('notifyUser error: $e'));
       }
       notifyListeners();
     }
@@ -742,16 +687,6 @@ class AppState extends ChangeNotifier {
           debugPrint('updateTenancyStatus error: $e');
         });
       }
-      // Mark property occupied
-      final pIdx = _properties.indexWhere((p) => p.id == t.propertyId);
-      if (pIdx >= 0) {
-        _properties[pIdx] = _properties[pIdx].copyWith(status: PropertyStatus.occupied);
-        if (_isFirebase) {
-          _data.updateProperty(_properties[pIdx]).catchError((e) {
-            debugPrint('updateProperty error: $e');
-          });
-        }
-      }
       notifyListeners();
     }
   }
@@ -768,16 +703,6 @@ class AppState extends ChangeNotifier {
         _data.updateTenancyStatus(tenancyId, TenancyStatus.completed).catchError((e) {
           debugPrint('updateTenancyStatus error: $e');
         });
-      }
-      // Mark property available again
-      final pIdx = _properties.indexWhere((p) => p.id == t.propertyId);
-      if (pIdx >= 0) {
-        _properties[pIdx] = _properties[pIdx].copyWith(status: PropertyStatus.available);
-        if (_isFirebase) {
-          _data.updateProperty(_properties[pIdx]).catchError((e) {
-            debugPrint('updateProperty error: $e');
-          });
-        }
       }
       notifyListeners();
     }

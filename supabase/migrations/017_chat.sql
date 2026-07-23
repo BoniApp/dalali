@@ -22,7 +22,7 @@
 
 CREATE TABLE IF NOT EXISTS conversations (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  participant_a UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  participant_a UUID NOT NåULL REFERENCES users(id) ON DELETE CASCADE,
   participant_b UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   participant_a_name TEXT NOT NULL DEFAULT '',
   participant_b_name TEXT NOT NULL DEFAULT '',
