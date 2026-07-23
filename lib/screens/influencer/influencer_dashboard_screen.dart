@@ -8,6 +8,7 @@ import 'package:dalali/providers/app_state.dart';
 import 'package:dalali/services/wallet_service.dart';
 import 'package:dalali/services/influencer/influencer_service.dart';
 import 'package:dalali/screens/influencer/influencer_application_screen.dart';
+import 'package:dalali/screens/influencer/shareable_listings_section.dart';
 import 'package:dalali/utils/helpers.dart';
 
 class InfluencerDashboardScreen extends StatelessWidget {
@@ -190,6 +191,8 @@ class InfluencerDashboardScreen extends StatelessWidget {
                       },
                     ),
                     const SizedBox(height: 24),
+                    if (profile.isActive)
+                      ShareableListingsSection(referralCode: profile.referralCode),
                     Text(
                       l10n.recentConversions,
                       style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),

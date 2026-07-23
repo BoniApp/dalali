@@ -145,6 +145,10 @@ class InfluencerService {
     }
   }
 
-  /// Full shareable URL for a referral code.
-  String buildReferralUrl(String code) => 'https://dalaliapp.com/ref/$code';
+  /// Full shareable URL for a referral code. [listingId] appends the
+  /// `?listing=<id>` deep-link param (see DeepLinkService) so a shared
+  /// listing opens directly in the recipient's app.
+  String buildReferralUrl(String code, {String? listingId}) =>
+      'https://dalaliapp.com/ref/$code'
+      '${listingId != null ? '?listing=$listingId' : ''}';
 }

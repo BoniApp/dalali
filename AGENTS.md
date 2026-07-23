@@ -1,6 +1,6 @@
 # AGENTS.md — Dalali / HTN (Housing Transition Network)
 
-Guidance for AI coding agents working in this repository. This file assumes no prior knowledge of the project.
+Guidance for coding agents working in this repository. This file assumes no prior knowledge of the project.
 
 ---
 
@@ -14,9 +14,10 @@ Guidance for AI coding agents working in this repository. This file assumes no p
 
 ### Backend: Supabase (migrated from Firebase)
 
-The current backend is **Supabase** (Postgres + Auth + Storage + Realtime + Edge Functions). The app was previously built on Firebase/Firestore; all Firebase artefacts (packages, configs, the old `FIREBASE_SETUP.md`/`DEPLOY.md` docs) have been removed.
+The current backend is **Supabase** (Postgres + Auth + Storage + Realtime + Edge Functions). The app was previously built on Firebase/Firestore, and several docs are stale:
 
-- `REQUIREMENTS.md` describes planned modules/features; treat it as a spec, not a schema reference. The authoritative schema is in `supabase/migrations/*.sql` and `SUPABASE_SCHEMA_UPGRADE.md`.
+- **`FIREBASE_SETUP.md` and `DEPLOY.md` describe the old Firebase setup and are outdated** — no Firebase packages remain in `pubspec.yaml`. Do not follow them.
+- `REQUIREMENTS.md` still references Firestore collections; treat it as a module/feature spec, not a schema reference. The authoritative schema is in `supabase/migrations/*.sql` and `SUPABASE_SCHEMA_UPGRADE.md`.
 - Supabase connection details live in `lib/config/supabase_config.dart` (project URL + anon key, currently hardcoded).
 
 ---
@@ -39,7 +40,7 @@ lib/
     admin/             #   ~22 admin screens (users, wallets, withdrawals, fraud, influencers, ...)
   services/            # Business logic + Supabase access
     supabase_service.dart   # Singleton wrapper (SupabaseService.client)
-    data_service.dart       # CRUD for core tables
+    data_service.dart       # CRUD for core tables (replaces old FirestoreService)
     auth_service.dart, payment_service.dart, wallet_service.dart,
     selcom_service.dart (payment gateway), earnings_service.dart, deal_service.dart,
     property_registry_service.dart, matching_engine.dart, recommendation_engine.dart,
@@ -50,7 +51,7 @@ lib/
   utils/helpers.dart   # Formatting helpers (TZS currency, dates)
   l10n/                # ARB files (app_en.arb, app_sw.arb) + generated localizations
 supabase/
-  migrations/          # Numbered SQL migrations (001–021; note there are two 001_* and two 002_* files)
+  migrations/          # Numbered SQL migrations (001–011; note there are two 001_* and two 002_* files)
   functions/           # Deno/TypeScript Edge Functions (payment webhooks, withdrawals, KYC, influencer commissions, ...)
   DEPLOYMENT_GUIDE.md  # How to run migrations & deploy edge functions (current, use this one)
 test/                  # flutter_test widget + unit tests (widget_test.dart, influencer_models_test.dart)
@@ -68,10 +69,9 @@ assets/images/         # Bundled image assets
   - Admin dashboard: `lib/main_admin.dart` — run with `flutter run -t lib/main_admin.dart -d chrome`
 - **Roles**: Seeker, Landlord, Agent, Influencer, plus Admin (admin shell under `lib/screens/admin/`, gated by `users.is_admin` in RLS policies). `UserRole` lives in `lib/models/user_model.dart`; `lib/screens/shared/main_navigation.dart` has exhaustive switches over it (adding a role breaks compilation until extended — intended). Influencer role is granted by admin approval (edge function flips `users.role`), not picked at signup.
 - **Localization**: English (`en`) and Kiswahili (`sw`) via ARB files. `l10n.yaml` outputs generated code into `lib/l10n` (`generate: true` in `pubspec.yaml`). When adding user-facing strings, add keys to **both** `app_en.arb` and `app_sw.arb`, then run `flutter gen-l10n` (or `flutter pub get` / any build, which triggers generation). Admin screens conventionally hardcode English.
-- **Money**: TZS; agency fee is a fixed 20,000 TZS per confirmed tenancy. Split rule (`supabase/functions/_shared/agency_fee_split.ts`): the listing creator earns 60% / platform 40% — **agents and seekers alike** (wallet split in `selcom-webhook`, payout ledger rows in `confirm-tenancy-deal`, both via `creatorEarnsFee(role)`); **landlord-sourced listings are 100% platform revenue** — landlords list for free and get no agency-fee share, no `agency_fees`/`earnings` rows, and no wallet UI (landlord nav has no Earnings tab and the profile Wallet card is hidden for them). Seekers create listings from the profile screen's "List a Property & Earn" card (`AddPropertyScreen` is role-agnostic: it stamps `listing_creator_id`/`listing_creator_role` from the current user). The payment flow (`payment_screen.dart`) inserts a **pending `transactions` intent row first** (payer = tenant, payee = listing creator, `idempotency_key` = Selcom order id; RLS allows client inserts of own pending intents) — `selcom-webhook` settles by that key, so never create a Selcom order without the intent row. Prices formatted with `Helpers.formatPrice` (`sw_TZ` locale).
+- **Money**: TZS; agency fee is a fixed 20,000 TZS per confirmed tenancy. Prices formatted with `Helpers.formatPrice` (`sw_TZ` locale).
 - **Maps**: `flutter_map` + OpenStreetMap (chosen deliberately to avoid Google Maps API keys). Haversine-based distance/safety scoring in `safety_engine.dart` / `property_registry_service.dart`.
 - **Comment style**: Services and important files use boxed banner comments (`/// ═══...═══`) — match this when editing those files.
-- **Notifications & app badge**: `NotificationService` wraps `flutter_local_notifications` (channel `dalali_channel`). The unread-notification count is mirrored to the launcher icon: iOS via the `dalali/app_badge` MethodChannel in `ios/Runner/AppDelegate.swift` (`NotificationService.updateAppBadge`), Android via the automatic launcher dot from the background summary alert (fixed id `NotificationService.newNotificationsId`, posted only while the app is backgrounded and cancelled when all notifications are read). Sync logic lives in `AppState._syncNotificationBadge` (called from the notifications stream, read-marking, and logout, which clears it). Android 13+ requires `POST_NOTIFICATIONS` — declared in `android/app/src/main/AndroidManifest.xml` and requested at runtime in `NotificationService.initialize()`; keep both.
 - **Design system**: `lib/config/app_theme.dart` defines the semantic colors (primary `#0D9488` teal, action `#F97316` orange CTA, text `#1F2937`, border `#E5E7EB`, dark bg `#0F172A`), the typography scale (32/24/18/16/14), button/input states, and 8pt spacing constants, per the DalaliApp UI Component Specification. `ThemeProvider` and `main_admin.dart` both consume `AppTheme.light()/dark()` — prefer `AppTheme` constants over hardcoded `Colors.teal`.
 - **Brand asset**: `assets/images/dalali_logo.png` (512×512) is the canonical logo; the Android/iOS/web launcher icons are generated from it.
 - **Linting**: `flutter_lints` defaults only (`analysis_options.yaml` has no custom rules). Keep code `flutter analyze`-clean.
@@ -80,7 +80,7 @@ assets/images/         # Bundled image assets
 ## Influencer Partnership System (migration 011)
 
 - **Flow**: two entry paths. (a) Signup with role "Influencer" (register screen picker) → migration 013's `handle_new_influencer` trigger instantly creates the active `influencers` row, mints the referral code + default `referral_links` row, and ensures a wallet exists — no approval step. (b) In-app application (`influencer_applications`) → admin approves in the admin dashboard → `generate-referral-code` edge function does the same setup and flips `users.role` to `influencer`; for users who already signed up as influencer it reuses their existing code instead of minting a new one.
-- **Attribution**: new users enter a referral code at registration → `referral_clicks` + a zero-amount `referral_conversions('registration')` row (client-insertable under tight RLS). Deep links (`dalaliapp.com/ref/CODE`) are a planned follow-up; the schema is ready for them.
+- **Attribution**: new users enter a referral code at registration → `referral_clicks` + a zero-amount `referral_conversions('registration')` row (client-insertable under tight RLS). **Deep links** (`https://dalaliapp.com/ref/CODE`, optional `?listing=<id>`) are handled by `lib/services/deep_link_service.dart` (`app_links` plugin): the code prefills the register screen's referral field (`pendingReferralCode`), and a `?listing` id pushes `PropertyDetailScreen` — immediately when the app is running logged-in, otherwise stashed (`pendingListingId`) until `MainNavigation` mounts. `InfluencerService.buildReferralUrl(code, listingId:)` builds them (the "Listings to Share" carousel attaches the listing id). Android: `/ref` intent-filter in the manifest (no `autoVerify` — needs `assetlinks.json` hosted on the domain). iOS: not wired — needs the `applinks:dalaliapp.com` associated-domain entitlement + a hosted AASA file (server-side follow-up).
 - **Commissions**: computed server-side only. `selcom-webhook` calls `calculate-influencer-commission` (secret-gated) after a successful payment → shared routine in `_shared/influencer_commission.ts` attributes the payer, computes the rate from `system_settings` (`influencer_agency_fee_pct` 10% of the 20,000 TZS agency fee = 2,000 TZS; `influencer_premium_pct` 20% for other payment types), inserts `referral_conversions` + an `earnings` row (`type='referralCommission'`), and credits the influencer's existing `wallets` row. Idempotent via `UNIQUE(referred_user_id, conversion_type)`. `scheduled-settlement` later moves pending → available and marks conversions paid. `verify-referral-payment` re-processes an order_id for ops backfill.
 - **No parallel money tables**: influencer balances/payouts reuse `wallets`, `transactions`, `withdrawals`, and the existing `process-withdrawal` function — do not create influencer-specific wallet tables.
 - **Campaigns**: `campaigns` + `campaign_participants` (admin-managed; influencers join in-app). `match_influencers_for_campaign(uuid)` is an admin-only SQL RPC returning heuristic scores — the documented swap-in point for a real AI matcher.
@@ -99,20 +99,6 @@ assets/images/         # Bundled image assets
 - **Client**: `lib/models/chat_models.dart` + `lib/services/chat_service.dart` (singleton, `.stream(primaryKey:)` realtime; the stream builder has no `.or()`, so `watchConversations` streams unfiltered — RLS scopes the rows — and filters client-side). UI: `lib/screens/shared/conversations_screen.dart` (list + unread pills) and `chat_screen.dart` (WhatsApp-style bubbles; marks read via RPC when open). Entry points: Messages tab in `main_navigation.dart` (all 4 roles, `Badge` over the icon via `watchTotalUnread`) and the chat icon on the landlord card in `property_detail_screen.dart` (targets `listingCreatorId` else `landlordId`).
 - **Admin broadcast**: `supabase/functions/admin-broadcast` (admin JWT or `x-admin-secret` + `admin_user_id`; targets `all|seeker|landlord|agent|influencer`; non-admin recipients only) fans out admin↔user conversations + messages; `lib/screens/admin/broadcast_admin_screen.dart` composes it (permission `AdminPermissions.canBroadcast` = superAdmin/supportAgent). Replies surface in the admin shell "Messages" item, which reuses `ConversationsScreen`.
 - `notifications.type` CHECK was extended with `'message'` and `'broadcast'` — keep them if you re-create the constraint.
-
-## Tenancy Applications & Tenancies (migration 019)
-
-- "Reservations" in the UI (`ReservationRequestsScreen`) are `tenancy_applications` rows: `pending → approved | rejected`, then terminal. Transition legality, field immutability, and `resolved_at` stamping are enforced by the `tenancy_application_guard` trigger; a partial unique index (`uniq_open_application`) allows only one open application per seeker per property.
-- **All side effects are server-trigger-owned** — never duplicate them client-side: application INSERT → landlord notification; approval → tenancy creation + property `status='pending'` (atomic `WHERE status='available'` guard aborts double-bookings) + tenant notification; rejection → tenant notification. Clients only write `status` via `DataService.updateApplicationStatus` / `updateTenancyStatus`; realtime streams reconcile `AppState`.
-- `tenancies`: `upcoming → active → completed | terminated` (guard-enforced; `upcoming → terminated` is the early-exit path). `handle_tenancy_status_change` reconciles the listing: active → `occupied`, completed/terminated → `unlisted` (migration 021 — **no auto-relist**; the landlord relists explicitly via `AppState.relistProperty` → `DataService.updatePropertyStatus`, which flips `status` back to `'available'`). Tenancy rows are created only by the approval trigger (no client INSERT policy).
-- Full state machines, dead ends, and the remaining gap register (G2–G10) are documented in `LISTING_WORKFLOW_SPEC.md`.
-
-## Move Checklists & Rent Schedules (migration 020)
-
-- **Both are seeded server-side only**: the `setup_new_tenancy` trigger (AFTER INSERT on `tenancies`) creates the tenant's default `move_checklists` row (8 items as JSONB) and 12 monthly `rent_schedules` rows from `move_in_date`. Clients never INSERT these tables — there are no client INSERT policies.
-- `move_checklists`: one row per tenancy per tenant (`UNIQUE(tenancy_id, user_id)`), owner read/update of `items` only. Toggling goes through `AppState.toggleChecklistItem` → `DataService.updateMoveChecklist` (whole `items` array + `updated_at`).
-- `rent_schedules`: `pending → paid` is the only legal transition; the `rent_schedule_guard` trigger makes paid rows terminal, stamps `paid_at`, and freezes the terms (parties, due date, amount). `'overdue'` is never stored — the client derives it from `due_date` (`RentScheduleModel.isOverdue`). Either party can mark paid via `AppState.markRentPaid` → `DataService.markRentPaid`; tenant and landlord both read via RLS.
-- Client: `lib/models/move_checklist_model.dart`, `lib/models/rent_schedule_model.dart`, streams in `DataService` (`getMoveChecklistsForUser`, `getRentSchedulesForTenant/Landlord`), `AppState` subscriptions wired per role (landlords stream by `landlord_id`). UI: `lib/screens/tenancy/move_checklist_screen.dart` and the rent tab in `tenancy_detail_screen.dart`.
 
 ## Build & Test Commands
 
@@ -141,7 +127,7 @@ Deploy per `supabase/DEPLOYMENT_GUIDE.md` (Supabase CLI: `supabase db push`, `su
 
 ### Database migrations
 
-SQL migrations in `supabase/migrations/` are applied in filename order via `supabase db push` or `psql -f`. **Caution**: there are two files numbered `001_*` and two numbered `002_*` — check actual file contents before adding a new migration; use the next free number (`022_...`).
+SQL migrations in `supabase/migrations/` are applied in filename order via `supabase db push` or `psql -f`. **Caution**: there are two files numbered `001_*` and two numbered `002_*` — check actual file contents before adding a new migration; use the next free number (`013_...`).
 
 ## Testing Instructions
 
@@ -168,7 +154,8 @@ SQL migrations in `supabase/migrations/` are applied in filename order via `supa
 
 ## Key Documentation Files
 
-- `REQUIREMENTS.md` — module/feature specification (planned vision; backend reality is Supabase)
+- `REQUIREMENTS.md` — module/feature specification (partially stale: says Firestore; backend is now Supabase)
 - `SUPABASE_SCHEMA_UPGRADE.md` — schema for property registry, deals, agency fees, earnings + RLS examples
 - `KYC_MODULE_DESIGN.md` — KYC module design
-- `supabase/DEPLOYMENT_GUIDE.md` — current backend deployment guide
+- `supabase/DEPLOYMENT_GUIDE.md` — current backend deployment guide (use this, not root `DEPLOY.md`)
+- `DEPLOY.md`, `FIREBASE_SETUP.md` — **outdated** Firebase-era docs

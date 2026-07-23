@@ -12,6 +12,7 @@ import 'package:dalali/screens/auth/login_screen.dart';
 import 'package:dalali/screens/shared/main_navigation.dart';
 import 'package:dalali/screens/shared/role_selection_screen.dart';
 import 'package:dalali/services/auth_service.dart';
+import 'package:dalali/services/deep_link_service.dart';
 import 'package:dalali/services/notification_service.dart';
 
 void main() async {
@@ -26,6 +27,9 @@ void main() async {
 
   // Initialize local notifications
   await NotificationService.initialize();
+
+  // Referral deep links (dalaliapp.com/ref/CODE?listing=<id>)
+  await DeepLinkService.instance.initialize();
 
   runApp(const MyApp());
 }
@@ -74,6 +78,7 @@ class _AppBody extends StatelessWidget {
       darkTheme: themeProvider.getDarkTheme(),
 
       home: const AuthWrapper(),
+      navigatorKey: DeepLinkService.instance.navigatorKey,
       routes: {
         '/home': (context) => const MainNavigation(),
         '/login': (context) => const LoginScreen(),

@@ -572,6 +572,29 @@ class AppLocalizationsSw extends AppLocalizations {
   }
 
   @override
+  String get listingsToShare => 'Nyumba za Kushirikisha';
+
+  @override
+  String get listingsToShareHint =>
+      'Shirikisha nyumba hizi kwenye mitandao yako — kila usajili kwa msimbo wako unakupatia kamisheni.';
+
+  @override
+  String listingShareMessage(
+      String title, String location, String price, String code, String url) {
+    return '🏠 $title huko $location — $price/mwezi kwenye Dalali. Orodha zilizothibitishwa, kuona ni rahisi. Jisajili kwa msimbo wangu $code: $url';
+  }
+
+  @override
+  String get shareViaWhatsApp => 'Shirikisha kwa WhatsApp';
+
+  @override
+  String get copyMessage => 'Nakili ujumbe';
+
+  @override
+  String get messageCopiedHint =>
+      'Ujumbe umenakiliwa — bandika kwenye programu yoyote.';
+
+  @override
   String get campaignLinks => 'Viungo vya Kampeni';
 
   @override

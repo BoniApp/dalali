@@ -1178,6 +1178,43 @@ abstract class AppLocalizations {
   /// **'Message copied — paste it in your {platform} post.'**
   String sharePasteHint(String platform);
 
+  /// No description provided for @listingsToShare.
+  ///
+  /// In en, this message translates to:
+  /// **'Listings to Share'**
+  String get listingsToShare;
+
+  /// No description provided for @listingsToShareHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Share these homes on your socials — every signup through your code earns you commission.'**
+  String get listingsToShareHint;
+
+  /// No description provided for @listingShareMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'🏠 {title} in {location} — {price}/month on Dalali. Verified listings, easy viewing. Sign up with my code {code}: {url}'**
+  String listingShareMessage(
+      String title, String location, String price, String code, String url);
+
+  /// No description provided for @shareViaWhatsApp.
+  ///
+  /// In en, this message translates to:
+  /// **'Share via WhatsApp'**
+  String get shareViaWhatsApp;
+
+  /// No description provided for @copyMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy message'**
+  String get copyMessage;
+
+  /// No description provided for @messageCopiedHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Message copied — paste it in any app.'**
+  String get messageCopiedHint;
+
   /// No description provided for @campaignLinks.
   ///
   /// In en, this message translates to:

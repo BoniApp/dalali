@@ -22,6 +22,7 @@ dependencies:
 
   # Supabase
   supabase_flutter: ^2.8.4
+  app_links: ^6.4.1
 
   # For maps - using flutter_map to avoid Google Maps API key setup
   flutter_map: ^7.0.0

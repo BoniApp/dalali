@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:dalali/config/app_theme.dart';
 import 'package:dalali/models/user_model.dart';
 import 'package:dalali/services/auth_service.dart';
+import 'package:dalali/services/deep_link_service.dart';
 import 'package:dalali/services/influencer/influencer_service.dart';
 import 'package:dalali/screens/shared/legal_screens.dart';
 
@@ -25,6 +26,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _isLoading = false;
   bool _obscurePassword = true;
   UserRole _selectedRole = UserRole.seeker;
+
+  @override
+  void initState() {
+    super.initState();
+    // Prefill from a referral deep link (dalaliapp.com/ref/CODE).
+    final code = DeepLinkService.instance.pendingReferralCode;
+    if (code != null) _referralCodeController.text = code;
+  }
 
   @override
   void dispose() {

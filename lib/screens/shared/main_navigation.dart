@@ -17,6 +17,7 @@ import 'package:dalali/screens/influencer/referral_link_screen.dart';
 import 'package:dalali/screens/influencer/influencer_campaigns_screen.dart';
 import 'package:dalali/screens/shared/conversations_screen.dart';
 import 'package:dalali/services/chat_service.dart';
+import 'package:dalali/services/deep_link_service.dart';
 
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
@@ -27,6 +28,21 @@ class MainNavigation extends StatefulWidget {
 
 class _MainNavigationState extends State<MainNavigation> {
   int _currentIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    // Cold-start deep link: a ?listing=<id> captured before login is
+    // stashed in DeepLinkService — open it once we land in the app.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _openPendingListing());
+  }
+
+  void _openPendingListing() {
+    final listingId = DeepLinkService.instance.pendingListingId;
+    if (listingId == null || !mounted) return;
+    DeepLinkService.instance.pendingListingId = null;
+    DeepLinkService.instance.openListingById(listingId);
+  }
 
   @override
   Widget build(BuildContext context) {

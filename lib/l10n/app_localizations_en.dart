@@ -572,6 +572,28 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get listingsToShare => 'Listings to Share';
+
+  @override
+  String get listingsToShareHint =>
+      'Share these homes on your socials — every signup through your code earns you commission.';
+
+  @override
+  String listingShareMessage(
+      String title, String location, String price, String code, String url) {
+    return '🏠 $title in $location — $price/month on Dalali. Verified listings, easy viewing. Sign up with my code $code: $url';
+  }
+
+  @override
+  String get shareViaWhatsApp => 'Share via WhatsApp';
+
+  @override
+  String get copyMessage => 'Copy message';
+
+  @override
+  String get messageCopiedHint => 'Message copied — paste it in any app.';
+
+  @override
   String get campaignLinks => 'Campaign Links';
 
   @override
