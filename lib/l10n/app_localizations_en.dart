@@ -489,6 +489,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get applyToEarnCommissions => 'Apply to earn commissions';
 
   @override
+  String get listPropertyEarn => 'List a Property & Earn';
+
+  @override
+  String get listPropertyEarnHint =>
+      'Know a vacant house? List it and earn commission when it\'s rented.';
+
+  @override
   String get influencerDashboard => 'Influencer Dashboard';
 
   @override

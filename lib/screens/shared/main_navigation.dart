@@ -60,10 +60,11 @@ class _MainNavigationState extends State<MainNavigation> {
           const ProfileScreen(),
         ];
       case UserRole.landlord:
+        // No Earnings tab: landlords list for free and have no in-app
+        // earnings (the platform keeps 100% of the agency fee).
         return [
           const LandlordDashboardScreen(),
           const AddPropertyScreen(),
-          const EarningsScreen(),
           ConversationsScreen(userId: userId),
           const ProfileScreen(),
         ];
@@ -120,7 +121,6 @@ class _MainNavigationState extends State<MainNavigation> {
         return [
           NavigationDestination(icon: const Icon(Icons.dashboard), label: l10n.dashboard),
           NavigationDestination(icon: const Icon(Icons.add_home), label: l10n.add),
-          NavigationDestination(icon: const Icon(Icons.account_balance_wallet), label: l10n.earnings),
           _messagesDestination(userId, l10n.messages),
           NavigationDestination(icon: const Icon(Icons.person), label: l10n.profile),
         ];

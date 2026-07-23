@@ -1,9 +1,10 @@
 // ═══════════════════════════════════════════════════════════════
 // Agency-fee split rule (shared)
 //
-// The fixed 20,000 TZS agency fee is the listing commission: agents
-// earn 60% for the listings they source; landlords list for FREE, so
-// a landlord-sourced listing earns them nothing — the platform keeps
+// The fixed 20,000 TZS agency fee is the listing commission: the
+// listing creator earns 60% for sourcing the listing — agents AND
+// seekers alike. Landlords list their own property for FREE, so a
+// landlord-sourced listing earns them nothing — the platform keeps
 // 100%. Used by selcom-webhook (wallet split) and confirm-tenancy-deal
 // (payout/earnings ledger rows).
 // ═══════════════════════════════════════════════════════════════
@@ -15,9 +16,10 @@ export interface AgencyFeeSplit {
   platformShare: number;
 }
 
-/// Only agent-sourced listings earn the creator a share of the fee.
+/// Every listing creator earns the share except landlords, who list
+/// for free. Unknown/missing roles fail safe to platform-only.
 export function creatorEarnsFee(role: string | null | undefined): boolean {
-  return role === "agent";
+  return role === "agent" || role === "seeker";
 }
 
 /// Wallet split for a successful agency-fee payment.

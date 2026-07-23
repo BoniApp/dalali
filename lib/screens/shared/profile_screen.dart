@@ -10,6 +10,7 @@ import 'package:dalali/widgets/verification_badge.dart';
 import 'package:dalali/screens/auth/login_screen.dart';
 import 'package:dalali/screens/move/move_dashboard_screen.dart';
 import 'package:dalali/screens/wallet/wallet_screen.dart';
+import 'package:dalali/screens/landlord/add_property_screen.dart';
 import 'package:dalali/screens/shared/settings_screen.dart';
 import 'package:dalali/screens/tenancy/my_tenancies_screen.dart';
 import 'package:dalali/screens/tenancy/reservation_requests_screen.dart';
@@ -134,24 +135,48 @@ class ProfileScreen extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 16),
-            // Wallet Card
-            Card(
-              color: AppTheme.primary.withAlpha(13),
-              child: ListTile(
-                leading: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(color: AppTheme.primary.withAlpha(26), shape: BoxShape.circle),
-                  child: Icon(Icons.account_balance_wallet, color: AppTheme.primaryDark),
-                ),
-                title: const Text('My Wallet', style: TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: const Text('Balance, transactions & withdrawals'),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const WalletScreen()),
+            // Wallet Card — not for landlords: they have no in-app
+            // earnings (free listings; the platform keeps the fee).
+            if (user.role != UserRole.landlord)
+              Card(
+                color: AppTheme.primary.withAlpha(13),
+                child: ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(color: AppTheme.primary.withAlpha(26), shape: BoxShape.circle),
+                    child: Icon(Icons.account_balance_wallet, color: AppTheme.primaryDark),
+                  ),
+                  title: const Text('My Wallet', style: TextStyle(fontWeight: FontWeight.bold)),
+                  subtitle: const Text('Balance, transactions & withdrawals'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const WalletScreen()),
+                  ),
                 ),
               ),
-            ),
+            const SizedBox(height: 16),
+            // List & Earn card — seekers can also source listings and
+            // earn the agency-fee commission (landlords list for free,
+            // so they never see this).
+            if (user.role == UserRole.seeker)
+              Card(
+                color: Colors.green.shade50,
+                child: ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(color: Colors.green.shade100, shape: BoxShape.circle),
+                    child: Icon(Icons.add_home, color: Colors.green.shade800),
+                  ),
+                  title: Text(l10n.listPropertyEarn, style: const TextStyle(fontWeight: FontWeight.bold)),
+                  subtitle: Text(l10n.listPropertyEarnHint),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const AddPropertyScreen()),
+                  ),
+                ),
+              ),
             const SizedBox(height: 16),
             // Influencer Program Card
             Card(

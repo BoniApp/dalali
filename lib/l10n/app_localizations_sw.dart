@@ -489,6 +489,13 @@ class AppLocalizationsSw extends AppLocalizations {
   String get applyToEarnCommissions => 'Jisajili ili kupata kamisheni';
 
   @override
+  String get listPropertyEarn => 'Weka Nyumba, Pata Kamisheni';
+
+  @override
+  String get listPropertyEarnHint =>
+      'Unajua nyumba iliyo wazi? Iweke hapa upate kamisheni ikikodiwa.';
+
+  @override
   String get influencerDashboard => 'Dashibodi ya Mshawishi';
 
   @override

@@ -6,9 +6,9 @@
 /// Triggered when tenant OR landlord confirms a deal.
 /// When BOTH confirm:
 ///   - Deal status -> tenancyConfirmed
-///   - Agency fee + earnings records created (20,000 TZS) — only for
-///     agent-sourced listings; landlords list for free and the
-///     platform retains 100% of the fee on their listings
+///   - Agency fee + earnings records created (20,000 TZS) — only when
+///     the listing creator earns the fee (agents + seekers); landlords
+///     list for free and the platform retains 100% on their listings
 ///   - Property status -> closed
 ///
 /// Invocation:
@@ -17,6 +17,7 @@
 ///
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { creatorEarnsFee } from '../_shared/agency_fee_split.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -99,18 +100,18 @@ serve(async (req) => {
         })
         .eq('deal_id', deal_id)
 
-      // Payout/ledger rows only for agent-sourced listings: landlords
-      // list for free, so the platform retains 100% of the fee on
-      // their listings (see _shared/agency_fee_split.ts; the wallet
-      // split itself happens in selcom-webhook). No agency_fees row
-      // for landlords either — that table is the payout queue.
+      // Payout/ledger rows only when the creator earns the fee
+      // (agents + seekers; landlords list for free — see
+      // _shared/agency_fee_split.ts; the wallet split itself happens
+      // in selcom-webhook). No agency_fees row for landlords either —
+      // that table is the payout queue.
       const { data: creator } = await supabaseClient
         .from('users')
         .select('role')
         .eq('id', updatedDeal.listing_creator_id)
         .maybeSingle()
 
-      if (creator?.role === 'agent') {
+      if (creatorEarnsFee(creator?.role)) {
         // Create agency fee record (admin payout queue)
         await supabaseClient
           .from('agency_fees')

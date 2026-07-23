@@ -1028,6 +1028,18 @@ abstract class AppLocalizations {
   /// **'Apply to earn commissions'**
   String get applyToEarnCommissions;
 
+  /// No description provided for @listPropertyEarn.
+  ///
+  /// In en, this message translates to:
+  /// **'List a Property & Earn'**
+  String get listPropertyEarn;
+
+  /// No description provided for @listPropertyEarnHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Know a vacant house? List it and earn commission when it\'s rented.'**
+  String get listPropertyEarnHint;
+
   /// No description provided for @influencerDashboard.
   ///
   /// In en, this message translates to:
