@@ -124,6 +124,10 @@ Property (listing)          Appointment (viewing)        TenancyApplication ("re
   persisted; both parties stream rows scoped by RLS. Approval side effects (tenancy creation,
   property reservation, notifications) execute in one DB transaction — no partial-failure
   drift between the application, the tenancy, and the listing.
+- **Payment direction** ✅: an approved tenant now sees a **Pay Agency Fee TZS 20,000** CTA
+  (`PayAgencyFeeButton` → `PaymentScreen`, Selcom) on the application card in My Applications
+  and on the upcoming tenancy's detail screen. Payment is recorded server-side by the
+  `selcom-webhook`; tenancy activation stays a manual landlord step (no payment gate yet 🆕).
 - **Tenancy follow-on** (from T2③): `upcoming → active` via landlord's **Confirm Move-in**
   button (`activateTenancy`; `handle_tenancy_status_change` trigger flips
   `properties.status → 'occupied'`); `active → completed` via **End Tenancy**

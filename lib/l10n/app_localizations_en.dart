@@ -383,9 +383,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get verificationSubmitted => 'Verification request submitted!';
 
   @override
-  String get opportunities => 'Opportunities';
-
-  @override
   String get earnings => 'Earnings';
 
   @override
@@ -406,18 +403,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get noEarningsYet =>
       'No earnings yet. List a property to start earning!';
-
-  @override
-  String get opportunityFeed => 'Opportunity Feed';
-
-  @override
-  String get highDemandAreas => 'High Demand Areas';
-
-  @override
-  String get recentlyListed => 'Recently Listed';
-
-  @override
-  String get fastMoving => 'Fast Moving';
 
   @override
   String get nearbyVacancies => 'Nearby Vacancies';

@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:dalali/models/notification_model.dart';
 import 'package:dalali/services/supabase_service.dart';
@@ -8,6 +9,14 @@ class NotificationService {
   static final _db = SupabaseService.client;
   static final FlutterLocalNotificationsPlugin _localNotifications =
       FlutterLocalNotificationsPlugin();
+
+  /// Fixed id for the "new notifications" summary alert posted while the app
+  /// is backgrounded. Keeping one id lets us cancel it (clearing the Android
+  /// launcher dot) the moment everything is read.
+  static const int newNotificationsId = 1001;
+
+  /// iOS-only launcher badge channel (see ios/Runner/AppDelegate.swift).
+  static const MethodChannel _badgeChannel = MethodChannel('dalali/app_badge');
 
   static bool _initialized = false;
 
@@ -43,6 +52,12 @@ class NotificationService {
         .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
         ?.createNotificationChannel(channel);
 
+    // Android 13+ (API 33) requires a runtime grant before notifications
+    // can be posted; on older versions this is a no-op.
+    await _localNotifications
+        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+        ?.requestNotificationsPermission();
+
     _initialized = true;
   }
 
@@ -51,6 +66,8 @@ class NotificationService {
     required String title,
     required String body,
     String? payload,
+    int? id,
+    int? badgeNumber,
   }) async {
     if (!_initialized) await initialize();
 
@@ -62,16 +79,38 @@ class NotificationService {
       priority: Priority.high,
       icon: '@mipmap/ic_launcher',
     );
-    const iosDetails = DarwinNotificationDetails();
-    const details = NotificationDetails(android: androidDetails, iOS: iosDetails);
+    final iosDetails = DarwinNotificationDetails(badgeNumber: badgeNumber);
+    final details = NotificationDetails(android: androidDetails, iOS: iosDetails);
 
     await _localNotifications.show(
-      id: DateTime.now().millisecond,
+      id: id ?? DateTime.now().millisecond,
       title: title,
       body: body,
       notificationDetails: details,
       payload: payload,
     );
+  }
+
+  /// Mirror the unread count onto the launcher icon. iOS gets a numeric
+  /// badge through the `dalali/app_badge` channel; Android has no portable
+  /// count API — its launcher dot follows the posted summary notification.
+  static Future<void> updateAppBadge(int unreadCount) async {
+    if (kIsWeb || defaultTargetPlatform != TargetPlatform.iOS) return;
+    try {
+      await _badgeChannel.invokeMethod('setBadgeCount', {'count': unreadCount});
+    } on PlatformException catch (e) {
+      debugPrint('updateAppBadge error: $e');
+    }
+  }
+
+  /// Remove the background "new notifications" summary alert (Android dot).
+  static Future<void> cancelNewNotificationsAlert() async {
+    if (kIsWeb || !_initialized) return;
+    try {
+      await _localNotifications.cancel(id: newNotificationsId);
+    } on PlatformException catch (e) {
+      debugPrint('cancelNewNotificationsAlert error: $e');
+    }
   }
 
   /// Insert a notification into Supabase (server-side record).

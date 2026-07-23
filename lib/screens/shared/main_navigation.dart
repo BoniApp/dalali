@@ -12,7 +12,6 @@ import 'package:dalali/screens/shared/profile_screen.dart';
 import 'package:dalali/screens/move/move_dashboard_screen.dart';
 import 'package:dalali/screens/auth/login_screen.dart';
 import 'package:dalali/screens/earnings/earnings_screen.dart';
-import 'package:dalali/screens/opportunity/opportunity_feed_screen.dart';
 import 'package:dalali/screens/influencer/influencer_dashboard_screen.dart';
 import 'package:dalali/screens/influencer/referral_link_screen.dart';
 import 'package:dalali/screens/influencer/influencer_campaigns_screen.dart';
@@ -55,7 +54,6 @@ class _MainNavigationState extends State<MainNavigation> {
       case UserRole.seeker:
         return [
           const SeekerHomeScreen(),
-          const OpportunityFeedScreen(),
           const EarningsScreen(),
           const MoveDashboardScreen(),
           ConversationsScreen(userId: userId),
@@ -65,7 +63,6 @@ class _MainNavigationState extends State<MainNavigation> {
         return [
           const LandlordDashboardScreen(),
           const AddPropertyScreen(),
-          const OpportunityFeedScreen(),
           const EarningsScreen(),
           ConversationsScreen(userId: userId),
           const ProfileScreen(),
@@ -74,7 +71,6 @@ class _MainNavigationState extends State<MainNavigation> {
         return [
           const AgentDashboardScreen(),
           const AddPropertyScreen(),
-          const OpportunityFeedScreen(),
           const EarningsScreen(),
           ConversationsScreen(userId: userId),
           const ProfileScreen(),
@@ -115,7 +111,6 @@ class _MainNavigationState extends State<MainNavigation> {
       case UserRole.seeker:
         return [
           NavigationDestination(icon: const Icon(Icons.home), label: l10n.home),
-          NavigationDestination(icon: const Icon(Icons.trending_up), label: l10n.opportunities),
           NavigationDestination(icon: const Icon(Icons.account_balance_wallet), label: l10n.earnings),
           NavigationDestination(icon: const Icon(Icons.local_shipping), label: l10n.myMove),
           _messagesDestination(userId, l10n.messages),
@@ -125,7 +120,6 @@ class _MainNavigationState extends State<MainNavigation> {
         return [
           NavigationDestination(icon: const Icon(Icons.dashboard), label: l10n.dashboard),
           NavigationDestination(icon: const Icon(Icons.add_home), label: l10n.add),
-          NavigationDestination(icon: const Icon(Icons.trending_up), label: l10n.opportunities),
           NavigationDestination(icon: const Icon(Icons.account_balance_wallet), label: l10n.earnings),
           _messagesDestination(userId, l10n.messages),
           NavigationDestination(icon: const Icon(Icons.person), label: l10n.profile),
@@ -134,7 +128,6 @@ class _MainNavigationState extends State<MainNavigation> {
         return [
           NavigationDestination(icon: const Icon(Icons.dashboard), label: l10n.dashboard),
           NavigationDestination(icon: const Icon(Icons.add_home), label: l10n.add),
-          NavigationDestination(icon: const Icon(Icons.trending_up), label: l10n.opportunities),
           NavigationDestination(icon: const Icon(Icons.account_balance_wallet), label: l10n.earnings),
           _messagesDestination(userId, l10n.messages),
           NavigationDestination(icon: const Icon(Icons.person), label: l10n.profile),

@@ -139,7 +139,6 @@
   "startVerification": "Start Verification",
   "verificationSubmitted": "Verification request submitted!",
 
-  "opportunities": "Opportunities",
   "earnings": "Earnings",
   "totalEarned": "Total Earned",
   "pendingEarnings": "Pending Earnings",
@@ -147,10 +146,6 @@
   "successfulListings": "Successful Listings",
   "agencyFeeHistory": "Agency Fee History",
   "noEarningsYet": "No earnings yet. List a property to start earning!",
-  "opportunityFeed": "Opportunity Feed",
-  "highDemandAreas": "High Demand Areas",
-  "recentlyListed": "Recently Listed",
-  "fastMoving": "Fast Moving",
   "nearbyVacancies": "Nearby Vacancies",
   "dealTracking": "Deal Tracking",
   "dealStatus": "Deal Status",

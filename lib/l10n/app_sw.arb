@@ -133,7 +133,6 @@
   "startVerification": "Anza Uthibitisho",
   "verificationSubmitted": "Ombi la uthibitisho limewasilishwa!",
 
-  "opportunities": "Fursa",
   "earnings": "Mapato",
   "totalEarned": "Jumla ya Mapato",
   "pendingEarnings": "Mapato Yanayosubiri",
@@ -141,10 +140,6 @@
   "successfulListings": "Orodha Zilizofanikiwa",
   "agencyFeeHistory": "Historia ya Ada ya Wakala",
   "noEarningsYet": "Hakuna mapato bado. Orodhesha mali kuanza kupata!",
-  "opportunityFeed": "Lishe ya Fursa",
-  "highDemandAreas": "Maeneo ya Mahitaji Makubwa",
-  "recentlyListed": "Zilizoingia Hivi Karibuni",
-  "fastMoving": "Zinazosonga Haraka",
   "nearbyVacancies": "Nafasi za Karibu",
   "dealTracking": "Ufuatiliaji wa Makubaliano",
   "dealStatus": "Hali ya Makubaliano",

@@ -818,12 +818,6 @@ abstract class AppLocalizations {
   /// **'Verification request submitted!'**
   String get verificationSubmitted;
 
-  /// No description provided for @opportunities.
-  ///
-  /// In en, this message translates to:
-  /// **'Opportunities'**
-  String get opportunities;
-
   /// No description provided for @earnings.
   ///
   /// In en, this message translates to:
@@ -865,30 +859,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No earnings yet. List a property to start earning!'**
   String get noEarningsYet;
-
-  /// No description provided for @opportunityFeed.
-  ///
-  /// In en, this message translates to:
-  /// **'Opportunity Feed'**
-  String get opportunityFeed;
-
-  /// No description provided for @highDemandAreas.
-  ///
-  /// In en, this message translates to:
-  /// **'High Demand Areas'**
-  String get highDemandAreas;
-
-  /// No description provided for @recentlyListed.
-  ///
-  /// In en, this message translates to:
-  /// **'Recently Listed'**
-  String get recentlyListed;
-
-  /// No description provided for @fastMoving.
-  ///
-  /// In en, this message translates to:
-  /// **'Fast Moving'**
-  String get fastMoving;
 
   /// No description provided for @nearbyVacancies.
   ///

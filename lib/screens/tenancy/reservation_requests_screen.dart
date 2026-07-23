@@ -4,6 +4,7 @@ import 'package:dalali/models/property_model.dart';
 import 'package:dalali/models/tenancy_application_model.dart';
 import 'package:dalali/models/user_model.dart';
 import 'package:dalali/providers/app_state.dart';
+import 'package:dalali/widgets/pay_agency_fee_button.dart';
 import 'package:provider/provider.dart';
 
 class ReservationRequestsScreen extends StatelessWidget {
@@ -159,6 +160,30 @@ class _ApplicationCard extends StatelessWidget {
                   ),
                 ],
               ),
+            ],
+            if (!isLandlord && application.status == ApplicationStatus.approved) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppTheme.action.withAlpha(13),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.celebration, size: 18, color: AppTheme.actionPressed),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Approved! Pay the agency fee to secure your tenancy.',
+                        style: TextStyle(fontSize: 12, color: AppTheme.actionPressed, fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 10),
+              PayAgencyFeeButton(propertyId: application.propertyId),
             ],
           ],
         ),

@@ -383,9 +383,6 @@ class AppLocalizationsSw extends AppLocalizations {
   String get verificationSubmitted => 'Ombi la uthibitisho limewasilishwa!';
 
   @override
-  String get opportunities => 'Fursa';
-
-  @override
   String get earnings => 'Mapato';
 
   @override
@@ -406,18 +403,6 @@ class AppLocalizationsSw extends AppLocalizations {
   @override
   String get noEarningsYet =>
       'Hakuna mapato bado. Orodhesha mali kuanza kupata!';
-
-  @override
-  String get opportunityFeed => 'Lishe ya Fursa';
-
-  @override
-  String get highDemandAreas => 'Maeneo ya Mahitaji Makubwa';
-
-  @override
-  String get recentlyListed => 'Zilizoingia Hivi Karibuni';
-
-  @override
-  String get fastMoving => 'Zinazosonga Haraka';
 
   @override
   String get nearbyVacancies => 'Nafasi za Karibu';

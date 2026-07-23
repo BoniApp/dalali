@@ -48,8 +48,8 @@
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Dalali shows rental properties near your current location.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Dalali lets you choose a photo for your profile picture.</string>
+	<string>Dalali lets you choose photos for your profile picture and property listings.</string>
 	<key>NSCameraUsageDescription</key>
-	<string>Dalali lets you take a photo for your profile picture.</string>
+	<string>Dalali lets you take photos for your profile picture, property listings, and identity verification.</string>
 </dict>
 </plist>

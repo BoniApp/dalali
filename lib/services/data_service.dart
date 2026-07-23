@@ -13,6 +13,8 @@ import 'package:dalali/models/agency_fee_model.dart';
 import 'package:dalali/models/earnings_model.dart';
 import 'package:dalali/models/tenancy_application_model.dart';
 import 'package:dalali/models/tenancy_model.dart';
+import 'package:dalali/models/move_checklist_model.dart';
+import 'package:dalali/models/rent_schedule_model.dart';
 
 /// ═══════════════════════════════════════════════════════════════
 /// DATA SERVICE — Supabase PostgreSQL wrapper
@@ -456,6 +458,50 @@ class DataService {
   }
 
   // ═══════════════════════════════════════════════════════════════
+  //  MOVE CHECKLISTS & RENT SCHEDULES (migration 020)
+  //
+  //  Rows for both are seeded by the setup_new_tenancy() trigger when
+  //  a tenancy is created. Clients only toggle checklist items and
+  //  mark rent paid; the rent_schedule_guard trigger enforces
+  //  pending → paid (terminal) and stamps paid_at.
+  // ═══════════════════════════════════════════════════════════════
+
+  Stream<List<MoveChecklistModel>> getMoveChecklistsForUser(String userId) {
+    return _db
+        .from('move_checklists')
+        .stream(primaryKey: ['id'])
+        .eq('user_id', userId)
+        .map((rows) => rows.map(_checklistFromJson).toList());
+  }
+
+  Future<void> updateMoveChecklist(MoveChecklistModel checklist) async {
+    await _db.from('move_checklists').update({
+      'items': checklist.items.map((i) => i.toJson()).toList(),
+      'updated_at': DateTime.now().toIso8601String(),
+    }).eq('id', checklist.id);
+  }
+
+  Stream<List<RentScheduleModel>> getRentSchedulesForTenant(String tenantId) {
+    return _db
+        .from('rent_schedules')
+        .stream(primaryKey: ['id'])
+        .eq('tenant_id', tenantId)
+        .map((rows) => rows.map(_rentScheduleFromJson).toList());
+  }
+
+  Stream<List<RentScheduleModel>> getRentSchedulesForLandlord(String landlordId) {
+    return _db
+        .from('rent_schedules')
+        .stream(primaryKey: ['id'])
+        .eq('landlord_id', landlordId)
+        .map((rows) => rows.map(_rentScheduleFromJson).toList());
+  }
+
+  Future<void> markRentPaid(String scheduleId) async {
+    await _db.from('rent_schedules').update({'status': 'paid'}).eq('id', scheduleId);
+  }
+
+  // ═══════════════════════════════════════════════════════════════
   //  STUBS — Phase 3 & 4 (Reviews, Reports, Maintenance, etc.)
   // ═══════════════════════════════════════════════════════════════
 
@@ -463,14 +509,12 @@ class DataService {
   Future<void> addNeighbourhoodReport(dynamic report) async {}
   Future<void> addMaintenanceRequest(dynamic request) async {}
   Future<void> updateMaintenanceStatus(String id, dynamic status, {String? resolutionNotes}) async {}
-  Future<void> markRentPaid(String scheduleId) async {}
   Stream<List<dynamic>> getReviews({int limit = 20}) => const Stream.empty();
   Stream<List<dynamic>> getMoveListingsByUser(String userId) => const Stream.empty();
   Stream<List<dynamic>> getRewardsForUser(String userId) => const Stream.empty();
   Stream<List<dynamic>> getNeighbourhoodReports({int limit = 200}) => const Stream.empty();
   Stream<List<dynamic>> getMaintenanceForLandlord(String id) => const Stream.empty();
   Stream<List<dynamic>> getMaintenanceForTenant(String id) => const Stream.empty();
-  Stream<List<dynamic>> getRentSchedulesForTenant(String id) => const Stream.empty();
 
   // ═══════════════════════════════════════════════════════════════
   //  SERIALIZATION HELPERS
@@ -715,6 +759,41 @@ class DataService {
       completedAt: json['completed_at'] != null
           ? DateTime.tryParse(json['completed_at'])
           : null,
+    );
+  }
+
+  // ─── Move Checklist ────────────────────────────────────────────
+
+  MoveChecklistModel _checklistFromJson(Map<String, dynamic> json) {
+    return MoveChecklistModel(
+      id: json['id'] ?? '',
+      userId: json['user_id'] ?? '',
+      moveId: json['move_id'],
+      tenancyId: json['tenancy_id'],
+      items: (json['items'] as List<dynamic>?)
+              ?.map((e) => ChecklistItem.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          [],
+      createdAt: DateTime.tryParse(json['created_at'] ?? '') ?? DateTime.now(),
+      updatedAt: DateTime.tryParse(json['updated_at'] ?? '') ?? DateTime.now(),
+    );
+  }
+
+  // ─── Rent Schedule ─────────────────────────────────────────────
+
+  RentScheduleModel _rentScheduleFromJson(Map<String, dynamic> json) {
+    return RentScheduleModel(
+      id: json['id'] ?? '',
+      tenancyId: json['tenancy_id'] ?? '',
+      tenantId: json['tenant_id'] ?? '',
+      propertyTitle: json['property_title'] ?? '',
+      dueDate: DateTime.tryParse(json['due_date'] ?? '') ?? DateTime.now(),
+      amount: (json['amount'] as num?)?.toDouble() ?? 0,
+      status: PaymentStatus.values.firstWhere(
+        (e) => e.name == json['status'],
+        orElse: () => PaymentStatus.pending,
+      ),
+      paidAt: json['paid_at'] != null ? DateTime.tryParse(json['paid_at']) : null,
     );
   }
 

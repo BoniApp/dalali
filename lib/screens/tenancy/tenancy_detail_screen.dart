@@ -5,6 +5,7 @@ import 'package:dalali/models/maintenance_request_model.dart';
 import 'package:dalali/models/rent_schedule_model.dart';
 import 'package:dalali/providers/app_state.dart';
 import 'package:dalali/screens/tenancy/move_checklist_screen.dart';
+import 'package:dalali/widgets/pay_agency_fee_button.dart';
 import 'package:provider/provider.dart';
 
 class TenancyDetailScreen extends StatelessWidget {
@@ -68,6 +69,30 @@ class _DetailsTab extends StatelessWidget {
         _DetailRow(icon: Icons.payments, label: 'Monthly Rent', value: 'TZS ${tenancy.rentAmount.toStringAsFixed(0)}'),
         _DetailRow(icon: Icons.account_balance_wallet, label: 'Deposit', value: 'TZS ${tenancy.depositAmount.toStringAsFixed(0)}'),
         const SizedBox(height: 24),
+        if (tenancy.isUpcoming && !isLandlord) ...[
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppTheme.action.withAlpha(13),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.info_outline, size: 18, color: AppTheme.actionPressed),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Your application was approved. Pay the agency fee to secure your tenancy before move-in.',
+                    style: TextStyle(fontSize: 12, color: AppTheme.actionPressed),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          PayAgencyFeeButton(propertyId: tenancy.propertyId),
+          const SizedBox(height: 12),
+        ],
         if (tenancy.isUpcoming && isLandlord)
           SizedBox(
             width: double.infinity,

@@ -51,7 +51,7 @@ lib/
   utils/helpers.dart   # Formatting helpers (TZS currency, dates)
   l10n/                # ARB files (app_en.arb, app_sw.arb) + generated localizations
 supabase/
-  migrations/          # Numbered SQL migrations (001–019; note there are two 001_* and two 002_* files)
+  migrations/          # Numbered SQL migrations (001–020; note there are two 001_* and two 002_* files)
   functions/           # Deno/TypeScript Edge Functions (payment webhooks, withdrawals, KYC, influencer commissions, ...)
   DEPLOYMENT_GUIDE.md  # How to run migrations & deploy edge functions (current, use this one)
 test/                  # flutter_test widget + unit tests (widget_test.dart, influencer_models_test.dart)
@@ -72,6 +72,7 @@ assets/images/         # Bundled image assets
 - **Money**: TZS; agency fee is a fixed 20,000 TZS per confirmed tenancy. Prices formatted with `Helpers.formatPrice` (`sw_TZ` locale).
 - **Maps**: `flutter_map` + OpenStreetMap (chosen deliberately to avoid Google Maps API keys). Haversine-based distance/safety scoring in `safety_engine.dart` / `property_registry_service.dart`.
 - **Comment style**: Services and important files use boxed banner comments (`/// ═══...═══`) — match this when editing those files.
+- **Notifications & app badge**: `NotificationService` wraps `flutter_local_notifications` (channel `dalali_channel`). The unread-notification count is mirrored to the launcher icon: iOS via the `dalali/app_badge` MethodChannel in `ios/Runner/AppDelegate.swift` (`NotificationService.updateAppBadge`), Android via the automatic launcher dot from the background summary alert (fixed id `NotificationService.newNotificationsId`, posted only while the app is backgrounded and cancelled when all notifications are read). Sync logic lives in `AppState._syncNotificationBadge` (called from the notifications stream, read-marking, and logout, which clears it). Android 13+ requires `POST_NOTIFICATIONS` — declared in `android/app/src/main/AndroidManifest.xml` and requested at runtime in `NotificationService.initialize()`; keep both.
 - **Design system**: `lib/config/app_theme.dart` defines the semantic colors (primary `#0D9488` teal, action `#F97316` orange CTA, text `#1F2937`, border `#E5E7EB`, dark bg `#0F172A`), the typography scale (32/24/18/16/14), button/input states, and 8pt spacing constants, per the DalaliApp UI Component Specification. `ThemeProvider` and `main_admin.dart` both consume `AppTheme.light()/dark()` — prefer `AppTheme` constants over hardcoded `Colors.teal`.
 - **Brand asset**: `assets/images/dalali_logo.png` (512×512) is the canonical logo; the Android/iOS/web launcher icons are generated from it.
 - **Linting**: `flutter_lints` defaults only (`analysis_options.yaml` has no custom rules). Keep code `flutter analyze`-clean.
@@ -107,6 +108,13 @@ assets/images/         # Bundled image assets
 - `tenancies`: `upcoming → active → completed | terminated` (guard-enforced; `upcoming → terminated` is the early-exit path). `handle_tenancy_status_change` reconciles the listing: active → `occupied`, completed/terminated → `available`. Tenancy rows are created only by the approval trigger (no client INSERT policy).
 - Full state machines, dead ends, and the remaining gap register (G2–G10) are documented in `LISTING_WORKFLOW_SPEC.md`.
 
+## Move Checklists & Rent Schedules (migration 020)
+
+- **Both are seeded server-side only**: the `setup_new_tenancy` trigger (AFTER INSERT on `tenancies`) creates the tenant's default `move_checklists` row (8 items as JSONB) and 12 monthly `rent_schedules` rows from `move_in_date`. Clients never INSERT these tables — there are no client INSERT policies.
+- `move_checklists`: one row per tenancy per tenant (`UNIQUE(tenancy_id, user_id)`), owner read/update of `items` only. Toggling goes through `AppState.toggleChecklistItem` → `DataService.updateMoveChecklist` (whole `items` array + `updated_at`).
+- `rent_schedules`: `pending → paid` is the only legal transition; the `rent_schedule_guard` trigger makes paid rows terminal, stamps `paid_at`, and freezes the terms (parties, due date, amount). `'overdue'` is never stored — the client derives it from `due_date` (`RentScheduleModel.isOverdue`). Either party can mark paid via `AppState.markRentPaid` → `DataService.markRentPaid`; tenant and landlord both read via RLS.
+- Client: `lib/models/move_checklist_model.dart`, `lib/models/rent_schedule_model.dart`, streams in `DataService` (`getMoveChecklistsForUser`, `getRentSchedulesForTenant/Landlord`), `AppState` subscriptions wired per role (landlords stream by `landlord_id`). UI: `lib/screens/tenancy/move_checklist_screen.dart` and the rent tab in `tenancy_detail_screen.dart`.
+
 ## Build & Test Commands
 
 ```bash
@@ -134,7 +142,7 @@ Deploy per `supabase/DEPLOYMENT_GUIDE.md` (Supabase CLI: `supabase db push`, `su
 
 ### Database migrations
 
-SQL migrations in `supabase/migrations/` are applied in filename order via `supabase db push` or `psql -f`. **Caution**: there are two files numbered `001_*` and two numbered `002_*` — check actual file contents before adding a new migration; use the next free number (`020_...`).
+SQL migrations in `supabase/migrations/` are applied in filename order via `supabase db push` or `psql -f`. **Caution**: there are two files numbered `001_*` and two numbered `002_*` — check actual file contents before adding a new migration; use the next free number (`021_...`).
 
 ## Testing Instructions
 

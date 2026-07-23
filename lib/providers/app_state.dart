@@ -31,7 +31,7 @@ import 'package:dalali/services/influencer/influencer_service.dart';
 
 enum AuthMode { supabase }
 
-class AppState extends ChangeNotifier {
+class AppState extends ChangeNotifier with WidgetsBindingObserver {
   AuthMode _authMode = AuthMode.supabase;
   UserModel? currentUser;
   InfluencerModel? influencerProfile;
@@ -64,9 +64,27 @@ class AppState extends ChangeNotifier {
   // Database stream subscriptions (cancelled on logout)
   final List<StreamSubscription> _subscriptions = [];
 
+  // App lifecycle (drives whether new notifications post a device alert
+  // or just update the in-app bell) and badge-sync bookkeeping.
+  AppLifecycleState _lifecycleState = AppLifecycleState.resumed;
+  bool _notificationsPrimed = false;
+
   AuthMode get authMode => _authMode;
 
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    _lifecycleState = state;
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _unsubscribeFromDatabase();
+    super.dispose();
+  }
+
   AppState() {
+    WidgetsBinding.instance.addObserver(this);
     _authService.authStateChanges.listen((AuthState state) async {
       final user = state.session?.user;
       if (user != null) {
@@ -312,6 +330,10 @@ class AppState extends ChangeNotifier {
     _authService.signOut();
     _unsubscribeFromDatabase();
     currentUser = null;
+    _notifications = [];
+    _notificationsPrimed = false;
+    NotificationService.updateAppBadge(0);
+    NotificationService.cancelNewNotificationsAlert();
     notifyListeners();
   }
 
@@ -320,6 +342,7 @@ class AppState extends ChangeNotifier {
   void _subscribeToDatabase() {
     if (currentUser == null) return;
     _unsubscribeFromDatabase();
+    _notificationsPrimed = false;
     final isLandlord = currentUser!.role == UserRole.landlord || currentUser!.role == UserRole.agent;
 
     // Properties (public feed: approved + available only)
@@ -432,14 +455,33 @@ class AppState extends ChangeNotifier {
     }
 
     // Rent Schedules
-    _subscriptions.add(_data.getRentSchedulesForTenant(currentUser!.id).listen((list) {
-      _rentSchedules = list.cast<RentScheduleModel>();
+    if (isLandlord) {
+      _subscriptions.add(_data.getRentSchedulesForLandlord(currentUser!.id).listen((list) {
+        _rentSchedules = list;
+        notifyListeners();
+      }));
+    } else {
+      _subscriptions.add(_data.getRentSchedulesForTenant(currentUser!.id).listen((list) {
+        _rentSchedules = list;
+        notifyListeners();
+      }));
+    }
+
+    // Move Checklists (tenant-owned; landlords simply get none)
+    _subscriptions.add(_data.getMoveChecklistsForUser(currentUser!.id).listen((list) {
+      _moveChecklists
+        ..clear()
+        ..addAll(list);
       notifyListeners();
     }));
 
     // Notifications
     _subscriptions.add(_data.getNotificationsForUser(currentUser!.id).listen((list) {
+      final previousIds = _notifications.map((n) => n.id).toSet();
+      final primed = _notificationsPrimed;
       _notifications = list;
+      _notificationsPrimed = true;
+      _syncNotificationBadge(previousIds: primed ? previousIds : null);
       notifyListeners();
     }));
 
@@ -490,6 +532,39 @@ class AppState extends ChangeNotifier {
     _myEarnings = [];
     _myClaims = [];
     influencerProfile = null;
+  }
+
+  /// Keeps the launcher-icon badge/dot aligned with unread notifications.
+  /// iOS gets the numeric badge via NotificationService.updateAppBadge;
+  /// Android shows a launcher dot while the summary alert (id
+  /// NotificationService.newNotificationsId) is posted, cancelled when
+  /// everything is read. A device alert is only posted for genuinely new
+  /// rows while the app is backgrounded — the in-app bell covers the
+  /// foreground case. [previousIds] is null on the first stream emission
+  /// (initial sync), which never posts an alert.
+  void _syncNotificationBadge({Set<String>? previousIds}) {
+    final unread = unreadNotificationCount;
+    NotificationService.updateAppBadge(unread);
+    if (unread == 0) {
+      NotificationService.cancelNewNotificationsAlert();
+      return;
+    }
+    if (previousIds == null || _lifecycleState == AppLifecycleState.resumed) {
+      return;
+    }
+    final fresh = _notifications
+        .where((n) => !n.isRead && !previousIds.contains(n.id))
+        .toList()
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    if (fresh.isEmpty) return;
+    NotificationService.showLocalNotification(
+      id: NotificationService.newNotificationsId,
+      title: fresh.first.title,
+      body: fresh.length > 1
+          ? '${fresh.first.body} (+${fresh.length - 1} more)'
+          : fresh.first.body,
+      badgeNumber: unread,
+    );
   }
 
   bool get _isFirebase => _authMode == AuthMode.supabase;
@@ -792,6 +867,11 @@ class AppState extends ChangeNotifier {
           items: items,
           updatedAt: DateTime.now(),
         );
+        if (_isFirebase) {
+          _data.updateMoveChecklist(_moveChecklists[cIdx]).catchError((e) {
+            debugPrint('updateMoveChecklist error: $e');
+          });
+        }
         notifyListeners();
       }
     }
@@ -922,6 +1002,7 @@ class AppState extends ChangeNotifier {
       _data.markNotificationRead(id).catchError((e) {
         debugPrint('markNotificationRead error: $e');
       });
+      _syncNotificationBadge();
       notifyListeners();
     }
   }
@@ -936,6 +1017,7 @@ class AppState extends ChangeNotifier {
     _data.markAllNotificationsRead(currentUser!.id).catchError((e) {
       debugPrint('markAllNotificationsRead error: $e');
     });
+    _syncNotificationBadge();
     notifyListeners();
   }
 
