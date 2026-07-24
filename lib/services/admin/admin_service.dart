@@ -76,9 +76,13 @@ class AdminService {
     required AdminRole adminRole,
     required String userId,
   }) async {
+    // Verifying someone as a landlord grants the landlord role too —
+    // otherwise the user shows a "Verified Landlord" badge while
+    // staying a seeker (as happened with legacy rows).
     final result = await _db.from('users').update({
       'is_verified_landlord': true,
       'verification_status': 'verified',
+      'role': 'landlord',
     }).eq('id', userId).select();
     if (result.isEmpty) {
       throw Exception(

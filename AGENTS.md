@@ -50,7 +50,7 @@ lib/
   utils/helpers.dart   # Formatting helpers (TZS currency, dates)
   l10n/                # ARB files (app_en.arb, app_sw.arb) + generated localizations
 supabase/
-  migrations/          # Numbered SQL migrations (001–025; note there are two 001_* and two 002_* files)
+  migrations/          # Numbered SQL migrations (001–026; note there are two 001_* and two 002_* files)
   functions/           # Deno/TypeScript Edge Functions (payment webhooks, withdrawals, KYC, influencer commissions, ...)
   DEPLOYMENT_GUIDE.md  # How to run migrations & deploy edge functions (current, use this one)
 test/                  # flutter_test widget + unit tests (widget_test.dart, influencer_models_test.dart)
@@ -146,7 +146,7 @@ Deploy per `supabase/DEPLOYMENT_GUIDE.md` (Supabase CLI: `supabase db push`, `su
 
 ### Database migrations
 
-SQL migrations in `supabase/migrations/` are applied in filename order via `supabase db push` or `psql -f`. **Caution**: there are two files numbered `001_*` and two numbered `002_*` — check actual file contents before adding a new migration; use the next free number (`026_...`).
+SQL migrations in `supabase/migrations/` are applied in filename order via `supabase db push` or `psql -f`. **Caution**: there are two files numbered `001_*` and two numbered `002_*` — check actual file contents before adding a new migration; use the next free number (`027_...`).
 
 ## Testing Instructions
 
@@ -158,7 +158,7 @@ SQL migrations in `supabase/migrations/` are applied in filename order via `supa
 
 - **Secrets**: `SUPABASE_SERVICE_ROLE_KEY`, `ADMIN_API_SECRET`, `COMMISSION_SECRET`, and `FCM_SERVICE_ACCOUNT` (Firebase service account JSON, used by `send-notification`) must never appear in client code — they are Edge Function environment variables only (set via `supabase secrets set`). `COMMISSION_SECRET` gates the server-to-server influencer commission endpoints (`calculate-influencer-commission`, `verify-referral-payment`). The anon key in `lib/config/supabase_config.dart` is the publishable client key and relies on RLS for protection.
 - **Row Level Security** is the primary authorization mechanism. Policies gate admin access via `users.is_admin`; see `supabase/migrations/006_admin_rls_policies.sql` and `SUPABASE_SCHEMA_UPGRADE.md`. When adding tables/columns, also add RLS policies and test them.
-- **Anti-tamper**: Postgres triggers (`prevent_property_tamper`, `prevent_influencer_tamper`) block clients from modifying moderation fields like `is_approved`, `view_count`, ratings, safety scores, influencer status/counters/referral_code. Don't attempt to write these from the client.
+- **Anti-tamper**: Postgres triggers (`prevent_property_tamper`, `prevent_influencer_tamper`) block clients from modifying moderation fields like `is_approved`, `view_count`, ratings, safety scores, influencer status/counters/referral_code. `prevent_user_verification_tamper` (018/026) additionally locks `users.role` after signup — one role per user, changeable only by admins or the service role (re-setting the same value is a no-op, so registration still works). Don't attempt to write these from the client.
 - **Payments**: DPO Pay is the sole gateway. The `DPO_COMPANY_TOKEN` is a function secret only — all DPO API calls (`CreateToken`/`VerifyToken`, XML in `_shared/dpo.ts`) happen inside edge functions; the app only calls Supabase. `dpo-callback` is intentionally `verify_jwt = false` (browser redirect) but only ever settles idempotently via `_shared/dpo_settlement.ts`. Commission crediting happens server-side only; wallet mutations are service-role only (`USING (false)` client policies).
 - **KYC**: Sensitive identity data (NIDA integration, OCR, liveness) flows through `lib/services/kyc/` and the `process-kyc-verification` function (JWT-gated: caller must own the session, or be admin); location data collection is opt-in and requires explicit user consent. Liveness is a real two-capture front-camera proof-of-life challenge (`liveness_service.dart`), not a pass-through.
 - **Withdrawals require KYC**: only users with `users.verification_status = 'verified'` can request a withdrawal — enforced by the `trg_withdrawal_verification` trigger (migration 016) on `withdrawals` INSERT; `withdrawal_screen.dart` shows a verify prompt instead of the form for unverified users. `verification_status` itself is set **server-side only** by `process-kyc-verification` (client persists session + document, then invokes it with the user JWT; NIDA docs verify instantly, other docs go to `pendingReview` → `users.verification_status='pending'`) and is protected from client self-edits by the `trg_prevent_user_verification_tamper` trigger (migration 018, allows admins + service role only).

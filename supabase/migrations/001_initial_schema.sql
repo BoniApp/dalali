@@ -39,23 +39,23 @@ CREATE TABLE IF NOT EXISTS users (
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 
 -- RLS: Users can read/update their own profile
-CREATE POLICY "Users can read own profile"
-  ON users FOR SELECT
+DROP POLICY IF EXISTS "Users can read own profile" ON users;
+CREATE POLICY "Users can read own profile" ON users FOR SELECT
   USING (auth.uid() = id);
 
-CREATE POLICY "Users can update own profile"
-  ON users FOR UPDATE
+DROP POLICY IF EXISTS "Users can update own profile" ON users;
+CREATE POLICY "Users can update own profile" ON users FOR UPDATE
   USING (auth.uid() = id);
 
 -- RLS: Admins can read all users
-CREATE POLICY "Admins can read all users"
-  ON users FOR SELECT
+DROP POLICY IF EXISTS "Admins can read all users" ON users;
+CREATE POLICY "Admins can read all users" ON users FOR SELECT
   USING (
     EXISTS (SELECT 1 FROM users u WHERE u.id = auth.uid() AND u.is_admin = true)
   );
 
-CREATE POLICY "Admins can update all users"
-  ON users FOR UPDATE
+DROP POLICY IF EXISTS "Admins can update all users" ON users;
+CREATE POLICY "Admins can update all users" ON users FOR UPDATE
   USING (
     EXISTS (SELECT 1 FROM users u WHERE u.id = auth.uid() AND u.is_admin = true)
   );
@@ -81,6 +81,7 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- Drop trigger if exists (idempotent)
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
@@ -109,12 +110,12 @@ ON CONFLICT (id) DO NOTHING;
 
 ALTER TABLE system_settings ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "System settings public read"
-  ON system_settings FOR SELECT
+DROP POLICY IF EXISTS "System settings public read" ON system_settings;
+CREATE POLICY "System settings public read" ON system_settings FOR SELECT
   USING (true);
 
-CREATE POLICY "Admins can update system settings"
-  ON system_settings FOR ALL
+DROP POLICY IF EXISTS "Admins can update system settings" ON system_settings;
+CREATE POLICY "Admins can update system settings" ON system_settings FOR ALL
   USING (
     EXISTS (SELECT 1 FROM users u WHERE u.id = auth.uid() AND u.is_admin = true)
   );
@@ -133,14 +134,14 @@ CREATE TABLE IF NOT EXISTS admin_logs (
 
 ALTER TABLE admin_logs ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Admins can read admin logs"
-  ON admin_logs FOR SELECT
+DROP POLICY IF EXISTS "Admins can read admin logs" ON admin_logs;
+CREATE POLICY "Admins can read admin logs" ON admin_logs FOR SELECT
   USING (
     EXISTS (SELECT 1 FROM users u WHERE u.id = auth.uid() AND u.is_admin = true)
   );
 
-CREATE POLICY "Admins can create admin logs"
-  ON admin_logs FOR INSERT
+DROP POLICY IF EXISTS "Admins can create admin logs" ON admin_logs;
+CREATE POLICY "Admins can create admin logs" ON admin_logs FOR INSERT
   WITH CHECK (
     EXISTS (SELECT 1 FROM users u WHERE u.id = auth.uid() AND u.is_admin = true)
   );
