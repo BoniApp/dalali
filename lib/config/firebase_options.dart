@@ -1,14 +1,15 @@
-// ═══════════════════════════════════════════════════════════════
-// FIREBASE OPTIONS (FCM)
-// ═══════════════════════════════════════════════════════════════
-//
-// Manual configuration for Firebase Cloud Messaging, taken from the
-// project's google-services.json (Android) and GoogleService-Info.plist
-// (iOS, checked in at ios/Runner/). Passing these to
-// Firebase.initializeApp means FCM needs NO google-services Gradle
-// plugin and NO Xcode project edit. Values are client config (safe
-// to ship); the FCM *service account* for sending stays in Supabase
-// secrets only.
+/// ═══════════════════════════════════════════════════════════════
+/// FIREBASE OPTIONS (FCM)
+/// ═══════════════════════════════════════════════════════════════
+///
+/// Manual configuration for Firebase Cloud Messaging, taken from the
+/// project's google-services.json (Android) and GoogleService-Info.plist
+/// (iOS, checked in at ios/Runner/). Passing these to
+/// Firebase.initializeApp means FCM needs NO google-services Gradle
+/// plugin and NO Xcode project edit. Values are client config (safe
+/// to ship); the FCM *service account* for sending stays in Supabase
+/// secrets only.
+library;
 import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
 import 'package:flutter/foundation.dart' show defaultTargetPlatform, TargetPlatform, kIsWeb;
 

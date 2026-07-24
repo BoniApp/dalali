@@ -6,6 +6,7 @@ import 'package:dalali/l10n/app_localizations.dart';
 import 'package:dalali/models/user_model.dart';
 import 'package:dalali/providers/app_state.dart';
 import 'package:dalali/services/storage_service.dart';
+import 'package:dalali/services/supabase_service.dart';
 import 'package:dalali/widgets/verification_badge.dart';
 import 'package:dalali/screens/auth/login_screen.dart';
 import 'package:dalali/screens/move/move_dashboard_screen.dart';
@@ -348,14 +349,100 @@ class ProfileScreen extends StatelessWidget {
                 label: Text(l10n.logout, style: const TextStyle(color: Colors.red)),
               ),
             ),
+            const SizedBox(height: 8),
+            Center(
+              child: TextButton.icon(
+                onPressed: () => _showDeleteAccountDialog(context),
+                icon: const Icon(Icons.delete_forever, color: Colors.red, size: 18),
+                label: Text(
+                  l10n.deleteAccount,
+                  style: const TextStyle(color: Colors.red, fontSize: 13),
+                ),
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  void _showVerificationDialog(BuildContext context, String userId) {
+  /// Industry-standard account deletion: warns, requires typing
+  /// DELETE, then calls the delete-account edge function (server
+  /// purges auth + personal data, retaining anonymized financial
+  /// records). Blocks server-side on outstanding obligations.
+  void _showDeleteAccountDialog(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final controller = TextEditingController();
+    var loading = false;
+    String? error;
+    showDialog(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setState) {
+          Future<void> confirm() async {
+            setState(() {
+              loading = true;
+              error = null;
+            });
+            try {
+              await SupabaseService.client.functions.invoke('delete-account');
+              if (!dialogContext.mounted) return;
+              Navigator.pop(dialogContext);
+              if (!context.mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(l10n.accountDeleted)),
+              );
+              context.read<AppState>().logout();
+            } catch (e) {
+              setState(() {
+                loading = false;
+                error = '$e';
+              });
+            }
+          }
+
+          return AlertDialog(
+            title: Text(l10n.deleteAccountTitle),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(l10n.deleteAccountWarning, style: const TextStyle(fontSize: 13)),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: controller,
+                  decoration: InputDecoration(
+                    labelText: l10n.typeDeleteToConfirm,
+                    border: const OutlineInputBorder(),
+                  ),
+                  onChanged: (_) => setState(() {}),
+                ),
+                if (error != null) ...[
+                  const SizedBox(height: 8),
+                  Text(error!, style: const TextStyle(color: Colors.red, fontSize: 12)),
+                ],
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: loading ? null : () => Navigator.pop(dialogContext),
+                child: Text(l10n.cancel),
+              ),
+              FilledButton(
+                onPressed: loading || controller.text.trim() != 'DELETE' ? null : confirm,
+                style: FilledButton.styleFrom(backgroundColor: Colors.red),
+                child: loading
+                    ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                    : Text(l10n.delete),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  void _showVerificationDialog(BuildContext context, String userId) {    final l10n = AppLocalizations.of(context)!;
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(

@@ -295,6 +295,22 @@ class AppLocalizationsSw extends AppLocalizations {
   String get delete => 'Futa';
 
   @override
+  String get deleteAccount => 'Futa Akaunti';
+
+  @override
+  String get deleteAccountTitle => 'Kufuta akaunti yako?';
+
+  @override
+  String get deleteAccountWarning =>
+      'Hii itafuta kabisa akaunti yako, wasifu, matangazo, na taarifa zako binafsi. Rekodi za fedha zinahifadhiwa bila majina kama inavyotakiwa kisheria. Haiwezi kutenduliwa.';
+
+  @override
+  String get typeDeleteToConfirm => 'Andika DELETE kuthibitisha';
+
+  @override
+  String get accountDeleted => 'Akaunti yako imefutwa.';
+
+  @override
   String get edit => 'Hariri';
 
   @override

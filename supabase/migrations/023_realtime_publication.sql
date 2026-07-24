@@ -1,5 +1,6 @@
+
 -- ═══════════════════════════════════════════════════════════════
--- DALALI SCHEMA — 023: Realtime Publication for App Streams
+-- DALALI SCHEMA — 023: Realtime Publication for App Stream
 --
 -- AppState/DPO/influencer screens stream these tables via Supabase
 -- Realtime (.stream / onPostgresChanges). Only conversations and
@@ -41,16 +42,12 @@ BEGIN
     'conversations',
     'messages'
   ] LOOP
-    -- Skip tables that don't exist yet (maintenance_requests has no
-    -- migration — its feature is client-side only for now).
-    IF to_regclass(format('public.%I', t)) IS NOT NULL THEN
-      BEGIN
-        EXECUTE format('ALTER PUBLICATION supabase_realtime ADD TABLE %I', t);
-      EXCEPTION WHEN duplicate_object THEN
-        -- already published
-        NULL;
-      END;
-    END IF;
+    BEGIN
+      EXECUTE format('ALTER PUBLICATION supabase_realtime ADD TABLE %I', t);
+    EXCEPTION WHEN duplicate_object THEN
+      -- already published
+      NULL;
+    END;
   END LOOP;
 END $$;
 

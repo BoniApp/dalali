@@ -295,6 +295,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get delete => 'Delete';
 
   @override
+  String get deleteAccount => 'Delete Account';
+
+  @override
+  String get deleteAccountTitle => 'Delete your account?';
+
+  @override
+  String get deleteAccountWarning =>
+      'This permanently deletes your account, profile, listings, and personal data. Financial records are kept anonymously as required by law. This cannot be undone.';
+
+  @override
+  String get typeDeleteToConfirm => 'Type DELETE to confirm';
+
+  @override
+  String get accountDeleted => 'Your account has been deleted.';
+
+  @override
   String get edit => 'Edit';
 
   @override
