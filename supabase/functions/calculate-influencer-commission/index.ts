@@ -1,6 +1,6 @@
 // ═══════════════════════════════════════════════════════════════
 // calculate-influencer-commission
-// Server-to-server endpoint (called by selcom-webhook after a payment
+// Server-to-server endpoint (called after a payment settles
 // succeeds). Verifies the transaction is in a successful state, then
 // attributes + credits the influencer commission idempotently.
 // Auth: x-commission-secret == COMMISSION_SECRET (never client-facing).

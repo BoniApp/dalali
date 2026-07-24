@@ -5,7 +5,7 @@
 // listing creator earns 60% for sourcing the listing — agents AND
 // seekers alike. Landlords list their own property for FREE, so a
 // landlord-sourced listing earns them nothing — the platform keeps
-// 100%. Used by selcom-webhook (wallet split) and confirm-tenancy-deal
+// 100%. Used by _shared/dpo_settlement.ts (wallet split) and confirm-tenancy-deal
 // (payout/earnings ledger rows).
 // ═══════════════════════════════════════════════════════════════
 

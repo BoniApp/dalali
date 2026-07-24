@@ -1,65 +1,73 @@
 Supabase Edge Functions & Migration Deployment Guide
 
 Prerequisites
-- Supabase CLI installed (`npm install -g supabase`)
-- You have access to Supabase project and service role key
+- Supabase CLI installed (`npm install -g supabase` or `brew install supabase/tap/supabase`)
+- You have access to the Supabase project and service role key
 
 1) Run database migrations
 
-From project root (or supabase folder):
+From project root:
 
 ```bash
-# Login to supabase
 supabase login
-# Set project
 supabase link --project-ref <your-project-ref>
-# Run migrations (if using supabase migrations)
-supabase db push --project-ref <your-project-ref>
-# Or run SQL directly via psql using connection string
-psql "<your_db_connection>" -f supabase/migrations/001_create_payment_tables.sql
-psql "<your_db_connection>" -f supabase/migrations/002_wallet_rpcs_and_withdrawals.sql
+supabase db push
+# Or apply a single migration via psql:
+psql "<your_db_connection>" -f supabase/migrations/022_dpo_payments.sql
 ```
 
 2) Deploy Edge Functions
 
-Set environment variables in Supabase dashboard for each function or use the CLI:
-- SUPABASE_URL
-- SUPABASE_SERVICE_ROLE_KEY (keep this secret)
-- ADMIN_API_SECRET (for `update_gateway` function)
-
 ```bash
-# Navigate to functions folder
-cd supabase/functions
-# Deploy each function
-supabase functions deploy payment_webhook --project-ref <your-project-ref>
-supabase functions deploy update_gateway --project-ref <your-project-ref>
-# Set env vars
-supabase secrets set SUPABASE_SERVICE_ROLE_KEY="<service_role_key>" --project-ref <your-project-ref>
-supabase secrets set SUPABASE_URL="https://<your-project>.supabase.co" --project-ref <your-project-ref>
-supabase secrets set ADMIN_API_SECRET="<long-secret>" --project-ref <your-project-ref>
+# DPO Pay (payment collections)
+supabase functions deploy create-dpo-token
+supabase functions deploy verify-dpo-payment
+supabase functions deploy dpo-callback
+
+# Withdrawals (manual ops payout) + the rest
+supabase functions deploy process-withdrawal
+supabase functions deploy listing-share
 ```
 
-3) Register webhook URL with payment provider
-- Configure the provider callback URL to: `https://<project>.functions.supabase.co/payment_webhook`
-- Ensure provider sends identifying headers (e.g., `x-provider: selcom`, or provider-specific signature headers like `x-selcom-signature`)
-
-4) Testing
-- Use `curl` to simulate a callback:
+Secrets (set once per project):
 
 ```bash
-curl -X POST "https://<project>.functions.supabase.co/payment_webhook" \
-  -H 'Content-Type: application/json' \
-  -H 'x-provider: selcom' \
-  -d '{"transaction_id":"DAL-TEST-1","status":"success","amount":20000}'
+# DPO Pay — the company token must NEVER appear in client code
+supabase secrets set DPO_COMPANY_TOKEN="<company-token>"
+supabase secrets set DPO_SERVICE_TYPE="85325"   # test service; replace with live service type
+
+# Existing
+supabase secrets set SUPABASE_SERVICE_ROLE_KEY="<service_role_key>"
+supabase secrets set ADMIN_API_SECRET="<long-secret>"       # process-withdrawal admin calls
+supabase secrets set COMMISSION_SECRET="<long-secret>"      # influencer commission endpoints
+```
+
+`SUPABASE_URL` is injected automatically. `dpo-callback` and `listing-share` are
+`verify_jwt = false` in `supabase/config.toml` (browser redirect / social crawlers).
+
+3) DPO configuration
+
+- In the DPO back office, set the payment page's redirect to:
+  `https://<project-ref>.functions.supabase.co/dpo-callback`
+  (the function already receives it as `RedirectURL` per CreateToken call;
+  configure it in DPO only if your account requires a whitelisted URL).
+- Test service types: `85325` (test service), `54841` (test product). Use `85325`.
+
+4) Testing
+
+```bash
+# Deno unit tests for all functions (CI runs these on push to main)
+cd supabase/functions && deno test --unstable --quiet --allow-env
+
+# CreateToken smoke test (requires a logged-in user JWT):
+curl -X POST "https://<project-ref>.functions.supabase.co/create-dpo-token" \
+  -H "Authorization: Bearer <user-jwt>" -H 'Content-Type: application/json' \
+  -d '{"property_id":"<uuid>"}'
 ```
 
 5) Security notes
-- Never expose `SUPABASE_SERVICE_ROLE_KEY` or `ADMIN_API_SECRET` in client apps.
-- Use HTTPS-only endpoints and verify provider signatures.
+- Never expose `SUPABASE_SERVICE_ROLE_KEY`, `ADMIN_API_SECRET`, `COMMISSION_SECRET`, or `DPO_COMPANY_TOKEN` in client apps.
+- All DPO XML API calls happen inside edge functions only; the app talks to Supabase.
 
 6) Rollback
 - If migration fails, use your DB backups or run appropriate DROP TABLE statements.
-
-7) Further work
-- Implement specific provider signature logic for M-Pesa & Airtel per their docs.
-- Add monitoring and retry logic for webhook processing.

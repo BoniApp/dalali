@@ -1,6 +1,6 @@
 // ═══════════════════════════════════════════════════════════════
 // verify-referral-payment
-// Server-to-server ops/backfill endpoint: given a Selcom order_id,
+// Server-to-server ops/backfill endpoint: given a payment's idempotency key,
 // resolves the transaction, confirms the payment succeeded, and runs
 // the shared commission routine (idempotent). Use it to re-process
 // payments whose commission hook was missed.

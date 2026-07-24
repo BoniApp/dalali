@@ -207,7 +207,7 @@ class _HowItWorksCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _StepItem(number: 1, text: 'Pay agency fee via Selcom (TZS 20,000) to secure a property'),
+            _StepItem(number: 1, text: 'Pay agency fee via DPO Pay (TZS 20,000) to unlock a property\'s contact details'),
             const SizedBox(height: 12),
             _StepItem(number: 2, text: 'Funds are held in escrow for 48 hours for your protection'),
             const SizedBox(height: 12),

@@ -17,6 +17,7 @@ import 'package:dalali/screens/landlord/edit_property_screen.dart';
 import 'package:dalali/services/data_service.dart';
 import 'package:dalali/services/app_settings.dart';
 import 'package:dalali/services/chat_service.dart';
+import 'package:dalali/services/dpo_payment_service.dart';
 import 'package:dalali/screens/shared/chat_screen.dart';
 import 'package:dalali/widgets/safety_badge.dart';
 import 'package:provider/provider.dart';
@@ -314,25 +315,31 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
                           _SourceBadge(sourceType: p.sourceType),
                         ],
                       ),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.phone, color: AppTheme.primary),
-                            onPressed: () => _call(p.landlordPhone),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.message, color: AppTheme.primary),
-                            onPressed: () => _sms(p.landlordPhone),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.chat_bubble_outline, color: AppTheme.primary),
-                            onPressed: () => _openChat(context, p),
-                          ),
-                        ],
-                      ),
+                      trailing: _contactTrailing(context, p, user),
                     ),
                   ),
+                  // Contact gate: seekers see call/SMS/chat only after
+                  // paying the agency fee (property_access, migration 022).
+                  if (user != null && user.id != p.landlordId && user.id != p.listingCreatorId)
+                    StreamBuilder<bool>(
+                      stream: DpoPaymentService().watchPropertyAccess(user.id, p.id),
+                      builder: (context, snapshot) {
+                        if (snapshot.data ?? false) return const SizedBox.shrink();
+                        return Card(
+                          color: AppTheme.action.withAlpha(13),
+                          child: ListTile(
+                            leading: const Icon(Icons.lock_outline, color: AppTheme.action),
+                            title: const Text('Contact details locked', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                            subtitle: const Text('Pay the agency fee to reveal phone, SMS and chat.', style: TextStyle(fontSize: 12)),
+                            trailing: const Icon(Icons.chevron_right),
+                            onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (_) => PaymentScreen(property: p)),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
                   const SizedBox(height: 24),
                   SizedBox(
                     width: double.infinity,
@@ -489,6 +496,38 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
       physics: const NeverScrollableScrollPhysics(),
       childAspectRatio: 3,
       children: items,
+    );
+  }
+
+  /// Contact buttons for the landlord card. Owners/creators always see
+  /// them; everyone else only after the agency fee is paid (the lock
+  /// state is mirrored by the unlock CTA under the card).
+  Widget _contactTrailing(BuildContext context, PropertyModel p, UserModel? user) {
+    final buttons = Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        IconButton(
+          icon: const Icon(Icons.phone, color: AppTheme.primary),
+          onPressed: () => _call(p.landlordPhone),
+        ),
+        IconButton(
+          icon: const Icon(Icons.message, color: AppTheme.primary),
+          onPressed: () => _sms(p.landlordPhone),
+        ),
+        IconButton(
+          icon: const Icon(Icons.chat_bubble_outline, color: AppTheme.primary),
+          onPressed: () => _openChat(context, p),
+        ),
+      ],
+    );
+    if (user == null) return const SizedBox.shrink();
+    if (user.id == p.landlordId || user.id == p.listingCreatorId) return buttons;
+    return StreamBuilder<bool>(
+      stream: DpoPaymentService().watchPropertyAccess(user.id, p.id),
+      builder: (context, snapshot) {
+        if (snapshot.data ?? false) return buttons;
+        return Icon(Icons.lock_outline, color: Colors.grey[400]);
+      },
     );
   }
 

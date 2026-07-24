@@ -1,6 +1,6 @@
 # AGENTS.md — Dalali / HTN (Housing Transition Network)
 
-Guidance for coding agents working in this repository. This file assumes no prior knowledge of the project.
+Guidance for AI coding agents working in this repository. This file assumes no prior knowledge of the project.
 
 ---
 
@@ -14,10 +14,9 @@ Guidance for coding agents working in this repository. This file assumes no prio
 
 ### Backend: Supabase (migrated from Firebase)
 
-The current backend is **Supabase** (Postgres + Auth + Storage + Realtime + Edge Functions). The app was previously built on Firebase/Firestore, and several docs are stale:
+The current backend is **Supabase** (Postgres + Auth + Storage + Realtime + Edge Functions). The app was previously built on Firebase/Firestore; all Firebase artefacts (packages, configs, the old `FIREBASE_SETUP.md`/`DEPLOY.md` docs) have been removed.
 
-- **`FIREBASE_SETUP.md` and `DEPLOY.md` describe the old Firebase setup and are outdated** — no Firebase packages remain in `pubspec.yaml`. Do not follow them.
-- `REQUIREMENTS.md` still references Firestore collections; treat it as a module/feature spec, not a schema reference. The authoritative schema is in `supabase/migrations/*.sql` and `SUPABASE_SCHEMA_UPGRADE.md`.
+- `REQUIREMENTS.md` describes planned modules/features; treat it as a spec, not a schema reference. The authoritative schema is in `supabase/migrations/*.sql` and `SUPABASE_SCHEMA_UPGRADE.md`.
 - Supabase connection details live in `lib/config/supabase_config.dart` (project URL + anon key, currently hardcoded).
 
 ---
@@ -40,9 +39,9 @@ lib/
     admin/             #   ~22 admin screens (users, wallets, withdrawals, fraud, influencers, ...)
   services/            # Business logic + Supabase access
     supabase_service.dart   # Singleton wrapper (SupabaseService.client)
-    data_service.dart       # CRUD for core tables (replaces old FirestoreService)
-    auth_service.dart, payment_service.dart, wallet_service.dart,
-    selcom_service.dart (payment gateway), earnings_service.dart, deal_service.dart,
+    data_service.dart       # CRUD for core tables
+    auth_service.dart, dpo_payment_service.dart (DPO Pay), wallet_service.dart,
+    earnings_service.dart, deal_service.dart,
     property_registry_service.dart, matching_engine.dart, recommendation_engine.dart,
     safety_engine.dart, report_service.dart, notification_service.dart,
     storage_service.dart, location_service.dart, ...
@@ -51,7 +50,7 @@ lib/
   utils/helpers.dart   # Formatting helpers (TZS currency, dates)
   l10n/                # ARB files (app_en.arb, app_sw.arb) + generated localizations
 supabase/
-  migrations/          # Numbered SQL migrations (001–011; note there are two 001_* and two 002_* files)
+  migrations/          # Numbered SQL migrations (001–022; note there are two 001_* and two 002_* files)
   functions/           # Deno/TypeScript Edge Functions (payment webhooks, withdrawals, KYC, influencer commissions, ...)
   DEPLOYMENT_GUIDE.md  # How to run migrations & deploy edge functions (current, use this one)
 test/                  # flutter_test widget + unit tests (widget_test.dart, influencer_models_test.dart)
@@ -69,9 +68,10 @@ assets/images/         # Bundled image assets
   - Admin dashboard: `lib/main_admin.dart` — run with `flutter run -t lib/main_admin.dart -d chrome`
 - **Roles**: Seeker, Landlord, Agent, Influencer, plus Admin (admin shell under `lib/screens/admin/`, gated by `users.is_admin` in RLS policies). `UserRole` lives in `lib/models/user_model.dart`; `lib/screens/shared/main_navigation.dart` has exhaustive switches over it (adding a role breaks compilation until extended — intended). Influencer role is granted by admin approval (edge function flips `users.role`), not picked at signup.
 - **Localization**: English (`en`) and Kiswahili (`sw`) via ARB files. `l10n.yaml` outputs generated code into `lib/l10n` (`generate: true` in `pubspec.yaml`). When adding user-facing strings, add keys to **both** `app_en.arb` and `app_sw.arb`, then run `flutter gen-l10n` (or `flutter pub get` / any build, which triggers generation). Admin screens conventionally hardcode English.
-- **Money**: TZS; agency fee is a fixed 20,000 TZS per confirmed tenancy. Prices formatted with `Helpers.formatPrice` (`sw_TZ` locale).
+- **Money**: TZS; agency fee is a fixed 20,000 TZS per payment, collected via **DPO Pay (sole gateway)** — see `DPO_INTEGRATION.md`. Flow: `payment_screen.dart` → `create-dpo-token` (mints the hosted-page token + a pending `payments` row) → customer pays on DPO → settlement in `_shared/dpo_settlement.ts` (via `dpo-callback` redirect or the app's `verify-dpo-payment` poll) marks the payment paid, upserts `property_access` (unlocks the landlord card's call/SMS/chat in `property_detail_screen.dart`), writes the `transactions` ledger row, applies the split rule (`_shared/agency_fee_split.ts`: the listing creator earns 60% / platform 40% — **agents and seekers alike**; **landlord-sourced listings are 100% platform revenue** — no share, no `agency_fees`/`earnings` rows, and no wallet UI for landlords), then the influencer commission. DPO credentials are function secrets only (`DPO_COMPANY_TOKEN`, `DPO_SERVICE_TYPE`) — never in client code. Prices formatted with `Helpers.formatPrice` (`sw_TZ` locale).
 - **Maps**: `flutter_map` + OpenStreetMap (chosen deliberately to avoid Google Maps API keys). Haversine-based distance/safety scoring in `safety_engine.dart` / `property_registry_service.dart`.
 - **Comment style**: Services and important files use boxed banner comments (`/// ═══...═══`) — match this when editing those files.
+- **Notifications & app badge**: `NotificationService` wraps `flutter_local_notifications` (channel `dalali_channel`). The unread-notification count is mirrored to the launcher icon: iOS via the `dalali/app_badge` MethodChannel in `ios/Runner/AppDelegate.swift` (`NotificationService.updateAppBadge`), Android via the automatic launcher dot from the background summary alert (fixed id `NotificationService.newNotificationsId`, posted only while the app is backgrounded and cancelled when all notifications are read). Sync logic lives in `AppState._syncNotificationBadge` (called from the notifications stream, read-marking, and logout, which clears it). Android 13+ requires `POST_NOTIFICATIONS` — declared in `android/app/src/main/AndroidManifest.xml` and requested at runtime in `NotificationService.initialize()`; keep both.
 - **Design system**: `lib/config/app_theme.dart` defines the semantic colors (primary `#0D9488` teal, action `#F97316` orange CTA, text `#1F2937`, border `#E5E7EB`, dark bg `#0F172A`), the typography scale (32/24/18/16/14), button/input states, and 8pt spacing constants, per the DalaliApp UI Component Specification. `ThemeProvider` and `main_admin.dart` both consume `AppTheme.light()/dark()` — prefer `AppTheme` constants over hardcoded `Colors.teal`.
 - **Brand asset**: `assets/images/dalali_logo.png` (512×512) is the canonical logo; the Android/iOS/web launcher icons are generated from it.
 - **Linting**: `flutter_lints` defaults only (`analysis_options.yaml` has no custom rules). Keep code `flutter analyze`-clean.
@@ -80,12 +80,12 @@ assets/images/         # Bundled image assets
 ## Influencer Partnership System (migration 011)
 
 - **Flow**: two entry paths. (a) Signup with role "Influencer" (register screen picker) → migration 013's `handle_new_influencer` trigger instantly creates the active `influencers` row, mints the referral code + default `referral_links` row, and ensures a wallet exists — no approval step. (b) In-app application (`influencer_applications`) → admin approves in the admin dashboard → `generate-referral-code` edge function does the same setup and flips `users.role` to `influencer`; for users who already signed up as influencer it reuses their existing code instead of minting a new one.
-- **Attribution**: new users enter a referral code at registration → `referral_clicks` + a zero-amount `referral_conversions('registration')` row (client-insertable under tight RLS). **Deep links** (`https://dalaliapp.com/ref/CODE`, optional `?listing=<id>`) are handled by `lib/services/deep_link_service.dart` (`app_links` plugin): the code prefills the register screen's referral field (`pendingReferralCode`), and a `?listing` id pushes `PropertyDetailScreen` — immediately when the app is running logged-in, otherwise stashed (`pendingListingId`) until `MainNavigation` mounts. `InfluencerService.buildReferralUrl(code, listingId:)` builds them (the "Listings to Share" carousel attaches the listing id). Android: `/ref` intent-filter in the manifest (no `autoVerify` — needs `assetlinks.json` hosted on the domain). iOS: not wired — needs the `applinks:dalaliapp.com` associated-domain entitlement + a hosted AASA file (server-side follow-up).
-- **Commissions**: computed server-side only. `selcom-webhook` calls `calculate-influencer-commission` (secret-gated) after a successful payment → shared routine in `_shared/influencer_commission.ts` attributes the payer, computes the rate from `system_settings` (`influencer_agency_fee_pct` 10% of the 20,000 TZS agency fee = 2,000 TZS; `influencer_premium_pct` 20% for other payment types), inserts `referral_conversions` + an `earnings` row (`type='referralCommission'`), and credits the influencer's existing `wallets` row. Idempotent via `UNIQUE(referred_user_id, conversion_type)`. `scheduled-settlement` later moves pending → available and marks conversions paid. `verify-referral-payment` re-processes an order_id for ops backfill.
+- **Attribution**: new users enter a referral code at registration → `referral_clicks` + a zero-amount `referral_conversions('registration')` row (client-insertable under tight RLS). **Deep links** (`https://dalaliapp.com/ref/CODE`, optional `?listing=<id>`) are handled by `lib/services/deep_link_service.dart` (`app_links` plugin): the code prefills the register screen's referral field (`pendingReferralCode`), and a `?listing` id pushes `PropertyDetailScreen` — immediately when the app is running logged-in, otherwise stashed (`pendingListingId`) until `MainNavigation` mounts. `InfluencerService.buildReferralUrl(code, listingId:)` builds them (the "Listings to Share" carousel attaches the listing id). **Social previews**: the carousel shares `${supabaseUrl}/functions/v1/listing-share?l=<id>&r=<code>` (via `buildListingShareUrl`) — the `listing-share` edge function serves an Open Graph page (listing photo as `og:image`, page builder in `_shared/listing_share_page.ts`) so WhatsApp/Facebook render a photo card, then redirects humans to the deep link; it is `verify_jwt = false` in `supabase/config.toml` because crawlers send no auth. Android: `/ref` intent-filter in the manifest (no `autoVerify` — needs `assetlinks.json` hosted on the domain). iOS: not wired — needs the `applinks:dalaliapp.com` associated-domain entitlement + a hosted AASA file (server-side follow-up).
+- **Commissions**: computed server-side only. `_shared/dpo_settlement.ts` calls `attributeAndCredit` (in `_shared/influencer_commission.ts`) after a payment settles: it attributes the payer, computes the rate from `system_settings` (`influencer_agency_fee_pct` 10% of the 20,000 TZS agency fee = 2,000 TZS; `influencer_premium_pct` 20% for other payment types), inserts `referral_conversions` + an `earnings` row (`type='referralCommission'`), and credits the influencer's existing `wallets` row. Idempotent via `UNIQUE(referred_user_id, conversion_type)`. `scheduled-settlement` later moves pending → available and marks conversions paid. `verify-referral-payment` re-processes an idempotency key for ops backfill.
 - **No parallel money tables**: influencer balances/payouts reuse `wallets`, `transactions`, `withdrawals`, and the existing `process-withdrawal` function — do not create influencer-specific wallet tables.
 - **Campaigns**: `campaigns` + `campaign_participants` (admin-managed; influencers join in-app). `match_influencers_for_campaign(uuid)` is an admin-only SQL RPC returning heuristic scores — the documented swap-in point for a real AI matcher.
 - **Fraud**: self-referral/duplicate/suspended-influencer crediting is blocked server-side and logged to `fraud_logs` (admin-visible). `prevent_influencer_tamper` trigger protects `influencers` status/counters/code from client writes.
-- **Client code**: `lib/models/influencer/`, `lib/services/influencer/`, `lib/screens/influencer/` (dashboard, referral link, campaigns, application) + admin screens (`influencers_admin_screen`, `influencer_detail_admin_screen`, `campaigns_admin_screen`, `influencer_reports_admin_screen`) wired into `admin_shell.dart` via `AdminPermissions.canManageInfluencers`.
+- **Client code**: `lib/models/influencer/`, `lib/services/influencer/`, `lib/screens/influencer/` (dashboard, referral link, campaigns, application, `shareable_listings_section.dart` — a "Listings to Share" carousel on the dashboard whose share messages carry the influencer's referral code/URL, WhatsApp via `wa.me` + copy-to-paste for other platforms) + admin screens (`influencers_admin_screen`, `influencer_detail_admin_screen`, `campaigns_admin_screen`, `influencer_reports_admin_screen`) wired into `admin_shell.dart` via `AdminPermissions.canManageInfluencers`.
 
 ## Listings Near Me (migration 012)
 
@@ -99,6 +99,20 @@ assets/images/         # Bundled image assets
 - **Client**: `lib/models/chat_models.dart` + `lib/services/chat_service.dart` (singleton, `.stream(primaryKey:)` realtime; the stream builder has no `.or()`, so `watchConversations` streams unfiltered — RLS scopes the rows — and filters client-side). UI: `lib/screens/shared/conversations_screen.dart` (list + unread pills) and `chat_screen.dart` (WhatsApp-style bubbles; marks read via RPC when open). Entry points: Messages tab in `main_navigation.dart` (all 4 roles, `Badge` over the icon via `watchTotalUnread`) and the chat icon on the landlord card in `property_detail_screen.dart` (targets `listingCreatorId` else `landlordId`).
 - **Admin broadcast**: `supabase/functions/admin-broadcast` (admin JWT or `x-admin-secret` + `admin_user_id`; targets `all|seeker|landlord|agent|influencer`; non-admin recipients only) fans out admin↔user conversations + messages; `lib/screens/admin/broadcast_admin_screen.dart` composes it (permission `AdminPermissions.canBroadcast` = superAdmin/supportAgent). Replies surface in the admin shell "Messages" item, which reuses `ConversationsScreen`.
 - `notifications.type` CHECK was extended with `'message'` and `'broadcast'` — keep them if you re-create the constraint.
+
+## Tenancy Applications & Tenancies (migration 019)
+
+- "Reservations" in the UI (`ReservationRequestsScreen`) are `tenancy_applications` rows: `pending → approved | rejected`, then terminal. Transition legality, field immutability, and `resolved_at` stamping are enforced by the `tenancy_application_guard` trigger; a partial unique index (`uniq_open_application`) allows only one open application per seeker per property.
+- **All side effects are server-trigger-owned** — never duplicate them client-side: application INSERT → landlord notification; approval → tenancy creation + property `status='pending'` (atomic `WHERE status='available'` guard aborts double-bookings) + tenant notification; rejection → tenant notification. Clients only write `status` via `DataService.updateApplicationStatus` / `updateTenancyStatus`; realtime streams reconcile `AppState`.
+- `tenancies`: `upcoming → active → completed | terminated` (guard-enforced; `upcoming → terminated` is the early-exit path). `handle_tenancy_status_change` reconciles the listing: active → `occupied`, completed/terminated → `unlisted` (migration 021 — **no auto-relist**; the landlord relists explicitly via `AppState.relistProperty` → `DataService.updatePropertyStatus`, which flips `status` back to `'available'`). Tenancy rows are created only by the approval trigger (no client INSERT policy).
+- Full state machines, dead ends, and the remaining gap register (G2–G10) are documented in `LISTING_WORKFLOW_SPEC.md`.
+
+## Move Checklists & Rent Schedules (migration 020)
+
+- **Both are seeded server-side only**: the `setup_new_tenancy` trigger (AFTER INSERT on `tenancies`) creates the tenant's default `move_checklists` row (8 items as JSONB) and 12 monthly `rent_schedules` rows from `move_in_date`. Clients never INSERT these tables — there are no client INSERT policies.
+- `move_checklists`: one row per tenancy per tenant (`UNIQUE(tenancy_id, user_id)`), owner read/update of `items` only. Toggling goes through `AppState.toggleChecklistItem` → `DataService.updateMoveChecklist` (whole `items` array + `updated_at`).
+- `rent_schedules`: `pending → paid` is the only legal transition; the `rent_schedule_guard` trigger makes paid rows terminal, stamps `paid_at`, and freezes the terms (parties, due date, amount). `'overdue'` is never stored — the client derives it from `due_date` (`RentScheduleModel.isOverdue`). Either party can mark paid via `AppState.markRentPaid` → `DataService.markRentPaid`; tenant and landlord both read via RLS.
+- Client: `lib/models/move_checklist_model.dart`, `lib/models/rent_schedule_model.dart`, streams in `DataService` (`getMoveChecklistsForUser`, `getRentSchedulesForTenant/Landlord`), `AppState` subscriptions wired per role (landlords stream by `landlord_id`). UI: `lib/screens/tenancy/move_checklist_screen.dart` and the rent tab in `tenancy_detail_screen.dart`.
 
 ## Build & Test Commands
 
@@ -127,7 +141,7 @@ Deploy per `supabase/DEPLOYMENT_GUIDE.md` (Supabase CLI: `supabase db push`, `su
 
 ### Database migrations
 
-SQL migrations in `supabase/migrations/` are applied in filename order via `supabase db push` or `psql -f`. **Caution**: there are two files numbered `001_*` and two numbered `002_*` — check actual file contents before adding a new migration; use the next free number (`013_...`).
+SQL migrations in `supabase/migrations/` are applied in filename order via `supabase db push` or `psql -f`. **Caution**: there are two files numbered `001_*` and two numbered `002_*` — check actual file contents before adding a new migration; use the next free number (`023_...`).
 
 ## Testing Instructions
 
@@ -140,7 +154,7 @@ SQL migrations in `supabase/migrations/` are applied in filename order via `supa
 - **Secrets**: `SUPABASE_SERVICE_ROLE_KEY`, `ADMIN_API_SECRET`, and `COMMISSION_SECRET` must never appear in client code — they are Edge Function environment variables only (set via `supabase secrets set`). `COMMISSION_SECRET` gates the server-to-server influencer commission endpoints (`calculate-influencer-commission`, `verify-referral-payment`). The anon key in `lib/config/supabase_config.dart` is the publishable client key and relies on RLS for protection.
 - **Row Level Security** is the primary authorization mechanism. Policies gate admin access via `users.is_admin`; see `supabase/migrations/006_admin_rls_policies.sql` and `SUPABASE_SCHEMA_UPGRADE.md`. When adding tables/columns, also add RLS policies and test them.
 - **Anti-tamper**: Postgres triggers (`prevent_property_tamper`, `prevent_influencer_tamper`) block clients from modifying moderation fields like `is_approved`, `view_count`, ratings, safety scores, influencer status/counters/referral_code. Don't attempt to write these from the client.
-- **Payments**: Webhook Edge Functions (`payment_webhook`, `selcom-webhook`) verify provider signatures/HMAC (see `_shared/hmac.ts`). Preserve signature verification when editing payment flows. Commission crediting happens server-side only; wallet mutations are service-role only (`USING (false)` client policies).
+- **Payments**: DPO Pay is the sole gateway. The `DPO_COMPANY_TOKEN` is a function secret only — all DPO API calls (`CreateToken`/`VerifyToken`, XML in `_shared/dpo.ts`) happen inside edge functions; the app only calls Supabase. `dpo-callback` is intentionally `verify_jwt = false` (browser redirect) but only ever settles idempotently via `_shared/dpo_settlement.ts`. Commission crediting happens server-side only; wallet mutations are service-role only (`USING (false)` client policies).
 - **KYC**: Sensitive identity data (NIDA integration, OCR, liveness) flows through `lib/services/kyc/` and the `process-kyc-verification` function (JWT-gated: caller must own the session, or be admin); location data collection is opt-in and requires explicit user consent. Liveness is a real two-capture front-camera proof-of-life challenge (`liveness_service.dart`), not a pass-through.
 - **Withdrawals require KYC**: only users with `users.verification_status = 'verified'` can request a withdrawal — enforced by the `trg_withdrawal_verification` trigger (migration 016) on `withdrawals` INSERT; `withdrawal_screen.dart` shows a verify prompt instead of the form for unverified users. `verification_status` itself is set **server-side only** by `process-kyc-verification` (client persists session + document, then invokes it with the user JWT; NIDA docs verify instantly, other docs go to `pendingReview` → `users.verification_status='pending'`) and is protected from client self-edits by the `trg_prevent_user_verification_tamper` trigger (migration 018, allows admins + service role only).
 - New properties default to unapproved (`is_approved: false` / `listing_status: 'draft'`) pending admin moderation.
@@ -154,8 +168,7 @@ SQL migrations in `supabase/migrations/` are applied in filename order via `supa
 
 ## Key Documentation Files
 
-- `REQUIREMENTS.md` — module/feature specification (partially stale: says Firestore; backend is now Supabase)
+- `REQUIREMENTS.md` — module/feature specification (planned vision; backend reality is Supabase)
 - `SUPABASE_SCHEMA_UPGRADE.md` — schema for property registry, deals, agency fees, earnings + RLS examples
 - `KYC_MODULE_DESIGN.md` — KYC module design
-- `supabase/DEPLOYMENT_GUIDE.md` — current backend deployment guide (use this, not root `DEPLOY.md`)
-- `DEPLOY.md`, `FIREBASE_SETUP.md` — **outdated** Firebase-era docs
+- `supabase/DEPLOYMENT_GUIDE.md` — current backend deployment guide

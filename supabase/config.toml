@@ -1,0 +1,11 @@
+project_id = "wnfeeyvanzesfdxvnkvf"
+
+# listing-share serves public Open Graph preview pages to social-media
+# crawlers, which send no auth headers — JWT verification must be off.
+[functions.listing-share]
+verify_jwt = false
+
+# dpo-callback is the browser redirect target from the DPO hosted
+# payment page — no auth headers exist on a redirect.
+[functions.dpo-callback]
+verify_jwt = false

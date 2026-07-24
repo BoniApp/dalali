@@ -24,7 +24,10 @@ class ShareableListingsSection extends StatelessWidget {
   const ShareableListingsSection({super.key, required this.referralCode});
 
   String _message(AppLocalizations l10n, PropertyModel p) {
-    final url = InfluencerService().buildReferralUrl(referralCode, listingId: p.id);
+    // Social-share URL: the listing-share edge function renders the OG
+    // preview (photo card) and redirects humans to the referral deep
+    // link, so the shared post shows the listing picture.
+    final url = InfluencerService().buildListingShareUrl(referralCode, p.id);
     return l10n.listingShareMessage(
       p.title,
       p.location,

@@ -2,8 +2,12 @@ import 'dart:async';
 import 'package:app_links/app_links.dart';
 import 'package:flutter/material.dart';
 import 'package:dalali/services/data_service.dart';
+import 'package:dalali/services/dpo_payment_service.dart';
 import 'package:dalali/services/supabase_service.dart';
 import 'package:dalali/screens/shared/property_detail_screen.dart';
+import 'package:dalali/screens/wallet/payment_failed_screen.dart';
+import 'package:dalali/screens/wallet/payment_pending_screen.dart';
+import 'package:dalali/screens/wallet/payment_success_screen.dart';
 
 /// ═══════════════════════════════════════════════════════════════
 /// DEEP LINK SERVICE
@@ -31,6 +35,10 @@ class DeepLinkService {
 
   String? pendingReferralCode;
   String? pendingListingId;
+
+  /// Stashed dalali://payment-* deep link (host + token), consumed on
+  /// warm start immediately or by MainNavigation after login.
+  ({String host, String? token})? pendingPaymentLink;
 
   final AppLinks _appLinks = AppLinks();
   StreamSubscription<Uri>? _sub;
@@ -74,6 +82,20 @@ class DeepLinkService {
   void dispose() => _sub?.cancel();
 
   void _handle(Uri uri) {
+    // dalali://payment-success|payment-pending|payment-failed?token=…
+    // (redirect target of the dpo-callback edge function)
+    if (uri.scheme == 'dalali') {
+      if (uri.host.startsWith('payment-')) {
+        final link = (host: uri.host, token: uri.queryParameters['token']);
+        if (navigatorKey.currentState != null && SupabaseService.currentUser != null) {
+          openPaymentLink(link);
+        } else {
+          pendingPaymentLink = link;
+        }
+      }
+      return;
+    }
+
     final data = parseReferralLink(uri);
     if (data.code == null && data.listingId == null) return;
     if (data.code != null) pendingReferralCode = data.code;
@@ -85,6 +107,40 @@ class DeepLinkService {
       } else {
         pendingListingId = data.listingId;
       }
+    }
+  }
+
+  /// Open a payment deep link (success/pending/failed) at the right screen.
+  Future<void> openPaymentLink(({String host, String? token}) link) async {
+    final nav = navigatorKey.currentState;
+    final token = link.token;
+    if (nav == null || token == null) return;
+    try {
+      final payment = await DpoPaymentService().getPaymentByToken(token);
+      if (payment == null) return;
+      final property = await DataService().getPropertyById(payment.propertyId);
+      final title = property?.title ?? '';
+      final user = SupabaseService.currentUser;
+      // tenantName is a receipt label — the users row isn't always
+      // readable client-side, so prefer auth metadata.
+      final tenantName = (user?.userMetadata?['full_name'] as String?) ?? '';
+      final nav2 = navigatorKey.currentState;
+      if (nav2 == null) return;
+      if (link.host == 'payment-success') {
+        nav2.push(MaterialPageRoute(
+          builder: (_) => PaymentSuccessScreen(payment: payment, propertyTitle: title, tenantName: tenantName),
+        ));
+      } else if (link.host == 'payment-pending') {
+        nav2.push(MaterialPageRoute(
+          builder: (_) => PaymentPendingScreen(payment: payment, propertyTitle: title),
+        ));
+      } else {
+        nav2.push(MaterialPageRoute(
+          builder: (_) => PaymentFailedScreen(payment: payment),
+        ));
+      }
+    } catch (e) {
+      debugPrint('DeepLinkService open payment link error: $e');
     }
   }
 

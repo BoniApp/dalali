@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:dalali/models/admin/admin_user_model.dart';
-import 'package:dalali/services/payment_service.dart';
+import 'package:dalali/services/supabase_service.dart';
 
 class CommissionsAdminScreen extends StatefulWidget {
   final String adminId;
@@ -19,7 +19,6 @@ class CommissionsAdminScreen extends StatefulWidget {
 }
 
 class _CommissionsAdminScreenState extends State<CommissionsAdminScreen> {
-  final PaymentService _service = PaymentService();
   bool _isLoading = true;
   List<Map<String, dynamic>> _commissions = [];
 
@@ -31,11 +30,14 @@ class _CommissionsAdminScreenState extends State<CommissionsAdminScreen> {
 
   Future<void> _loadCommissions() async {
     try {
-      // In future: call a service that returns aggregated commissions
-      // For now we fetch transactions and derive commissions client-side (demo)
-      final rows = await _service.getAllTransactions(limit: 200).first;
+      final rows = await SupabaseService.client
+          .from('transactions')
+          .select()
+          .eq('type', 'agencyFee')
+          .order('created_at', ascending: false)
+          .limit(200);
       setState(() {
-        _commissions = rows.where((r) => r['type'] == 'agency_fee').toList();
+        _commissions = (rows as List).cast<Map<String, dynamic>>();
       });
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to load: $e')));

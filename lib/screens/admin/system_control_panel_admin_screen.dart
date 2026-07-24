@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:dalali/config/app_theme.dart';
 import 'package:dalali/models/admin/admin_user_model.dart';
 import 'package:dalali/services/admin/admin_service.dart';
-import 'package:dalali/screens/admin/payment_providers_admin_screen.dart';
 
 class SystemControlPanelAdminScreen extends StatefulWidget {
   final String adminId;
@@ -40,10 +39,6 @@ class _SystemControlPanelAdminScreenState extends State<SystemControlPanelAdminS
   String _defaultLanguage = 'en';
   bool _maintenanceMode = false;
   bool _allowNewRegistrations = true;
-  bool _enableSelcom = true;
-  bool _enableAirtelMoney = true;
-  bool _enableVodacom = true;
-  bool _enableTigoPesa = true;
   bool _enableAiPhotoEnhancement = true;
   bool _enableAiDescription = true;
   bool _enableAiFraudDetection = true;
@@ -77,10 +72,6 @@ class _SystemControlPanelAdminScreenState extends State<SystemControlPanelAdminS
         _maintenanceMode = (data['maintenance_mode'] as bool?) ?? false;
         _allowNewRegistrations = (data['allow_new_registrations'] as bool?) ?? true;
         _defaultLanguage = (data['default_language'] as String?) ?? 'en';
-        _enableSelcom = (data['payment_selcom'] as bool?) ?? true;
-        _enableAirtelMoney = (data['payment_airtel_money'] as bool?) ?? true;
-        _enableVodacom = (data['payment_vodacom'] as bool?) ?? true;
-        _enableTigoPesa = (data['payment_tigo_pesa'] as bool?) ?? true;
         _enableAiPhotoEnhancement = (data['feature_ai_photo_enhancement'] as bool?) ?? true;
         _enableAiDescription = (data['feature_ai_property_description'] as bool?) ?? true;
         _enableAiFraudDetection = (data['feature_ai_fraud_detection'] as bool?) ?? true;
@@ -123,10 +114,6 @@ class _SystemControlPanelAdminScreenState extends State<SystemControlPanelAdminS
           'minimum_app_version': _minimumAppVersionController.text.trim(),
           'terms_url': _termsUrlController.text.trim(),
           'privacy_url': _privacyUrlController.text.trim(),
-          'payment_selcom': _enableSelcom,
-          'payment_airtel_money': _enableAirtelMoney,
-          'payment_vodacom': _enableVodacom,
-          'payment_tigo_pesa': _enableTigoPesa,
           'feature_ai_photo_enhancement': _enableAiPhotoEnhancement,
           'feature_ai_property_description': _enableAiDescription,
           'feature_ai_fraud_detection': _enableAiFraudDetection,
@@ -318,6 +305,8 @@ class _SystemControlPanelAdminScreenState extends State<SystemControlPanelAdminS
   }
 
   Widget _buildPaymentGatewayCard() {
+    // DPO Pay is the sole gateway — nothing to switch. Credentials
+    // live in function secrets (DPO_COMPANY_TOKEN), never in the DB.
     return Card(
       elevation: 2,
       child: Padding(
@@ -325,23 +314,13 @@ class _SystemControlPanelAdminScreenState extends State<SystemControlPanelAdminS
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Payment Gateway Control', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 16),
-            _buildSwitchTile('Selcom', _enableSelcom, (value) => setState(() => _enableSelcom = value)),
-            _buildSwitchTile('Airtel Money', _enableAirtelMoney, (value) => setState(() => _enableAirtelMoney = value)),
-            _buildSwitchTile('Vodacom', _enableVodacom, (value) => setState(() => _enableVodacom = value)),
-            _buildSwitchTile('Tigo Pesa', _enableTigoPesa, (value) => setState(() => _enableTigoPesa = value)),
+            const Text('Payment Gateway', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
-            FilledButton.icon(
-              onPressed: () {
-                Navigator.of(context).push(MaterialPageRoute(builder: (_) => PaymentProvidersAdminScreen(
-                  adminId: widget.adminId,
-                  adminName: widget.adminName,
-                  adminRole: widget.adminRole,
-                )));
-              },
-              icon: const Icon(Icons.manage_accounts),
-              label: const Text('Manage Providers'),
+            const ListTile(
+              leading: Icon(Icons.payments, color: Colors.green),
+              title: Text('DPO Pay', style: TextStyle(fontWeight: FontWeight.bold)),
+              subtitle: Text('Sole payment provider. Visa, Mastercard, M-Pesa, Airtel Money, Tigo Pesa, bank — configured via function secrets.'),
+              contentPadding: EdgeInsets.zero,
             ),
           ],
         ),

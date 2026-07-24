@@ -1,15 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:dalali/config/app_theme.dart';
+import 'package:dalali/models/payment_model.dart';
 import 'package:dalali/models/property_model.dart';
-import 'package:dalali/models/wallet_model.dart';
 import 'package:dalali/providers/app_state.dart';
 import 'package:dalali/services/app_settings.dart';
-import 'package:dalali/services/selcom_service.dart';
-import 'package:dalali/services/wallet_service.dart';
+import 'package:dalali/services/dpo_payment_service.dart';
+import 'package:dalali/screens/wallet/payment_failed_screen.dart';
+import 'package:dalali/screens/wallet/payment_success_screen.dart';
 import 'package:dalali/utils/helpers.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+/// ═══════════════════════════════════════════════════════════════
+/// PAYMENT SCREEN (DPO Pay)
+/// ═══════════════════════════════════════════════════════════════
+///
+/// Agency-fee checkout: summary → mint a DPO token via
+/// create-dpo-token → open the hosted payment page in the browser →
+/// customer pays → "I've completed payment" verifies and settles via
+/// verify-dpo-payment (retry with backoff) → receipt or failure.
 class PaymentScreen extends StatefulWidget {
   final PropertyModel property;
 
@@ -19,11 +28,16 @@ class PaymentScreen extends StatefulWidget {
   State<PaymentScreen> createState() => _PaymentScreenState();
 }
 
-class _PaymentScreenState extends State<PaymentScreen> {
-  bool _isProcessing = false;
-  String? _statusMessage;
+enum _Phase { form, awaiting, verifying }
 
-  Future<void> _initiatePayment() async {
+class _PaymentScreenState extends State<PaymentScreen> {
+  final _dpo = DpoPaymentService();
+  _Phase _phase = _Phase.form;
+  String? _paymentUrl;
+  String? _token;
+  String? _error;
+
+  Future<void> _startPayment() async {
     final user = context.read<AppState>().currentUser;
     if (user == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -31,134 +45,105 @@ class _PaymentScreenState extends State<PaymentScreen> {
       );
       return;
     }
-
     setState(() {
-      _isProcessing = true;
-      _statusMessage = 'Creating payment order...';
+      _phase = _Phase.verifying;
+      _error = null;
     });
-
     try {
-      final orderId = SelcomService.generateOrderId('DAL');
-      final selcom = SelcomService();
-
-      // Record the payment intent FIRST: selcom-webhook settles the
-      // agent/platform split and the influencer commission by looking
-      // this order up via idempotency_key — without the row, a paid
-      // order credits nobody. If this fails, abort before ordering so
-      // no unsettled payment can happen.
-      await WalletService().createTransaction(TransactionModel(
-        id: '', // DB assigns
-        type: TransactionType.agencyFee,
-        status: TransactionStatus.pending,
-        amount: AppSettings.agencyFee,
-        payerId: user.id,
-        payeeId: widget.property.listingCreatorId.isNotEmpty
-            ? widget.property.listingCreatorId
-            : widget.property.landlordId,
-        propertyId: widget.property.id,
-        propertyTitle: widget.property.title,
-        idempotencyKey: orderId,
-        createdAt: DateTime.now(),
-      ));
-
-      final response = await selcom.createPaymentOrder(
-        amount: AppSettings.agencyFee,
-        currency: 'TZS',
-        orderId: orderId,
-        customerEmail: user.email,
-        customerPhone: user.phone,
-        description: 'Agency fee for ${widget.property.title}',
-        redirectUrl: 'https://dalali.app/payment/success',
-        cancelUrl: 'https://dalali.app/payment/cancel',
-      );
-
-      if (response.success && response.raw != null) {
-        setState(() {
-          _statusMessage = 'Redirecting to Selcom checkout...';
-        });
-
-        // Try to open checkout URL if provided
-        final paymentUrl = response.raw!['payment_url'] ?? response.raw!['checkout_url'];
-        if (paymentUrl != null && paymentUrl is String) {
-          final uri = Uri.parse(paymentUrl);
-          if (await canLaunchUrl(uri)) {
-            await launchUrl(uri, mode: LaunchMode.externalApplication);
-          }
-        }
-
-        // Start polling for payment status
-        _startStatusPolling(orderId);
-      } else {
-        setState(() {
-          _statusMessage = response.message ?? 'Payment initiation failed';
-          _isProcessing = false;
-        });
+      final result = await _dpo.createToken(widget.property.id);
+      _paymentUrl = result.paymentUrl;
+      _token = result.token;
+      final uri = Uri.parse(result.paymentUrl);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
       }
+      if (!mounted) return;
+      setState(() => _phase = _Phase.awaiting);
     } catch (e) {
+      if (!mounted) return;
       setState(() {
-        _statusMessage = 'Error: $e';
-        _isProcessing = false;
+        _phase = _Phase.form;
+        _error = '$e';
       });
     }
   }
 
-  Future<void> _startStatusPolling(String orderId) async {
-    final selcom = SelcomService();
-    int attempts = 0;
-    const maxAttempts = 60; // 5 minutes at 5-second intervals
-
-    while (attempts < maxAttempts && mounted) {
-      await Future.delayed(const Duration(seconds: 5));
-      if (!mounted) return;
-
+  /// Verify with retry: DPO can take a moment to settle mobile money.
+  Future<void> _verifyNow() async {
+    final token = _token;
+    if (token == null) return;
+    setState(() {
+      _phase = _Phase.verifying;
+      _error = null;
+    });
+    const maxAttempts = 3;
+    for (var attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
-        final response = await selcom.verifyPayment(orderId);
+        final payment = await _dpo.verify(token);
         if (!mounted) return;
-
-        final paymentStatus = response.status?.toLowerCase();
-
-        if (paymentStatus == 'completed' || paymentStatus == 'success') {
-          setState(() {
-            _statusMessage = 'Payment successful!';
-            _isProcessing = false;
-          });
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Payment completed successfully!')),
-          );
-          return;
-        } else if (paymentStatus == 'failed' || paymentStatus == 'cancelled') {
-          setState(() {
-            _statusMessage = 'Payment failed. Please try again.';
-            _isProcessing = false;
-          });
+        if (payment.isPaid) {
+          _goSuccess(payment);
           return;
         }
-
-        setState(() {
-          _statusMessage = 'Waiting for payment confirmation... (${attempts + 1}/$maxAttempts)';
-        });
+        if (payment.status != PaymentStatus.pending) {
+          _goFailed(payment);
+          return;
+        }
+        if (attempt < maxAttempts) {
+          await Future.delayed(const Duration(seconds: 5));
+        }
       } catch (e) {
-        // Continue polling on error
+        if (!mounted) return;
+        setState(() {
+          _phase = _Phase.awaiting;
+          _error = '$e';
+        });
+        return;
       }
-
-      attempts++;
     }
-
     if (mounted) {
       setState(() {
-        _statusMessage = 'Payment status check timed out. Please check your transaction history.';
-        _isProcessing = false;
+        _phase = _Phase.awaiting;
+        _error = 'Not confirmed yet. If you completed the payment, wait a moment and try again.';
       });
     }
+  }
+
+  void _goSuccess(PaymentModel payment) {
+    final user = context.read<AppState>().currentUser;
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => PaymentSuccessScreen(
+          payment: payment,
+          propertyTitle: widget.property.title,
+          tenantName: user?.fullName ?? '',
+        ),
+      ),
+    );
+  }
+
+  void _goFailed(PaymentModel payment) {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => PaymentFailedScreen(
+          payment: payment,
+          onRetry: () => Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => PaymentScreen(property: widget.property)),
+          ),
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final p = widget.property;
-
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Confirm Payment'),
+        title: const Text('Pay Agency Fee'),
         backgroundColor: AppTheme.primary,
         foregroundColor: Colors.white,
       ),
@@ -199,11 +184,11 @@ class _PaymentScreenState extends State<PaymentScreen> {
                 padding: const EdgeInsets.all(12),
                 child: Row(
                   children: [
-                    Icon(Icons.shield, color: AppTheme.primaryDark),
-                    const SizedBox(width: 12),
+                    Icon(Icons.lock, color: AppTheme.primaryDark, size: 18),
+                    const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'Your payment is protected. Funds are held in escrow for 48 hours before release to the agent.',
+                        'Paying unlocks the landlord\'s contact details for this listing.',
                         style: TextStyle(fontSize: 12, color: AppTheme.primaryDark),
                       ),
                     ),
@@ -211,52 +196,85 @@ class _PaymentScreenState extends State<PaymentScreen> {
                 ),
               ),
             ),
-            const SizedBox(height: 32),
-            if (_statusMessage != null) ...[
-              Center(
-                child: Column(
-                  children: [
-                    if (_isProcessing) const CircularProgressIndicator(),
-                    const SizedBox(height: 12),
-                    Text(_statusMessage!, textAlign: TextAlign.center),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-            ],
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _isProcessing ? null : _initiatePayment,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.primary,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                ),
-                child: _isProcessing
-                    ? const Text('Processing...', style: TextStyle(fontSize: 16))
-                    : Text('Pay ${Helpers.formatPrice(AppSettings.agencyFee)}', style: const TextStyle(fontSize: 16)),
-              ),
-            ),
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton(
-                onPressed: _isProcessing ? null : () => Navigator.pop(context),
-                child: const Text('Cancel'),
-              ),
-            ),
             const SizedBox(height: 16),
+            if (_error != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Text(_error!, style: const TextStyle(color: Colors.red, fontSize: 13)),
+              ),
+            _buildAction(),
+            const SizedBox(height: 12),
             Center(
               child: Text(
-                'Powered by Selcom',
-                style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                'Visa · Mastercard · M-Pesa · Airtel Money · Tigo Pesa · Bank',
+                style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+                textAlign: TextAlign.center,
               ),
             ),
           ],
         ),
       ),
     );
+  }
+
+  Widget _buildAction() {
+    switch (_phase) {
+      case _Phase.verifying:
+        return const Center(
+          child: Padding(
+            padding: EdgeInsets.all(16),
+            child: Column(
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(height: 12),
+                Text('Contacting DPO…'),
+              ],
+            ),
+          ),
+        );
+      case _Phase.awaiting:
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            ElevatedButton.icon(
+              onPressed: _verifyNow,
+              icon: const Icon(Icons.check_circle),
+              label: const Text('I\'ve completed payment', style: TextStyle(fontSize: 16)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.action,
+                foregroundColor: Colors.white,
+                minimumSize: const Size.fromHeight(50),
+              ),
+            ),
+            const SizedBox(height: 8),
+            TextButton.icon(
+              onPressed: () async {
+                final url = _paymentUrl;
+                if (url != null) {
+                  final uri = Uri.parse(url);
+                  if (await canLaunchUrl(uri)) {
+                    await launchUrl(uri, mode: LaunchMode.externalApplication);
+                  }
+                }
+              },
+              icon: const Icon(Icons.open_in_new),
+              label: const Text('Re-open payment page'),
+            ),
+          ],
+        );
+      case _Phase.form:
+        return ElevatedButton.icon(
+          onPressed: _startPayment,
+          icon: const Icon(Icons.payments),
+          label: Text('Pay ${Helpers.formatPrice(AppSettings.agencyFee)} with DPO',
+              style: const TextStyle(fontSize: 16)),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppTheme.action,
+            foregroundColor: Colors.white,
+            minimumSize: const Size.fromHeight(50),
+          ),
+        );
+    }
   }
 }
 
@@ -266,29 +284,24 @@ class _SummaryRow extends StatelessWidget {
   final bool isTotal;
   final bool isFree;
 
-  const _SummaryRow({required this.label, required this.amount, this.isTotal = false, this.isFree = false});
+  const _SummaryRow({
+    required this.label,
+    required this.amount,
+    this.isTotal = false,
+    this.isFree = false,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: isTotal ? 16 : 14,
-              fontWeight: isTotal ? FontWeight.bold : FontWeight.normal,
-            ),
-          ),
+          Text(label, style: TextStyle(fontSize: isTotal ? 16 : 14, fontWeight: isTotal ? FontWeight.bold : FontWeight.normal)),
           Text(
             isFree ? 'FREE' : Helpers.formatPrice(amount),
-            style: TextStyle(
-              fontSize: isTotal ? 16 : 14,
-              fontWeight: isTotal ? FontWeight.bold : FontWeight.normal,
-              color: isFree ? Colors.green : (isTotal ? AppTheme.primary : Colors.black),
-            ),
+            style: TextStyle(fontSize: isTotal ? 16 : 14, fontWeight: isTotal ? FontWeight.bold : FontWeight.normal),
           ),
         ],
       ),

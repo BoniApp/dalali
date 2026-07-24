@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:dalali/config/supabase_config.dart';
 import 'package:dalali/models/influencer/influencer_model.dart';
 import 'package:dalali/models/influencer/influencer_application_model.dart';
 import 'package:dalali/models/influencer/referral_link_model.dart';
@@ -151,4 +152,11 @@ class InfluencerService {
   String buildReferralUrl(String code, {String? listingId}) =>
       'https://dalaliapp.com/ref/$code'
       '${listingId != null ? '?listing=$listingId' : ''}';
+
+  /// Social-share URL for a listing: hits the `listing-share` edge
+  /// function, which serves an Open Graph preview page (listing photo
+  /// as og:image → rich cards on WhatsApp/Facebook/X) and then
+  /// redirects humans to the referral deep link above.
+  String buildListingShareUrl(String code, String listingId) =>
+      '${SupabaseConfig.url}/functions/v1/listing-share?l=$listingId&r=$code';
 }

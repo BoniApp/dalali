@@ -103,7 +103,7 @@ serve(async (req) => {
       // Payout/ledger rows only when the creator earns the fee
       // (agents + seekers; landlords list for free — see
       // _shared/agency_fee_split.ts; the wallet split itself happens
-      // in selcom-webhook). No agency_fees row for landlords either —
+      // in _shared/dpo_settlement.ts). No agency_fees row for landlords either —
       // that table is the payout queue.
       const { data: creator } = await supabaseClient
         .from('users')

@@ -38,10 +38,18 @@ class _MainNavigationState extends State<MainNavigation> {
   }
 
   void _openPendingListing() {
+    // Cold-start deep links stashed before login — open once in the app.
     final listingId = DeepLinkService.instance.pendingListingId;
-    if (listingId == null || !mounted) return;
-    DeepLinkService.instance.pendingListingId = null;
-    DeepLinkService.instance.openListingById(listingId);
+    if (listingId != null && mounted) {
+      DeepLinkService.instance.pendingListingId = null;
+      DeepLinkService.instance.openListingById(listingId);
+      return;
+    }
+    final paymentLink = DeepLinkService.instance.pendingPaymentLink;
+    if (paymentLink != null && mounted) {
+      DeepLinkService.instance.pendingPaymentLink = null;
+      DeepLinkService.instance.openPaymentLink(paymentLink);
+    }
   }
 
   @override

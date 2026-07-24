@@ -28,7 +28,7 @@ class TransactionsAdminScreen extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 4),
-            Text('All Selcom payment transactions', style: TextStyle(fontSize: 14, color: Colors.grey[600])),
+            Text('All DPO Pay payment transactions', style: TextStyle(fontSize: 14, color: Colors.grey[600])),
             const SizedBox(height: 24),
             Card(
               elevation: 2,
@@ -53,7 +53,7 @@ class TransactionsAdminScreen extends StatelessWidget {
                         DataColumn(label: Text('Payer')),
                         DataColumn(label: Text('Payee')),
                         DataColumn(label: Text('Property')),
-                        DataColumn(label: Text('Selcom Ref')),
+                        DataColumn(label: Text('Gateway Ref')),
                         DataColumn(label: Text('Date')),
                       ],
                       rows: txs.map((tx) => DataRow(
