@@ -15,6 +15,7 @@ import 'package:dalali/models/tenancy_application_model.dart';
 import 'package:dalali/models/tenancy_model.dart';
 import 'package:dalali/models/move_checklist_model.dart';
 import 'package:dalali/models/rent_schedule_model.dart';
+import 'package:dalali/models/maintenance_request_model.dart';
 
 /// ═══════════════════════════════════════════════════════════════
 /// DATA SERVICE — Supabase PostgreSQL wrapper
@@ -509,19 +510,62 @@ class DataService {
   }
 
   // ═══════════════════════════════════════════════════════════════
-  //  STUBS — Phase 3 & 4 (Reviews, Reports, Maintenance, etc.)
+  //  MAINTENANCE REQUESTS (migration 025)
+  //
+  //  Tenants file requests (RLS: own rows, always 'open'); landlords
+  //  move them open → inProgress → resolved via the guard trigger,
+  //  which stamps resolved_at and freezes the request details.
+  // ═══════════════════════════════════════════════════════════════
+
+  Stream<List<MaintenanceRequestModel>> getMaintenanceForTenant(String tenantId) {
+    return _db
+        .from('maintenance_requests')
+        .stream(primaryKey: ['id'])
+        .eq('tenant_id', tenantId)
+        .order('created_at', ascending: false)
+        .map((rows) => rows.map(_maintenanceFromJson).toList());
+  }
+
+  Stream<List<MaintenanceRequestModel>> getMaintenanceForLandlord(String landlordId) {
+    return _db
+        .from('maintenance_requests')
+        .stream(primaryKey: ['id'])
+        .eq('landlord_id', landlordId)
+        .order('created_at', ascending: false)
+        .map((rows) => rows.map(_maintenanceFromJson).toList());
+  }
+
+  Future<void> addMaintenanceRequest(MaintenanceRequestModel request) async {
+    await _db.from('maintenance_requests').insert({
+      'tenant_id': request.tenantId,
+      'tenant_name': request.tenantName,
+      'landlord_id': request.landlordId,
+      'property_id': request.propertyId,
+      'property_title': request.propertyTitle,
+      'category': request.category.name,
+      'description': request.description,
+      'status': 'open',
+      'photos': request.photos,
+    });
+  }
+
+  Future<void> updateMaintenanceStatus(String id, MaintenanceStatus status, {String? resolutionNotes}) async {
+    await _db.from('maintenance_requests').update({
+      'status': status.name,
+      if (resolutionNotes != null) 'resolution_notes': resolutionNotes,
+    }).eq('id', id);
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  //  STUBS — Phase 3 & 4 (Reviews, Reports, etc.)
   // ═══════════════════════════════════════════════════════════════
 
   Future<void> addReview(dynamic review) async {}
   Future<void> addNeighbourhoodReport(dynamic report) async {}
-  Future<void> addMaintenanceRequest(dynamic request) async {}
-  Future<void> updateMaintenanceStatus(String id, dynamic status, {String? resolutionNotes}) async {}
   Stream<List<dynamic>> getReviews({int limit = 20}) => const Stream.empty();
   Stream<List<dynamic>> getMoveListingsByUser(String userId) => const Stream.empty();
   Stream<List<dynamic>> getRewardsForUser(String userId) => const Stream.empty();
   Stream<List<dynamic>> getNeighbourhoodReports({int limit = 200}) => const Stream.empty();
-  Stream<List<dynamic>> getMaintenanceForLandlord(String id) => const Stream.empty();
-  Stream<List<dynamic>> getMaintenanceForTenant(String id) => const Stream.empty();
 
   // ═══════════════════════════════════════════════════════════════
   //  SERIALIZATION HELPERS
@@ -801,6 +845,32 @@ class DataService {
         orElse: () => PaymentStatus.pending,
       ),
       paidAt: json['paid_at'] != null ? DateTime.tryParse(json['paid_at']) : null,
+    );
+  }
+
+  // ─── Maintenance Request ───────────────────────────────────────
+
+  MaintenanceRequestModel _maintenanceFromJson(Map<String, dynamic> json) {
+    return MaintenanceRequestModel(
+      id: json['id'] ?? '',
+      tenantId: json['tenant_id'] ?? '',
+      tenantName: json['tenant_name'] ?? '',
+      landlordId: json['landlord_id'] ?? '',
+      propertyId: json['property_id'] ?? '',
+      propertyTitle: json['property_title'] ?? '',
+      category: MaintenanceCategory.values.firstWhere(
+        (e) => e.name == json['category'],
+        orElse: () => MaintenanceCategory.general,
+      ),
+      description: json['description'] ?? '',
+      status: MaintenanceStatus.values.firstWhere(
+        (e) => e.name == json['status'],
+        orElse: () => MaintenanceStatus.open,
+      ),
+      photos: (json['photos'] as List<dynamic>?)?.cast<String>() ?? [],
+      createdAt: DateTime.tryParse(json['created_at'] ?? '') ?? DateTime.now(),
+      resolvedAt: json['resolved_at'] != null ? DateTime.tryParse(json['resolved_at']) : null,
+      resolutionNotes: json['resolution_notes'],
     );
   }
 

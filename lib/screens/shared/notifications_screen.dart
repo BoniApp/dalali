@@ -2,6 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:dalali/config/app_theme.dart';
 import 'package:dalali/models/notification_model.dart';
 import 'package:dalali/providers/app_state.dart';
+import 'package:dalali/screens/shared/conversations_screen.dart';
+import 'package:dalali/screens/shared/property_detail_screen.dart';
+import 'package:dalali/screens/tenancy/my_tenancies_screen.dart';
+import 'package:dalali/screens/tenancy/reservation_requests_screen.dart';
+import 'package:dalali/screens/wallet/payment_success_screen.dart';
+import 'package:dalali/services/data_service.dart';
+import 'package:dalali/services/dpo_payment_service.dart';
 import 'package:dalali/utils/helpers.dart';
 import 'package:provider/provider.dart';
 
@@ -98,13 +105,72 @@ class _NotificationTile extends StatelessWidget {
                 height: 10,
                 decoration: const BoxDecoration(shape: BoxShape.circle, color: Colors.red),
               ),
-        onTap: () {
-          if (!notification.isRead) {
-            context.read<AppState>().markNotificationRead(notification.id);
-          }
-        },
+        onTap: () => _openTarget(context, notification),
       ),
     );
+  }
+
+  /// Tap-to-open: mark read, then navigate to the notification's
+  /// target (property / conversation / payment receipt / tenancies).
+  Future<void> _openTarget(BuildContext context, NotificationModel n) async {
+    if (!n.isRead) {
+      context.read<AppState>().markNotificationRead(n.id);
+    }
+    final collection = n.targetCollection;
+    final targetId = n.targetId;
+
+    if (n.type == NotificationType.message || n.type == NotificationType.broadcast) {
+      final userId = context.read<AppState>().currentUser?.id;
+      if (userId != null && context.mounted) {
+        Navigator.push(context, MaterialPageRoute(builder: (_) => ConversationsScreen(userId: userId)));
+      }
+      return;
+    }
+    if (collection == null || targetId == null) return;
+
+    switch (collection) {
+      case 'properties':
+        final property = await DataService().getPropertyById(targetId);
+        if (property != null && context.mounted) {
+          Navigator.push(context, MaterialPageRoute(builder: (_) => PropertyDetailScreen(property: property)));
+        }
+        break;
+      case 'conversations':
+        final userId = context.read<AppState>().currentUser?.id;
+        if (userId != null && context.mounted) {
+          Navigator.push(context, MaterialPageRoute(builder: (_) => ConversationsScreen(userId: userId)));
+        }
+        break;
+      case 'payments':
+        final user = context.read<AppState>().currentUser;
+        final payment = await DpoPaymentService().getPaymentById(targetId);
+        if (payment != null && context.mounted) {
+          final property = await DataService().getPropertyById(payment.propertyId);
+          if (context.mounted) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => PaymentSuccessScreen(
+                  payment: payment,
+                  propertyTitle: property?.title ?? '',
+                  tenantName: user?.fullName ?? '',
+                ),
+              ),
+            );
+          }
+        }
+        break;
+      case 'tenancies':
+        if (context.mounted) {
+          Navigator.push(context, MaterialPageRoute(builder: (_) => const MyTenanciesScreen()));
+        }
+        break;
+      case 'tenancy_applications':
+        if (context.mounted) {
+          Navigator.push(context, MaterialPageRoute(builder: (_) => const ReservationRequestsScreen()));
+        }
+        break;
+    }
   }
 
   IconData _iconForType(NotificationType type) {
@@ -129,6 +195,10 @@ class _NotificationTile extends StatelessWidget {
         return Icons.attach_money;
       case NotificationType.withdrawalProcessed:
         return Icons.account_balance_wallet;
+      case NotificationType.message:
+        return Icons.chat_bubble_outline;
+      case NotificationType.broadcast:
+        return Icons.campaign;
       case NotificationType.system:
         return Icons.info;
     }

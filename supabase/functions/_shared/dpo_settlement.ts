@@ -61,14 +61,25 @@ async function creditWallet(
   }
 }
 
-async function notify(supabase: any, userId: string, title: string, body: string, targetId?: string) {
-  await supabase.from("notifications").insert({
-    user_id: userId,
-    type: "paymentReceived",
-    title,
-    body,
-    target_id: targetId ?? null,
-    target_collection: "payments",
+async function notify(_supabase: any, userId: string, title: string, body: string, targetId?: string) {
+  // Route through send-notification: it inserts the in-app row AND
+  // pushes via FCM. Fire-and-forget semantics stay with the caller's
+  // try/catch — notification failure must never fail settlement.
+  const fnBase = Deno.env.get("SUPABASE_URL")!.replace(".supabase.co", ".functions.supabase.co");
+  await fetch(`${fnBase}/send-notification`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-admin-secret": Deno.env.get("ADMIN_API_SECRET") ?? "",
+    },
+    body: JSON.stringify({
+      user_id: userId,
+      title,
+      body,
+      type: "paymentReceived",
+      target_collection: "payments",
+      target_id: targetId ?? null,
+    }),
   });
 }
 

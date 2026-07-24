@@ -66,6 +66,12 @@ class DpoPaymentService {
     return row == null ? null : PaymentModel.fromJson(row);
   }
 
+  /// Fetch a payment by id (notification target navigation).
+  Future<PaymentModel?> getPaymentById(String id) async {
+    final row = await _db.from('payments').select().eq('id', id).maybeSingle();
+    return row == null ? null : PaymentModel.fromJson(row);
+  }
+
   /// Whether [userId] has paid access (contact unlocked) to [propertyId].
   Stream<bool> watchPropertyAccess(String userId, String propertyId) {
     return _db

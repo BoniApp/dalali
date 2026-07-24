@@ -9,6 +9,8 @@ enum NotificationType {
   rentDue,
   paymentReceived,
   withdrawalProcessed,
+  message,
+  broadcast,
   system,
 }
 

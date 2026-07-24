@@ -51,5 +51,9 @@
 	<string>Dalali lets you choose photos for your profile picture and property listings.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>Dalali lets you take photos for your profile picture, property listings, and identity verification.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>
 </dict>
 </plist>

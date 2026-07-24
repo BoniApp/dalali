@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:dalali/l10n/app_localizations.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'package:dalali/config/firebase_options.dart';
 import 'package:dalali/services/supabase_service.dart';
 import 'package:dalali/providers/app_state.dart';
 import 'package:dalali/providers/theme_provider.dart';
@@ -13,10 +15,18 @@ import 'package:dalali/screens/shared/main_navigation.dart';
 import 'package:dalali/screens/shared/role_selection_screen.dart';
 import 'package:dalali/services/auth_service.dart';
 import 'package:dalali/services/deep_link_service.dart';
+import 'package:dalali/services/fcm_service.dart';
 import 'package:dalali/services/notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Firebase (FCM push) — manual options, no native config edits needed
+  try {
+    await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  } catch (e) {
+    debugPrint('Firebase initialization error: $e');
+  }
 
   // Initialize Supabase
   try {
@@ -27,6 +37,9 @@ void main() async {
 
   // Initialize local notifications
   await NotificationService.initialize();
+
+  // FCM push (permissions, token sync, message handlers)
+  await FcmService.initialize();
 
   // Referral deep links (dalaliapp.com/ref/CODE?listing=<id>)
   await DeepLinkService.instance.initialize();
