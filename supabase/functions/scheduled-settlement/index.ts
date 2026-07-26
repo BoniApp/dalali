@@ -39,43 +39,27 @@ serve(async (req) => {
       const agentShare = split.agent || 0;
       const platformShare = split.platform || 0;
 
-      // Move agent's pending to available
+      // Move agent's pending to available (atomic — migration 027's
+      // wallet_settle_pending, replacing a read-then-write race).
       if (tx.payee_id && agentShare > 0) {
-        const { data: wallet } = await supabase
-          .from("wallets")
-          .select("*")
-          .eq("user_id", tx.payee_id)
-          .maybeSingle();
-
-        if (wallet) {
-          await supabase.from("wallets").update({
-            pending_balance: Math.max(0, wallet.pending_balance - agentShare),
-            available_balance: wallet.available_balance + agentShare,
-            updated_at: new Date().toISOString(),
-          }).eq("user_id", tx.payee_id);
-        }
+        const { error } = await supabase.rpc("wallet_settle_pending", {
+          p_user_id: tx.payee_id,
+          p_amount: agentShare,
+        });
+        if (error) console.error(`wallet_settle_pending failed for ${tx.payee_id}:`, error);
       }
 
-      // Move platform's pending to available
+      // Move platform's pending to available. Previously written against
+      // a "_platform" sentinel row in `wallets`, whose user_id column is
+      // uuid + FK'd to users(id) — every insert/update against that
+      // string silently failed, so the platform's revenue share was
+      // never actually landing anywhere. platform_wallet (migration 027)
+      // is a real, dedicated singleton table for this.
       if (platformShare > 0) {
-        const { data: wallet } = await supabase
-          .from("wallets")
-          .select("*")
-          .eq("user_id", "_platform")
-          .maybeSingle();
-
-        if (wallet) {
-          await supabase.from("wallets").update({
-            pending_balance: Math.max(0, wallet.pending_balance - platformShare),
-            available_balance: wallet.available_balance + platformShare,
-            updated_at: new Date().toISOString(),
-          }).eq("user_id", "_platform");
-        } else {
-          await supabase.from("wallets").insert({
-            user_id: "_platform",
-            available_balance: platformShare,
-          });
-        }
+        const { error } = await supabase.rpc("platform_wallet_settle_pending", {
+          p_amount: platformShare,
+        });
+        if (error) console.error("platform_wallet_settle_pending failed:", error);
       }
 
       // Mark transaction as available
@@ -100,18 +84,13 @@ serve(async (req) => {
       .limit(100);
 
     for (const entry of pendingEarnings || []) {
-      const { data: wallet } = await supabase
-        .from("wallets")
-        .select("*")
-        .eq("user_id", entry.user_id)
-        .maybeSingle();
-
-      if (wallet) {
-        await supabase.from("wallets").update({
-          pending_balance: Math.max(0, Number(wallet.pending_balance) - Number(entry.amount)),
-          available_balance: Number(wallet.available_balance) + Number(entry.amount),
-          updated_at: new Date().toISOString(),
-        }).eq("user_id", entry.user_id);
+      const { error } = await supabase.rpc("wallet_settle_pending", {
+        p_user_id: entry.user_id,
+        p_amount: Number(entry.amount),
+      });
+      if (error) {
+        console.error(`wallet_settle_pending failed for earnings entry ${entry.entry_id}:`, error);
+        continue;
       }
 
       await supabase.from("earnings").update({

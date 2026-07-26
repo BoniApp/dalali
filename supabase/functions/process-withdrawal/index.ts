@@ -11,6 +11,7 @@
 //
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { timingSafeEqual } from '../_shared/timing_safe_equal.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -37,7 +38,7 @@ export async function handler(req: Request): Promise<Response> {
     // ─── Admin auth: shared secret, or an admin user's JWT ─────
     const adminSecret = Deno.env.get('ADMIN_API_SECRET')
     const provided = req.headers.get('x-admin-secret')
-    if (!adminSecret || provided !== adminSecret) {
+    if (!adminSecret || !provided || !timingSafeEqual(provided, adminSecret)) {
       const jwt = req.headers.get('Authorization')?.replace('Bearer ', '')
       if (!jwt) return json({ error: 'Unauthorized' }, 401)
       const { data: { user } } = await supabase.auth.getUser(jwt)
@@ -71,17 +72,17 @@ export async function handler(req: Request): Promise<Response> {
     }
 
     // ─── Debit atomically, mark completed (manual payout) ──────
-    const { error: debitError } = await supabase.rpc('wallet_debit', {
+    // wallet_debit (migration 027) decrements available_balance AND
+    // bumps total_withdrawn in the same statement — do not also
+    // update total_withdrawn here, that would double-count it.
+    const { data: debited, error: debitError } = await supabase.rpc('wallet_debit', {
       p_user_id: wd.user_id,
       p_amount: wd.amount,
     })
     if (debitError) return json({ error: `Debit failed: ${debitError.message}` }, 400)
+    if (!debited) return json({ error: 'Insufficient balance' }, 400)
 
     const manualRef = `MANUAL-${withdrawalId}`
-    await supabase.from('wallets').update({
-      total_withdrawn: (wallet.total_withdrawn ?? 0) + wd.amount,
-      updated_at: new Date().toISOString(),
-    }).eq('user_id', wd.user_id)
 
     await supabase.from('withdrawals').update({
       status: 'completed',

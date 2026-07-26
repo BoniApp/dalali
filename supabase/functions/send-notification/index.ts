@@ -18,6 +18,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { sendFcm, type FcmServiceAccount } from '../_shared/fcm.ts'
+import { timingSafeEqual } from '../_shared/timing_safe_equal.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -37,7 +38,8 @@ serve(async (req) => {
 
   try {
     const adminSecret = Deno.env.get('ADMIN_API_SECRET')
-    if (!adminSecret || req.headers.get('x-admin-secret') !== adminSecret) {
+    const provided = req.headers.get('x-admin-secret')
+    if (!adminSecret || !provided || !timingSafeEqual(provided, adminSecret)) {
       return json({ error: 'Unauthorized' }, 401)
     }
 

@@ -38,29 +38,6 @@ export interface SettlementOutcome {
   note?: string;
 }
 
-async function creditWallet(
-  supabase: any,
-  userId: string,
-  balanceField: string,
-  amount: number,
-  earnedField?: string,
-) {
-  const { data: wallet } = await supabase.from("wallets").select("*").eq("user_id", userId).maybeSingle();
-  if (!wallet) {
-    await supabase.from("wallets").insert({
-      user_id: userId,
-      [balanceField]: amount,
-      ...(earnedField ? { [earnedField]: amount } : {}),
-    });
-  } else {
-    await supabase.from("wallets").update({
-      [balanceField]: (wallet[balanceField] || 0) + amount,
-      ...(earnedField ? { [earnedField]: (wallet[earnedField] || 0) + amount } : {}),
-      updated_at: new Date().toISOString(),
-    }).eq("user_id", userId);
-  }
-}
-
 async function notify(_supabase: any, userId: string, title: string, body: string, targetId?: string) {
   // Route through send-notification: it inserts the in-app row AND
   // pushes via FCM. Fire-and-forget semantics stay with the caller's
@@ -104,56 +81,41 @@ export async function verifyAndSettle(
     return { status, payment: { ...payment, status }, verify };
   }
 
-  // ─── 1. Mark paid ────────────────────────────────────────────
-  await supabase.from("payments").update({
-    status: "paid",
-    paid_at: now,
-    dpo_transaction_id: verify.transactionId,
-    payment_method: verify.paymentMethod,
-  }).eq("id", payment.id);
-
-  // ─── 2. Unlock contact access ────────────────────────────────
-  await supabase.from("property_access").upsert({
-    property_id: payment.property_id,
-    tenant_id: payment.tenant_id,
-    payment_id: payment.id,
-    paid: true,
-  }, { onConflict: "property_id,tenant_id" });
-
-  // ─── 3. Ledger + wallet split (creator vs platform rule) ─────
+  // ─── 1-3. Mark paid, unlock access, ledger + wallet split ─────
+  // All money-moving mutations run inside one Postgres transaction
+  // (settle_dpo_payment, migration 027) so a crash mid-flight can't
+  // leave a payment marked paid without its ledger row / wallet
+  // credit — the idempotency guard above only ever short-circuits
+  // once every step below has actually committed.
   const { data: creator } = payment.agent_id
     ? await supabase.from("users").select("role").eq("id", payment.agent_id).maybeSingle()
     : { data: null };
   const { payeeShare, platformShare } = computeAgencyFeeSplit(payment.amount, creator?.role ?? null);
 
-  const { data: prop } = await supabase
-    .from("properties").select("title").eq("id", payment.property_id).maybeSingle();
-  const propertyTitle = prop?.title ?? "";
+  const { data: settlement, error: settleError } = await supabase.rpc("settle_dpo_payment", {
+    p_payment_id: payment.id,
+    p_dpo_transaction_id: verify.transactionId ?? null,
+    p_payment_method: verify.paymentMethod ?? null,
+    p_agent_id: payment.agent_id ?? null,
+    p_payee_share: payeeShare,
+    p_platform_share: platformShare,
+  });
+  if (settleError) throw settleError;
 
-  const { data: txn } = await supabase.from("transactions").insert({
-    type: "agencyFee",
-    status: "processing",
-    amount: payment.amount,
-    currency: payment.currency,
-    payer_id: payment.tenant_id,
-    payee_id: payment.agent_id,
-    property_id: payment.property_id,
-    property_title: propertyTitle,
-    payment_method: "dpo",
-    idempotency_key: verify.transactionId ?? `dpo_${payment.id}`,
-    split: { agent: payeeShare, platform: platformShare },
-    processed_at: now,
-  }).select().single();
+  const propertyTitle = settlement?.property_title ?? "";
+  const txn = settlement?.already_paid ? null : { id: settlement?.transaction_id };
 
-  if (txn) {
-    if (payment.agent_id && payeeShare > 0) {
-      await creditWallet(supabase, payment.agent_id, "pending_balance", payeeShare, "total_earned");
-    }
-    await creditWallet(supabase, "_platform", "pending_balance", platformShare, "total_earned");
-
-    // ─── 4. Influencer commission (best-effort — never fails settlement)
+  // ─── 4. Influencer commission (best-effort — never fails settlement)
+  if (txn?.id) {
     try {
-      await attributeAndCredit(supabase, txn);
+      await attributeAndCredit(supabase, {
+        id: txn.id,
+        payer_id: payment.tenant_id,
+        type: "agencyFee",
+        amount: payment.amount,
+        property_id: payment.property_id,
+        property_title: propertyTitle,
+      });
     } catch (e) {
       console.error("Influencer commission failed:", e);
     }

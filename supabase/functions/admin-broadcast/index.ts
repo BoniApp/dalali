@@ -11,6 +11,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { timingSafeEqual } from "../_shared/timing_safe_equal.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -24,7 +25,7 @@ const VALID_TARGETS = ["all", "seeker", "landlord", "agent", "influencer"];
 async function resolveAdminId(supabase: any, req: Request): Promise<string | null> {
   const secret = req.headers.get("x-admin-secret");
   const expected = Deno.env.get("ADMIN_API_SECRET");
-  if (secret && expected && secret === expected) return "secret";
+  if (secret && expected && timingSafeEqual(secret, expected)) return "secret";
 
   const authHeader = req.headers.get("Authorization");
   if (!authHeader) return null;

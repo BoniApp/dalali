@@ -102,29 +102,16 @@ export async function logFraud(
   });
 }
 
+// Atomic single-statement credit (migration 027) — replaces a prior
+// read-then-write that could lose credits under concurrent settlement
+// of the same influencer's wallet.
 // deno-lint-ignore no-explicit-any
 async function creditWallet(supabase: any, userId: string, amount: number): Promise<void> {
-  const { data: wallet } = await supabase
-    .from("wallets")
-    .select("*")
-    .eq("user_id", userId)
-    .maybeSingle();
-  if (!wallet) {
-    await supabase.from("wallets").insert({
-      user_id: userId,
-      pending_balance: amount,
-      total_earned: amount,
-    });
-  } else {
-    await supabase
-      .from("wallets")
-      .update({
-        pending_balance: Number(wallet.pending_balance || 0) + amount,
-        total_earned: Number(wallet.total_earned || 0) + amount,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("user_id", userId);
-  }
+  const { error } = await supabase.rpc("wallet_credit_pending", {
+    p_user_id: userId,
+    p_amount: amount,
+  });
+  if (error) throw error;
 }
 
 export interface CreditResult {

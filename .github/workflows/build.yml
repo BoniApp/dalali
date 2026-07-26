@@ -57,6 +57,12 @@ jobs:
       - name: Get Flutter dependencies
         run: flutter pub get
 
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Run tests
+        run: flutter test
+
       - name: Build APK (Debug)
         env:
           GRADLE_OPTS: -Xmx3072m -Dorg.gradle.daemon=false -Dorg.gradle.parallel=false

@@ -10,6 +10,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { attributeAndCredit } from "../_shared/influencer_commission.ts";
+import { timingSafeEqual } from "../_shared/timing_safe_equal.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -33,7 +34,7 @@ serve(async (req) => {
   try {
     const secret = req.headers.get("x-commission-secret");
     const expected = Deno.env.get("COMMISSION_SECRET");
-    if (!expected || secret !== expected) {
+    if (!expected || !secret || !timingSafeEqual(secret, expected)) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
