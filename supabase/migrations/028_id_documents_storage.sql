@@ -24,7 +24,6 @@ CREATE POLICY "ID documents owner upload"
     bucket_id = 'id-documents'
     AND (storage.foldername(name))[1] = auth.uid()::text
   );
-
 DROP POLICY IF EXISTS "ID documents owner read" ON storage.objects;
 CREATE POLICY "ID documents owner read"
   ON storage.objects FOR SELECT
