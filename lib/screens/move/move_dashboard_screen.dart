@@ -3,7 +3,9 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:dalali/models/move_listing_model.dart';
 import 'package:dalali/models/property_model.dart';
-import 'package:dalali/providers/app_state.dart';
+import 'package:dalali/providers/user_state.dart';
+import 'package:dalali/providers/property_state.dart';
+import 'package:dalali/providers/move_state.dart';
 import 'package:dalali/screens/move/start_move_screen.dart';
 import 'package:dalali/screens/shared/property_detail_screen.dart';
 import 'package:dalali/services/matching_engine.dart';
@@ -13,8 +15,9 @@ class MoveDashboardScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final appState = context.watch<AppState>();
-    final myMoves = appState.myMoveListings;
+    final userId = context.watch<UserState>().currentUser?.id;
+    final moveState = context.watch<MoveState>();
+    final myMoves = moveState.myMoveListingsFor(userId);
     final activeMove = myMoves.isNotEmpty ? myMoves.first : null;
     final theme = Theme.of(context);
 
@@ -24,7 +27,7 @@ class MoveDashboardScreen extends StatelessWidget {
           ? _EmptyMoveState(onStart: () => _goToStartMove(context))
           : _ActiveMoveBody(
               move: activeMove,
-              appState: appState,
+              moveState: moveState,
               theme: theme,
             ),
       floatingActionButton: activeMove == null
@@ -85,25 +88,27 @@ class _EmptyMoveState extends StatelessWidget {
 
 class _ActiveMoveBody extends StatelessWidget {
   final MoveListingModel move;
-  final AppState appState;
+  final MoveState moveState;
   final ThemeData theme;
 
   const _ActiveMoveBody({
     required this.move,
-    required this.appState,
+    required this.moveState,
     required this.theme,
   });
 
   @override
   Widget build(BuildContext context) {
     final currency = NumberFormat.currency(locale: 'sw_TZ', symbol: 'TZS ', decimalDigits: 0);
+    final user = context.watch<UserState>().currentUser;
+    final propertyState = context.watch<PropertyState>();
     final engine = MatchingEngine();
     final matches = engine.matchForMove(
       move: move,
-      user: appState.currentUser,
-      allProperties: appState.properties,
-      favoritePropertyIds: appState.favorites
-          .where((f) => f.userId == appState.currentUser?.id)
+      user: user,
+      allProperties: propertyState.properties,
+      favoritePropertyIds: propertyState.favorites
+          .where((f) => f.userId == user?.id)
           .map((f) => f.propertyId)
           .toList(),
       maxResults: 5,
@@ -157,7 +162,7 @@ class _ActiveMoveBody extends StatelessWidget {
             if (move.status == MoveStatus.planning)
               Expanded(
                 child: ElevatedButton.icon(
-                  onPressed: () => appState.activateMove(move.id),
+                  onPressed: () => moveState.activateMove(move.id),
                   icon: const Icon(Icons.play_arrow),
                   label: const Text('Activate'),
                 ),
@@ -196,7 +201,7 @@ class _ActiveMoveBody extends StatelessWidget {
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Keep')),
           ElevatedButton(
             onPressed: () {
-              appState.cancelMove(move.id);
+              moveState.cancelMove(move.id);
               Navigator.pop(ctx);
             },
             child: const Text('Cancel Move'),
@@ -207,7 +212,7 @@ class _ActiveMoveBody extends StatelessWidget {
   }
 
   void _showCompleteDialog(BuildContext context) {
-    final properties = appState.properties.where((p) => p.status == PropertyStatus.available).toList();
+    final properties = context.read<PropertyState>().properties.where((p) => p.status == PropertyStatus.available).toList();
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -225,7 +230,7 @@ class _ActiveMoveBody extends StatelessWidget {
                       title: Text(p.title),
                       subtitle: Text(p.location),
                       onTap: () {
-                        appState.completeMove(move.id, p.id);
+                        moveState.completeMove(move.id, p.id);
                         Navigator.pop(ctx);
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(content: Text('Move completed! Welcome to ${p.title}')),

@@ -3,7 +3,8 @@ import 'package:dalali/config/app_theme.dart';
 import 'package:dalali/models/property_model.dart';
 import 'package:dalali/models/tenancy_application_model.dart';
 import 'package:dalali/models/user_model.dart';
-import 'package:dalali/providers/app_state.dart';
+import 'package:dalali/providers/user_state.dart';
+import 'package:dalali/providers/tenancy_state.dart';
 import 'package:dalali/widgets/pay_agency_fee_button.dart';
 import 'package:dalali/widgets/guest_gate.dart';
 import 'package:provider/provider.dart';
@@ -13,8 +14,8 @@ class ReservationRequestsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final appState = context.watch<AppState>();
-    final user = appState.currentUser;
+    final user = context.watch<UserState>().currentUser;
+    final tenancyState = context.watch<TenancyState>();
     final isLandlord = user?.role == UserRole.landlord || user?.role == UserRole.agent;
 
     return Scaffold(
@@ -24,19 +25,20 @@ class ReservationRequestsScreen extends StatelessWidget {
         foregroundColor: Colors.white,
       ),
       body: isLandlord
-          ? _LandlordView(appState: appState)
-          : _TenantView(appState: appState),
+          ? _LandlordView(tenancyState: tenancyState, userId: user?.id)
+          : _TenantView(tenancyState: tenancyState, userId: user?.id),
     );
   }
 }
 
 class _TenantView extends StatelessWidget {
-  final AppState appState;
-  const _TenantView({required this.appState});
+  final TenancyState tenancyState;
+  final String? userId;
+  const _TenantView({required this.tenancyState, required this.userId});
 
   @override
   Widget build(BuildContext context) {
-    final myApps = appState.myTenancyApplications;
+    final myApps = tenancyState.myTenancyApplicationsFor(userId);
     if (myApps.isEmpty) {
       return _EmptyState(message: 'You have not applied for any properties yet.', icon: Icons.send);
     }
@@ -49,13 +51,14 @@ class _TenantView extends StatelessWidget {
 }
 
 class _LandlordView extends StatelessWidget {
-  final AppState appState;
-  const _LandlordView({required this.appState});
+  final TenancyState tenancyState;
+  final String? userId;
+  const _LandlordView({required this.tenancyState, required this.userId});
 
   @override
   Widget build(BuildContext context) {
-    final pending = appState.pendingApplicationsForLandlord;
-    final all = appState.tenancyApplications.where((a) => a.landlordId == appState.currentUser!.id).toList();
+    final pending = tenancyState.pendingApplicationsForLandlordFor(userId);
+    final all = tenancyState.tenancyApplications.where((a) => a.landlordId == userId).toList();
 
     if (all.isEmpty) {
       return _EmptyState(message: 'No reservation requests yet.', icon: Icons.inbox);
@@ -67,14 +70,14 @@ class _LandlordView extends StatelessWidget {
         if (pending.isNotEmpty) ...[
           Text('Pending (${pending.length})', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
-          ...pending.map((a) => _ApplicationCard(application: a, isLandlord: true, appState: appState)),
+          ...pending.map((a) => _ApplicationCard(application: a, isLandlord: true, tenancyState: tenancyState)),
           const SizedBox(height: 16),
         ],
         if (all.any((a) => a.status != ApplicationStatus.pending)) ...[
           const Text('History', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           ...all.where((a) => a.status != ApplicationStatus.pending).map(
-            (a) => _ApplicationCard(application: a, isLandlord: true, appState: appState),
+            (a) => _ApplicationCard(application: a, isLandlord: true, tenancyState: tenancyState),
           ),
         ],
       ],
@@ -85,8 +88,8 @@ class _LandlordView extends StatelessWidget {
 class _ApplicationCard extends StatelessWidget {
   final TenancyApplicationModel application;
   final bool isLandlord;
-  final AppState? appState;
-  const _ApplicationCard({required this.application, required this.isLandlord, this.appState});
+  final TenancyState? tenancyState;
+  const _ApplicationCard({required this.application, required this.isLandlord, this.tenancyState});
 
   @override
   Widget build(BuildContext context) {
@@ -138,13 +141,13 @@ class _ApplicationCard extends StatelessWidget {
                 child: Text(application.notes!, style: TextStyle(fontSize: 13, color: Colors.grey[700])),
               ),
             ],
-            if (isLandlord && application.status == ApplicationStatus.pending && appState != null) ...[
+            if (isLandlord && application.status == ApplicationStatus.pending && tenancyState != null) ...[
               const SizedBox(height: 12),
               Row(
                 children: [
                   Expanded(
                     child: ElevatedButton.icon(
-                      onPressed: () => appState!.approveApplication(application.id),
+                      onPressed: () => tenancyState!.approveApplication(application.id),
                       icon: const Icon(Icons.check, size: 18),
                       label: const Text('Approve'),
                       style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
@@ -153,7 +156,7 @@ class _ApplicationCard extends StatelessWidget {
                   const SizedBox(width: 8),
                   Expanded(
                     child: OutlinedButton.icon(
-                      onPressed: () => appState!.rejectApplication(application.id),
+                      onPressed: () => tenancyState!.rejectApplication(application.id),
                       icon: const Icon(Icons.close, size: 18),
                       label: const Text('Reject'),
                       style: OutlinedButton.styleFrom(foregroundColor: Colors.red),
@@ -220,14 +223,14 @@ class ApplyForTenancyButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final appState = context.read<AppState>();
-    final user = appState.currentUser;
+    final user = context.watch<UserState>().currentUser;
+    final tenancyState = context.watch<TenancyState>();
     // Landlords/agents never apply to their own listings; a guest or a
     // seeker always can (guest is gated on tap below).
     if (user != null && user.role != UserRole.seeker) return const SizedBox.shrink();
 
     // Check if already applied
-    final alreadyApplied = user != null && appState.tenancyApplications.any(
+    final alreadyApplied = user != null && tenancyState.tenancyApplications.any(
       (a) => a.propertyId == property.id && a.tenantId == user.id,
     );
 
@@ -242,7 +245,7 @@ class ApplyForTenancyButton extends StatelessWidget {
     return ElevatedButton.icon(
       onPressed: () {
         if (!GuestGate.requireAuth(context, message: 'Sign up to apply for this property.')) return;
-        _submitApplication(context, appState, appState.currentUser!);
+        _submitApplication(context, tenancyState, context.read<UserState>().currentUser!);
       },
       icon: const Icon(Icons.send),
       label: const Text('Apply to Rent'),
@@ -250,7 +253,7 @@ class ApplyForTenancyButton extends StatelessWidget {
     );
   }
 
-  void _submitApplication(BuildContext context, AppState appState, UserModel user) {
+  void _submitApplication(BuildContext context, TenancyState tenancyState, UserModel user) {
     final noteController = TextEditingController();
     showDialog(
       context: context,
@@ -268,7 +271,7 @@ class ApplyForTenancyButton extends StatelessWidget {
           TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
           ElevatedButton(
             onPressed: () {
-              appState.applyForTenancy(TenancyApplicationModel(
+              tenancyState.applyForTenancy(TenancyApplicationModel(
                 id: 'ta${DateTime.now().millisecondsSinceEpoch}',
                 propertyId: property.id,
                 propertyTitle: property.title,

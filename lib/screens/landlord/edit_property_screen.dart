@@ -1,7 +1,8 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:dalali/models/property_model.dart';
-import 'package:dalali/providers/app_state.dart';
+import 'package:dalali/providers/user_state.dart';
+import 'package:dalali/providers/property_state.dart';
 import 'package:dalali/services/storage_service.dart';
 import 'package:dalali/services/location_service.dart';
 import 'package:provider/provider.dart';
@@ -36,7 +37,7 @@ class _EditPropertyScreenState extends State<EditPropertyScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final user = context.watch<AppState>().currentUser;
+    final user = context.watch<UserState>().currentUser;
     final isPremium = user?.subscriptionTier == 1;
 
     return Scaffold(
@@ -159,7 +160,7 @@ class _EditPropertyScreenState extends State<EditPropertyScreen> {
 
     if (!mounted) return;
     final messenger = ScaffoldMessenger.of(context);
-    final appState = context.read<AppState>();
+    final appState = context.read<PropertyState>();
 
     try {
       await appState.updateProperty(updatedProperty);

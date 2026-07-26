@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:dalali/config/app_theme.dart';
 import 'package:dalali/models/property_model.dart';
-import 'package:dalali/providers/app_state.dart';
+import 'package:dalali/providers/property_state.dart';
 import 'package:dalali/utils/helpers.dart';
 import 'package:dalali/screens/shared/property_detail_screen.dart';
 import 'package:dalali/screens/landlord/add_property_screen.dart';
@@ -14,7 +14,7 @@ class LandlordDashboardScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final properties = context.watch<AppState>().landlordProperties;
+    final properties = context.watch<PropertyState>().landlordProperties;
     final totalViews = properties.fold<int>(0, (sum, p) => sum + p.viewCount);
     final totalInquiries = properties.fold<int>(0, (sum, p) => sum + p.inquiryCount);
     final activeListings = properties.where((p) => p.status == PropertyStatus.available).length;
@@ -162,7 +162,7 @@ class LandlordDashboardScreen extends StatelessWidget {
                                   if (p.status == PropertyStatus.unlisted)
                                     IconButton(
                                       icon: const Icon(Icons.replay, size: 18, color: Colors.green),
-                                      onPressed: () => context.read<AppState>().relistProperty(p.id),
+                                      onPressed: () => context.read<PropertyState>().relistProperty(p.id),
                                       tooltip: 'Relist property',
                                       padding: EdgeInsets.zero,
                                       constraints: const BoxConstraints(),

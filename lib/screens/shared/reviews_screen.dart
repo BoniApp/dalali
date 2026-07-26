@@ -4,7 +4,8 @@ import 'package:intl/intl.dart';
 import 'package:dalali/models/property_model.dart';
 import 'package:dalali/models/review_model.dart';
 
-import 'package:dalali/providers/app_state.dart';
+import 'package:dalali/providers/user_state.dart';
+import 'package:dalali/providers/property_state.dart';
 import 'package:dalali/widgets/guest_gate.dart';
 
 class ReviewsScreen extends StatefulWidget {
@@ -21,8 +22,7 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final appState = context.watch<AppState>();
-    final reviews = appState.reviews.where((r) => r.propertyId == widget.property.id).toList();
+    final reviews = context.watch<PropertyState>().reviews.where((r) => r.propertyId == widget.property.id).toList();
 
     return Scaffold(
       appBar: AppBar(title: const Text('Reviews')),
@@ -274,8 +274,7 @@ class _ReviewFormState extends State<_ReviewForm> {
   }
 
   void _submit() {
-    final appState = context.read<AppState>();
-    final user = appState.currentUser;
+    final user = context.read<UserState>().currentUser;
     if (user == null) return;
 
     final review = ReviewModel(
@@ -295,7 +294,7 @@ class _ReviewFormState extends State<_ReviewForm> {
       createdAt: DateTime.now(),
     );
 
-    appState.addReview(review);
+    context.read<PropertyState>().addReview(review);
     widget.onSubmit();
 
     ScaffoldMessenger.of(context).showSnackBar(

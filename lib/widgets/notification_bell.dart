@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:dalali/providers/app_state.dart';
+import 'package:dalali/providers/notification_state.dart';
 import 'package:dalali/screens/shared/notifications_screen.dart';
 import 'package:dalali/widgets/guest_gate.dart';
 import 'package:provider/provider.dart';
@@ -11,7 +11,7 @@ class NotificationBell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final unreadCount = context.watch<AppState>().unreadNotificationCount;
+    final unreadCount = context.watch<NotificationState>().unreadNotificationCount;
 
     return Stack(
       children: [

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:dalali/config/app_theme.dart';
 import 'package:dalali/models/property_model.dart';
-import 'package:dalali/providers/app_state.dart';
+import 'package:dalali/providers/user_state.dart';
+import 'package:dalali/providers/property_state.dart';
+import 'package:dalali/providers/move_state.dart';
 import 'package:dalali/widgets/property_card.dart';
 import 'package:dalali/widgets/filter_sheet.dart';
 import 'package:dalali/screens/shared/property_detail_screen.dart';
@@ -34,7 +36,7 @@ class _SeekerHomeScreenState extends State<SeekerHomeScreen> {
     super.dispose();
   }
 
-  List<PropertyModel> _getFilteredProperties(AppState state) {
+  List<PropertyModel> _getFilteredProperties(PropertyState state) {
     return state.properties.where((p) {
       if (p.status != PropertyStatus.available) return false;
       final query = _searchController.text.toLowerCase();
@@ -63,7 +65,9 @@ class _SeekerHomeScreenState extends State<SeekerHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final state = context.watch<AppState>();
+    final state = context.watch<PropertyState>();
+    final currentUser = context.watch<UserState>().currentUser;
+    final moveState = context.watch<MoveState>();
     final filtered = _getFilteredProperties(state);
     final featured = state.featuredProperties;
 
@@ -100,7 +104,7 @@ class _SeekerHomeScreenState extends State<SeekerHomeScreen> {
       ),
       body: Column(
         children: [
-          if (state.currentUser == null && !_guestBannerDismissed)
+          if (currentUser == null && !_guestBannerDismissed)
             _GuestSignUpBanner(onDismiss: () => setState(() => _guestBannerDismissed = true)),
           Padding(
             padding: const EdgeInsets.all(16),
@@ -128,7 +132,7 @@ class _SeekerHomeScreenState extends State<SeekerHomeScreen> {
           Expanded(
             child: RefreshIndicator(
               color: AppTheme.primary,
-              onRefresh: () => context.read<AppState>().refreshData(),
+              onRefresh: () => context.read<PropertyState>().refreshData(),
               child: CustomScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
                 slivers: [
@@ -172,7 +176,7 @@ class _SeekerHomeScreenState extends State<SeekerHomeScreen> {
                   ),
                 if (_searchController.text.isEmpty && _filters.isEmpty)
                   SliverToBoxAdapter(
-                    child: _PeopleMovingSection(moves: state.activeMoveListings),
+                    child: _PeopleMovingSection(moves: moveState.activeMoveListings),
                   ),
                 SliverToBoxAdapter(
                   child: Padding(
@@ -271,7 +275,7 @@ class _PeopleMovingSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final user = context.watch<AppState>().currentUser;
+    final user = context.watch<UserState>().currentUser;
     final isMoving = user?.isMoving ?? false;
 
     return Column(

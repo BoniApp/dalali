@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:dalali/config/app_theme.dart';
-import 'package:dalali/providers/app_state.dart';
+import 'package:dalali/providers/user_state.dart';
 import 'package:dalali/screens/auth/login_screen.dart';
 import 'package:dalali/screens/auth/register_screen.dart';
 
@@ -21,7 +21,7 @@ class GuestGate {
     BuildContext context, {
     String message = 'Create a free account to continue.',
   }) {
-    final user = context.read<AppState>().currentUser;
+    final user = context.read<UserState>().currentUser;
     if (user != null) return true;
     _showSignUpSheet(context, message);
     return false;

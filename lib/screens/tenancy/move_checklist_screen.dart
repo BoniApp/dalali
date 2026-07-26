@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:dalali/config/app_theme.dart';
-import 'package:dalali/providers/app_state.dart';
+import 'package:dalali/providers/user_state.dart';
+import 'package:dalali/providers/tenancy_state.dart';
 import 'package:provider/provider.dart';
 
 class MoveChecklistScreen extends StatelessWidget {
@@ -9,8 +10,9 @@ class MoveChecklistScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final appState = context.watch<AppState>();
-    final checklist = appState.getMyChecklist(tenancyId);
+    final tenancyState = context.watch<TenancyState>();
+    final userId = context.watch<UserState>().currentUser?.id;
+    final checklist = tenancyState.getMyChecklist(userId, tenancyId);
 
     if (checklist == null) {
       return const Center(child: Text('No checklist found for this move.'));
@@ -67,7 +69,7 @@ class MoveChecklistScreen extends StatelessWidget {
               final item = checklist.items[index];
               return CheckboxListTile(
                 value: item.completed,
-                onChanged: (_) => appState.toggleChecklistItem(checklist.id, item.id),
+                onChanged: (_) => tenancyState.toggleChecklistItem(checklist.id, item.id),
                 title: Text(
                   item.title,
                   style: TextStyle(

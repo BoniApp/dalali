@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:dalali/config/app_theme.dart';
 import 'package:dalali/models/property_model.dart';
-import 'package:dalali/providers/app_state.dart';
+import 'package:dalali/providers/property_state.dart';
+import 'package:dalali/providers/user_state.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:dalali/widgets/safety_badge.dart';
@@ -21,7 +22,8 @@ class PropertyCard extends StatelessWidget {
       symbol: 'TZS ',
       decimalDigits: 0,
     );
-    final isFav = context.watch<AppState>().isFavorite(property.id);
+    final userId = context.watch<UserState>().currentUser?.id;
+    final isFav = context.watch<PropertyState>().isFavorite(userId, property.id);
 
     return Card(
       clipBehavior: Clip.antiAlias,
@@ -80,7 +82,7 @@ class PropertyCard extends StatelessWidget {
                           ),
                           onPressed: () {
                             if (!GuestGate.requireAuth(context, message: 'Sign up to save favorites.')) return;
-                            context.read<AppState>().toggleFavorite(property.id);
+                            context.read<PropertyState>().toggleFavorite(userId!, property.id);
                           },
                         ),
                       ),

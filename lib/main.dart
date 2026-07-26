@@ -7,7 +7,14 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:dalali/config/firebase_options.dart';
 import 'package:dalali/services/supabase_service.dart';
-import 'package:dalali/providers/app_state.dart';
+import 'package:dalali/providers/user_state.dart';
+import 'package:dalali/providers/property_state.dart';
+import 'package:dalali/providers/tenancy_state.dart';
+import 'package:dalali/providers/move_state.dart';
+import 'package:dalali/providers/appointment_state.dart';
+import 'package:dalali/providers/reward_state.dart';
+import 'package:dalali/providers/notification_state.dart';
+import 'package:dalali/providers/earnings_state.dart';
 import 'package:dalali/providers/theme_provider.dart';
 import 'package:dalali/providers/language_provider.dart';
 import 'package:dalali/screens/auth/login_screen.dart';
@@ -54,7 +61,39 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => AppState()),
+        ChangeNotifierProvider(create: (_) => UserState()),
+        ChangeNotifierProxyProvider<UserState, PropertyState>(
+          create: (_) => PropertyState(),
+          update: (_, userState, propertyState) =>
+              propertyState!..onUserChanged(userState.currentUser, userState.isGuestMode),
+        ),
+        ChangeNotifierProxyProvider<UserState, TenancyState>(
+          create: (_) => TenancyState(),
+          update: (_, userState, tenancyState) => tenancyState!..onUserChanged(userState.currentUser),
+        ),
+        ChangeNotifierProxyProvider<UserState, MoveState>(
+          create: (_) => MoveState(),
+          update: (_, userState, moveState) =>
+              (moveState!..attachUserState(userState))..onUserChanged(userState.currentUser),
+        ),
+        ChangeNotifierProxyProvider2<UserState, PropertyState, AppointmentState>(
+          create: (_) => AppointmentState(),
+          update: (_, userState, propertyState, appointmentState) =>
+              (appointmentState!..attachPropertyState(propertyState))..onUserChanged(userState.currentUser),
+        ),
+        ChangeNotifierProxyProvider<UserState, RewardState>(
+          create: (_) => RewardState(),
+          update: (_, userState, rewardState) =>
+              (rewardState!..attachUserState(userState))..onUserChanged(userState.currentUser),
+        ),
+        ChangeNotifierProxyProvider<UserState, NotificationState>(
+          create: (_) => NotificationState(),
+          update: (_, userState, notificationState) => notificationState!..onUserChanged(userState.currentUser),
+        ),
+        ChangeNotifierProxyProvider<UserState, EarningsState>(
+          create: (_) => EarningsState(),
+          update: (_, userState, earningsState) => earningsState!..onUserChanged(userState.currentUser),
+        ),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(create: (_) => LanguageProvider()),
       ],
@@ -105,12 +144,12 @@ class AuthWrapper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final appState = context.watch<AppState>();
+    final userState = context.watch<UserState>();
 
     return StreamBuilder<AuthState>(
       stream: AuthService().authStateChanges,
       builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting && appState.currentUser == null) {
+        if (snapshot.connectionState == ConnectionState.waiting && userState.currentUser == null) {
           return Scaffold(
             body: Center(
               child: Column(
@@ -128,7 +167,7 @@ class AuthWrapper extends StatelessWidget {
         final session = snapshot.data?.session;
 
         // Logged in via Supabase
-        if (session != null || appState.currentUser != null) {
+        if (session != null || userState.currentUser != null) {
           return const MainNavigation();
         }
 

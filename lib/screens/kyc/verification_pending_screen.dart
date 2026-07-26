@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:dalali/providers/app_state.dart';
+import 'package:dalali/providers/user_state.dart';
 import 'package:dalali/services/kyc/kyc_service.dart';
 import 'package:dalali/screens/kyc/kyc_status_screen.dart';
 
@@ -49,7 +49,7 @@ class _VerificationPendingScreenState extends State<VerificationPendingScreen> {
       // withdrawal gate reflect the new status immediately.
       if (mounted) {
         try {
-          await context.read<AppState>().refreshCurrentUser();
+          await context.read<UserState>().refreshCurrentUser();
         } catch (_) {}
       }
 

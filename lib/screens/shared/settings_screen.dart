@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:dalali/models/user_preferences_model.dart';
 import 'package:dalali/providers/theme_provider.dart';
 import 'package:dalali/providers/language_provider.dart';
-import 'package:dalali/providers/app_state.dart';
+import 'package:dalali/providers/user_state.dart';
 
 void _showFeedback(BuildContext context, String message) {
   ScaffoldMessenger.of(context).showSnackBar(
@@ -24,8 +24,7 @@ class SettingsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final themeProvider = context.watch<ThemeProvider>();
     final languageProvider = context.watch<LanguageProvider>();
-    final appState = context.read<AppState>();
-    final user = appState.currentUser;
+    final user = context.read<UserState>().currentUser;
     final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(

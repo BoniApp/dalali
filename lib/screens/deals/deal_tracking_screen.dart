@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:dalali/config/app_theme.dart';
 import 'package:dalali/l10n/app_localizations.dart';
-import 'package:dalali/providers/app_state.dart';
+import 'package:dalali/providers/earnings_state.dart';
 import 'package:dalali/models/deal_model.dart';
 import 'package:dalali/services/deal_service.dart';
 
@@ -12,7 +12,7 @@ class DealTrackingScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final appState = context.watch<AppState>();
+    final appState = context.watch<EarningsState>();
     final deals = appState.myDeals;
 
     return Scaffold(

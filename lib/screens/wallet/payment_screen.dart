@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:dalali/config/app_theme.dart';
 import 'package:dalali/models/payment_model.dart';
 import 'package:dalali/models/property_model.dart';
-import 'package:dalali/providers/app_state.dart';
+import 'package:dalali/providers/user_state.dart';
 import 'package:dalali/services/app_settings.dart';
 import 'package:dalali/services/dpo_payment_service.dart';
 import 'package:dalali/screens/wallet/payment_failed_screen.dart';
@@ -38,7 +38,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
   String? _error;
 
   Future<void> _startPayment() async {
-    final user = context.read<AppState>().currentUser;
+    final user = context.read<UserState>().currentUser;
     if (user == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please log in to proceed with payment')),
@@ -110,7 +110,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
   }
 
   void _goSuccess(PaymentModel payment) {
-    final user = context.read<AppState>().currentUser;
+    final user = context.read<UserState>().currentUser;
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(

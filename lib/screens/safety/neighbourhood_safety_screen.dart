@@ -4,7 +4,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:intl/intl.dart';
 import 'package:dalali/models/neighbourhood_report_model.dart';
-import 'package:dalali/providers/app_state.dart';
+import 'package:dalali/providers/property_state.dart';
 import 'package:dalali/screens/safety/report_incident_screen.dart';
 import 'package:dalali/widgets/guest_gate.dart';
 
@@ -22,8 +22,7 @@ class _NeighbourhoodSafetyScreenState extends State<NeighbourhoodSafetyScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final appState = context.watch<AppState>();
-    final reports = appState.neighbourhoodReports;
+    final reports = context.watch<PropertyState>().neighbourhoodReports;
     final unresolved = reports.where((r) => !r.resolved).toList();
     final theme = Theme.of(context);
 

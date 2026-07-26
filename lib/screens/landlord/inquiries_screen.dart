@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:dalali/config/app_theme.dart';
-import 'package:dalali/providers/app_state.dart';
+import 'package:dalali/providers/user_state.dart';
+import 'package:dalali/providers/appointment_state.dart';
 // import 'package:dalali/models/inquiry_model.dart';
 import 'package:dalali/utils/helpers.dart';
 import 'package:provider/provider.dart';
@@ -11,7 +12,8 @@ class InquiriesScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final inquiries = context.watch<AppState>().landlordInquiries;
+    final userId = context.watch<UserState>().currentUser?.id;
+    final inquiries = context.watch<AppointmentState>().landlordInquiriesFor(userId);
 
     return Scaffold(
       appBar: AppBar(
@@ -88,7 +90,7 @@ class InquiriesScreen extends StatelessWidget {
                             const SizedBox(width: 8),
                             Expanded(
                               child: ElevatedButton.icon(
-                                onPressed: () => context.read<AppState>().markInquiryRead(i.id),
+                                onPressed: () => context.read<AppointmentState>().markInquiryRead(i.id),
                                 icon: const Icon(Icons.done, size: 18),
                                 label: const Text('Mark Read'),
                                 style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primary, foregroundColor: Colors.white),

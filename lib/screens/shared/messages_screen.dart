@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:dalali/config/app_theme.dart';
 import 'package:dalali/models/inquiry_model.dart';
-import 'package:dalali/providers/app_state.dart';
+import 'package:dalali/providers/appointment_state.dart';
 import 'package:dalali/utils/helpers.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -11,7 +11,7 @@ class MessagesScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final inquiries = context.watch<AppState>().inquiries;
+    final inquiries = context.watch<AppointmentState>().inquiries;
 
     return Scaffold(
       appBar: AppBar(

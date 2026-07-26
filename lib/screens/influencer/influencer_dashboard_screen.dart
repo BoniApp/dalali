@@ -4,7 +4,7 @@ import 'package:dalali/config/app_theme.dart';
 import 'package:dalali/l10n/app_localizations.dart';
 import 'package:dalali/models/wallet_model.dart';
 import 'package:dalali/models/influencer/referral_conversion_model.dart';
-import 'package:dalali/providers/app_state.dart';
+import 'package:dalali/providers/user_state.dart';
 import 'package:dalali/services/wallet_service.dart';
 import 'package:dalali/services/influencer/influencer_service.dart';
 import 'package:dalali/screens/influencer/influencer_application_screen.dart';
@@ -43,7 +43,7 @@ class InfluencerDashboardScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final appState = context.watch<AppState>();
+    final appState = context.watch<UserState>();
     final user = appState.currentUser;
     final profile = appState.influencerProfile;
 

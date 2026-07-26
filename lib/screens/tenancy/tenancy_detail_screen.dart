@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:dalali/config/app_theme.dart';
 import 'package:dalali/models/tenancy_model.dart';
+import 'package:dalali/models/user_model.dart';
 import 'package:dalali/models/maintenance_request_model.dart';
 import 'package:dalali/models/rent_schedule_model.dart';
-import 'package:dalali/providers/app_state.dart';
+import 'package:dalali/providers/user_state.dart';
+import 'package:dalali/providers/tenancy_state.dart';
 import 'package:dalali/screens/tenancy/move_checklist_screen.dart';
 import 'package:dalali/widgets/pay_agency_fee_button.dart';
 import 'package:provider/provider.dart';
@@ -14,9 +16,10 @@ class TenancyDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final appState = context.watch<AppState>();
-    final tenancy = appState.tenancies.firstWhere((t) => t.id == tenancyId);
-    final isLandlord = appState.currentUser?.id == tenancy.landlordId;
+    final tenancyState = context.watch<TenancyState>();
+    final currentUser = context.watch<UserState>().currentUser;
+    final tenancy = tenancyState.tenancies.firstWhere((t) => t.id == tenancyId);
+    final isLandlord = currentUser?.id == tenancy.landlordId;
 
     return DefaultTabController(
       length: 4,
@@ -38,10 +41,15 @@ class TenancyDetailScreen extends StatelessWidget {
         ),
         body: TabBarView(
           children: [
-            _DetailsTab(tenancy: tenancy, isLandlord: isLandlord, appState: appState),
+            _DetailsTab(tenancy: tenancy, isLandlord: isLandlord, tenancyState: tenancyState),
             MoveChecklistScreen(tenancyId: tenancyId),
-            _MaintenanceTab(tenancy: tenancy, appState: appState, isLandlord: isLandlord),
-            _RentTab(tenancy: tenancy, appState: appState),
+            _MaintenanceTab(
+              tenancy: tenancy,
+              tenancyState: tenancyState,
+              isLandlord: isLandlord,
+              currentUser: currentUser,
+            ),
+            _RentTab(tenancy: tenancy, tenancyState: tenancyState),
           ],
         ),
       ),
@@ -52,8 +60,8 @@ class TenancyDetailScreen extends StatelessWidget {
 class _DetailsTab extends StatelessWidget {
   final TenancyModel tenancy;
   final bool isLandlord;
-  final AppState appState;
-  const _DetailsTab({required this.tenancy, required this.isLandlord, required this.appState});
+  final TenancyState tenancyState;
+  const _DetailsTab({required this.tenancy, required this.isLandlord, required this.tenancyState});
 
   @override
   Widget build(BuildContext context) {
@@ -97,7 +105,7 @@ class _DetailsTab extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
-              onPressed: () => appState.activateTenancy(tenancy.id),
+              onPressed: () => tenancyState.activateTenancy(tenancy.id),
               icon: const Icon(Icons.check_circle),
               label: const Text('Confirm Move-in (Activate)'),
               style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
@@ -107,7 +115,7 @@ class _DetailsTab extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(
-              onPressed: () => appState.completeTenancy(tenancy.id),
+              onPressed: () => tenancyState.completeTenancy(tenancy.id),
               icon: const Icon(Icons.done_all),
               label: const Text('Mark Tenancy Complete'),
             ),
@@ -189,13 +197,19 @@ class _DetailRow extends StatelessWidget {
 
 class _MaintenanceTab extends StatelessWidget {
   final TenancyModel tenancy;
-  final AppState appState;
+  final TenancyState tenancyState;
   final bool isLandlord;
-  const _MaintenanceTab({required this.tenancy, required this.appState, required this.isLandlord});
+  final UserModel? currentUser;
+  const _MaintenanceTab({
+    required this.tenancy,
+    required this.tenancyState,
+    required this.isLandlord,
+    required this.currentUser,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final requests = appState.maintenanceRequests.where((r) => r.propertyId == tenancy.propertyId).toList();
+    final requests = tenancyState.maintenanceRequests.where((r) => r.propertyId == tenancy.propertyId).toList();
 
     return Column(
       children: [
@@ -205,7 +219,7 @@ class _MaintenanceTab extends StatelessWidget {
               : ListView.builder(
                   padding: const EdgeInsets.all(12),
                   itemCount: requests.length,
-                  itemBuilder: (_, i) => _MaintenanceCard(request: requests[i], isLandlord: isLandlord, appState: appState),
+                  itemBuilder: (_, i) => _MaintenanceCard(request: requests[i], isLandlord: isLandlord, tenancyState: tenancyState),
                 ),
         ),
         if (!isLandlord)
@@ -229,6 +243,8 @@ class _MaintenanceTab extends StatelessWidget {
     final categories = MaintenanceCategory.values;
     MaintenanceCategory selected = MaintenanceCategory.general;
     final descController = TextEditingController();
+    final user = currentUser;
+    if (user == null) return;
 
     showDialog(
       context: context,
@@ -260,10 +276,10 @@ class _MaintenanceTab extends StatelessWidget {
             ElevatedButton(
               onPressed: () {
                 if (descController.text.isNotEmpty) {
-                  appState.addMaintenanceRequest(MaintenanceRequestModel(
+                  tenancyState.addMaintenanceRequest(MaintenanceRequestModel(
                     id: 'mr${DateTime.now().millisecondsSinceEpoch}',
-                    tenantId: appState.currentUser!.id,
-                    tenantName: appState.currentUser!.fullName,
+                    tenantId: user.id,
+                    tenantName: user.fullName,
                     landlordId: tenancy.landlordId,
                     propertyId: tenancy.propertyId,
                     propertyTitle: tenancy.propertyTitle,
@@ -286,8 +302,8 @@ class _MaintenanceTab extends StatelessWidget {
 class _MaintenanceCard extends StatelessWidget {
   final MaintenanceRequestModel request;
   final bool isLandlord;
-  final AppState appState;
-  const _MaintenanceCard({required this.request, required this.isLandlord, required this.appState});
+  final TenancyState tenancyState;
+  const _MaintenanceCard({required this.request, required this.isLandlord, required this.tenancyState});
 
   @override
   Widget build(BuildContext context) {
@@ -328,11 +344,11 @@ class _MaintenanceCard extends StatelessWidget {
                 children: [
                   if (request.status == MaintenanceStatus.open)
                     TextButton(
-                      onPressed: () => appState.updateMaintenanceStatus(request.id, MaintenanceStatus.inProgress),
+                      onPressed: () => tenancyState.updateMaintenanceStatus(request.id, MaintenanceStatus.inProgress),
                       child: const Text('Mark In Progress'),
                     ),
                   TextButton(
-                    onPressed: () => appState.updateMaintenanceStatus(request.id, MaintenanceStatus.resolved),
+                    onPressed: () => tenancyState.updateMaintenanceStatus(request.id, MaintenanceStatus.resolved),
                     child: const Text('Resolve'),
                   ),
                 ],
@@ -347,12 +363,12 @@ class _MaintenanceCard extends StatelessWidget {
 
 class _RentTab extends StatelessWidget {
   final TenancyModel tenancy;
-  final AppState appState;
-  const _RentTab({required this.tenancy, required this.appState});
+  final TenancyState tenancyState;
+  const _RentTab({required this.tenancy, required this.tenancyState});
 
   @override
   Widget build(BuildContext context) {
-    final schedules = appState.rentSchedules.where((r) => r.tenancyId == tenancy.id).toList()
+    final schedules = tenancyState.rentSchedules.where((r) => r.tenancyId == tenancy.id).toList()
       ..sort((a, b) => a.dueDate.compareTo(b.dueDate));
 
     return ListView.builder(
@@ -384,7 +400,7 @@ class _RentTab extends StatelessWidget {
             trailing: s.status == PaymentStatus.paid
                 ? Chip(label: const Text('Paid'), backgroundColor: Colors.green.shade100, labelStyle: const TextStyle(color: Colors.green))
                 : ElevatedButton(
-                    onPressed: () => appState.markRentPaid(s.id),
+                    onPressed: () => tenancyState.markRentPaid(s.id),
                     style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primary, foregroundColor: Colors.white),
                     child: const Text('Pay'),
                   ),

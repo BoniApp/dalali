@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:dalali/config/app_theme.dart';
 import 'package:dalali/l10n/app_localizations.dart';
 import 'package:dalali/models/influencer/influencer_application_model.dart';
-import 'package:dalali/providers/app_state.dart';
+import 'package:dalali/providers/user_state.dart';
 import 'package:dalali/services/influencer/influencer_service.dart';
 import 'package:dalali/screens/influencer/influencer_dashboard_screen.dart';
 
@@ -42,7 +42,7 @@ class _InfluencerApplicationScreenState extends State<InfluencerApplicationScree
   @override
   void initState() {
     super.initState();
-    final user = context.read<AppState>().currentUser;
+    final user = context.read<UserState>().currentUser;
     if (user != null) {
       _nameController.text = user.fullName;
       _phoneController.text = user.phone;
@@ -85,7 +85,7 @@ class _InfluencerApplicationScreenState extends State<InfluencerApplicationScree
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     final l10n = AppLocalizations.of(context)!;
-    final user = context.read<AppState>().currentUser;
+    final user = context.read<UserState>().currentUser;
     if (user == null) return;
 
     setState(() => _isLoading = true);
@@ -124,7 +124,7 @@ class _InfluencerApplicationScreenState extends State<InfluencerApplicationScree
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final user = context.watch<AppState>().currentUser;
+    final user = context.watch<UserState>().currentUser;
 
     if (user == null) {
       return Scaffold(

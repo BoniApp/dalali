@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:dalali/l10n/app_localizations.dart';
 import 'package:dalali/models/user_model.dart';
-import 'package:dalali/providers/app_state.dart';
+import 'package:dalali/providers/user_state.dart';
 import 'package:provider/provider.dart';
 
 import 'package:dalali/screens/seeker/seeker_home_screen.dart';
@@ -55,11 +55,11 @@ class _MainNavigationState extends State<MainNavigation> {
 
   @override
   Widget build(BuildContext context) {
-    final appState = context.watch<AppState>();
-    final user = appState.currentUser;
+    final userState = context.watch<UserState>();
+    final user = userState.currentUser;
 
     if (user == null) {
-      return appState.isGuestMode ? const _GuestShell() : const LoginScreen();
+      return userState.isGuestMode ? const _GuestShell() : const LoginScreen();
     }
 
     final screens = _getScreens(user.role, user.id);

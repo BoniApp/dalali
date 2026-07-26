@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:dalali/config/app_theme.dart';
 import 'package:dalali/models/user_model.dart';
 import 'package:dalali/models/wallet_model.dart';
-import 'package:dalali/providers/app_state.dart';
+import 'package:dalali/providers/user_state.dart';
 import 'package:dalali/services/wallet_service.dart';
 import 'package:dalali/screens/kyc/kyc_gate_screen.dart';
 import 'package:dalali/utils/helpers.dart';
@@ -29,7 +29,7 @@ class _WithdrawalScreenState extends State<WithdrawalScreen> {
   }
 
   Future<void> _submit() async {
-    final user = context.read<AppState>().currentUser;
+    final user = context.read<UserState>().currentUser;
     if (user == null) return;
 
     final amount = double.tryParse(_amountController.text);
@@ -96,7 +96,7 @@ class _WithdrawalScreenState extends State<WithdrawalScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final user = context.watch<AppState>().currentUser;
+    final user = context.watch<UserState>().currentUser;
 
     return Scaffold(
       appBar: AppBar(

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:dalali/config/app_theme.dart';
 import 'package:dalali/models/property_model.dart';
-import 'package:dalali/providers/app_state.dart';
+import 'package:dalali/providers/user_state.dart';
+import 'package:dalali/providers/property_state.dart';
 import 'package:dalali/utils/helpers.dart';
 import 'package:dalali/screens/shared/property_detail_screen.dart';
 import 'package:dalali/screens/landlord/edit_property_screen.dart';
@@ -13,8 +14,8 @@ class AgentDashboardScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final user = context.watch<AppState>().currentUser;
-    final properties = context.watch<AppState>().landlordProperties;
+    final user = context.watch<UserState>().currentUser;
+    final properties = context.watch<PropertyState>().landlordProperties;
     final totalViews = properties.fold<int>(0, (sum, p) => sum + p.viewCount);
     final totalInquiries = properties.fold<int>(0, (sum, p) => sum + p.inquiryCount);
 

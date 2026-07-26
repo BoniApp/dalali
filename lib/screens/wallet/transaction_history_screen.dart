@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:dalali/config/app_theme.dart';
 import 'package:dalali/models/wallet_model.dart';
-import 'package:dalali/providers/app_state.dart';
+import 'package:dalali/providers/user_state.dart';
 import 'package:dalali/services/wallet_service.dart';
 import 'package:dalali/utils/helpers.dart';
 import 'package:provider/provider.dart';
@@ -61,7 +61,7 @@ class TransactionHistoryScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final user = context.watch<AppState>().currentUser;
+    final user = context.watch<UserState>().currentUser;
 
     return Scaffold(
       appBar: AppBar(

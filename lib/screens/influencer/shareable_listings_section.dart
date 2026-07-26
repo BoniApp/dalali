@@ -5,7 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:dalali/config/app_theme.dart';
 import 'package:dalali/l10n/app_localizations.dart';
 import 'package:dalali/models/property_model.dart';
-import 'package:dalali/providers/app_state.dart';
+import 'package:dalali/providers/property_state.dart';
 import 'package:dalali/services/influencer/influencer_service.dart';
 import 'package:dalali/screens/shared/property_detail_screen.dart';
 import 'package:dalali/utils/helpers.dart';
@@ -94,7 +94,7 @@ class ShareableListingsSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final properties = context.watch<AppState>().properties;
+    final properties = context.watch<PropertyState>().properties;
     if (properties.isEmpty) return const SizedBox.shrink();
 
     return Column(

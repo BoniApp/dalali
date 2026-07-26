@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:dalali/config/app_theme.dart';
 import 'package:dalali/models/notification_model.dart';
-import 'package:dalali/providers/app_state.dart';
+import 'package:dalali/providers/user_state.dart';
+import 'package:dalali/providers/notification_state.dart';
 import 'package:dalali/screens/shared/conversations_screen.dart';
 import 'package:dalali/screens/shared/property_detail_screen.dart';
 import 'package:dalali/screens/tenancy/my_tenancies_screen.dart';
@@ -17,8 +18,8 @@ class NotificationsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final notifications = context.watch<AppState>().notifications;
-    final unreadCount = context.watch<AppState>().unreadNotificationCount;
+    final notifications = context.watch<NotificationState>().notifications;
+    final unreadCount = context.watch<NotificationState>().unreadNotificationCount;
 
     return Scaffold(
       appBar: AppBar(
@@ -28,7 +29,9 @@ class NotificationsScreen extends StatelessWidget {
         actions: [
           if (unreadCount > 0)
             TextButton(
-              onPressed: () => context.read<AppState>().markAllNotificationsRead(),
+              onPressed: () => context
+                  .read<NotificationState>()
+                  .markAllNotificationsRead(context.read<UserState>().currentUser?.id),
               child: const Text('Mark all read', style: TextStyle(color: Colors.white)),
             ),
         ],
@@ -71,7 +74,7 @@ class _NotificationTile extends StatelessWidget {
         padding: const EdgeInsets.only(right: 20),
         child: const Icon(Icons.done, color: Colors.white),
       ),
-      onDismissed: (_) => context.read<AppState>().markNotificationRead(notification.id),
+      onDismissed: (_) => context.read<NotificationState>().markNotificationRead(notification.id),
       child: ListTile(
         leading: CircleAvatar(
           backgroundColor: notification.isRead ? Colors.grey.shade200 : AppTheme.primary.withAlpha(26),
@@ -114,13 +117,13 @@ class _NotificationTile extends StatelessWidget {
   /// target (property / conversation / payment receipt / tenancies).
   Future<void> _openTarget(BuildContext context, NotificationModel n) async {
     if (!n.isRead) {
-      context.read<AppState>().markNotificationRead(n.id);
+      context.read<NotificationState>().markNotificationRead(n.id);
     }
     final collection = n.targetCollection;
     final targetId = n.targetId;
 
     if (n.type == NotificationType.message || n.type == NotificationType.broadcast) {
-      final userId = context.read<AppState>().currentUser?.id;
+      final userId = context.read<UserState>().currentUser?.id;
       if (userId != null && context.mounted) {
         Navigator.push(context, MaterialPageRoute(builder: (_) => ConversationsScreen(userId: userId)));
       }
@@ -136,13 +139,13 @@ class _NotificationTile extends StatelessWidget {
         }
         break;
       case 'conversations':
-        final userId = context.read<AppState>().currentUser?.id;
+        final userId = context.read<UserState>().currentUser?.id;
         if (userId != null && context.mounted) {
           Navigator.push(context, MaterialPageRoute(builder: (_) => ConversationsScreen(userId: userId)));
         }
         break;
       case 'payments':
-        final user = context.read<AppState>().currentUser;
+        final user = context.read<UserState>().currentUser;
         final payment = await DpoPaymentService().getPaymentById(targetId);
         if (payment != null && context.mounted) {
           final property = await DataService().getPropertyById(payment.propertyId);

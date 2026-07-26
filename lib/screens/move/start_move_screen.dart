@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:dalali/models/move_listing_model.dart';
-import 'package:dalali/providers/app_state.dart';
+import 'package:dalali/providers/user_state.dart';
+import 'package:dalali/providers/move_state.dart';
 
 class StartMoveScreen extends StatefulWidget {
   const StartMoveScreen({super.key});
@@ -53,8 +54,7 @@ class _StartMoveScreenState extends State<StartMoveScreen> {
       return;
     }
 
-    final appState = context.read<AppState>();
-    final user = appState.currentUser;
+    final user = context.read<UserState>().currentUser;
     if (user == null) return;
 
     setState(() => _isLoading = true);
@@ -75,7 +75,7 @@ class _StartMoveScreenState extends State<StartMoveScreen> {
       createdAt: DateTime.now(),
     );
 
-    appState.startMove(move);
+    context.read<MoveState>().startMove(move);
 
     setState(() => _isLoading = false);
 

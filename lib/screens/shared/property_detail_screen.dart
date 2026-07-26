@@ -4,7 +4,9 @@ import 'package:dalali/models/property_model.dart';
 import 'package:dalali/models/user_model.dart';
 import 'package:dalali/models/appointment_model.dart';
 import 'package:dalali/models/inquiry_model.dart';
-import 'package:dalali/providers/app_state.dart';
+import 'package:dalali/providers/user_state.dart';
+import 'package:dalali/providers/property_state.dart';
+import 'package:dalali/providers/appointment_state.dart';
 import 'package:dalali/utils/helpers.dart';
 import 'package:dalali/widgets/verification_badge.dart';
 import 'package:dalali/widgets/utility_display.dart';
@@ -71,8 +73,8 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final p = _property;
-    final isFav = context.watch<AppState>().isFavorite(p.id);
-    final user = context.watch<AppState>().currentUser;
+    final user = context.watch<UserState>().currentUser;
+    final isFav = context.watch<PropertyState>().isFavorite(user?.id, p.id);
 
     return Scaffold(
       body: CustomScrollView(
@@ -133,7 +135,7 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
                 icon: Icon(isFav ? Icons.favorite : Icons.favorite_border, color: isFav ? Colors.red : Colors.white),
                 onPressed: () {
                   if (!GuestGate.requireAuth(context, message: 'Sign up to save favorites.')) return;
-                  context.read<AppState>().toggleFavorite(p.id);
+                  context.read<PropertyState>().toggleFavorite(user!.id, p.id);
                 },
               ),
             ],
@@ -573,7 +575,7 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
   /// Open (creating if needed) the in-app chat with the listing's
   /// contact — the listing creator (agent) when set, else the landlord.
   Future<void> _openChat(BuildContext context, PropertyModel p) async {
-    final user = context.read<AppState>().currentUser;
+    final user = context.read<UserState>().currentUser;
     if (user == null) return;
     final targetId = p.listingCreatorId.isNotEmpty ? p.listingCreatorId : p.landlordId;
     if (targetId.isEmpty || targetId == user.id) return;
@@ -662,9 +664,9 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
                 selectedTime.hour,
                 selectedTime.minute,
               );
-              final user = context.read<AppState>().currentUser;
+              final user = context.read<UserState>().currentUser;
               if (user != null) {
-                context.read<AppState>().addAppointment(AppointmentModel(
+                context.read<AppointmentState>().addAppointment(AppointmentModel(
                   id: 'a${DateTime.now().millisecondsSinceEpoch}',
                   propertyId: property.id,
                   propertyTitle: property.title,
@@ -709,9 +711,9 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
             onPressed: () {
               final text = messageController.text.trim();
               if (text.isEmpty) return;
-              final user = context.read<AppState>().currentUser;
+              final user = context.read<UserState>().currentUser;
               if (user != null) {
-                context.read<AppState>().addInquiry(InquiryModel(
+                context.read<AppointmentState>().addInquiry(InquiryModel(
                   id: 'iq${DateTime.now().millisecondsSinceEpoch}',
                   propertyId: property.id,
                   propertyTitle: property.title,
@@ -847,7 +849,7 @@ class _ReviewPreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final reviews = context.watch<AppState>().reviews.where((r) => r.propertyId == propertyId).toList();
+    final reviews = context.watch<PropertyState>().reviews.where((r) => r.propertyId == propertyId).toList();
 
     if (reviews.isEmpty) {
       return Container(
@@ -947,7 +949,7 @@ class _SafetySection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final reports = context.watch<AppState>().activeNeighbourhoodReports;
+    final reports = context.watch<PropertyState>().activeNeighbourhoodReports;
     final nearbyCount = reports.where((r) {
       // Simple distance filter client-side
       final dx = (r.latitude - property.latitude).abs();

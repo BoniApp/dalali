@@ -4,7 +4,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:dalali/config/app_theme.dart';
 import 'package:dalali/l10n/app_localizations.dart';
 import 'package:dalali/models/user_model.dart';
-import 'package:dalali/providers/app_state.dart';
+import 'package:dalali/providers/user_state.dart';
+import 'package:dalali/providers/reward_state.dart';
 import 'package:dalali/services/storage_service.dart';
 import 'package:dalali/services/supabase_service.dart';
 import 'package:dalali/widgets/verification_badge.dart';
@@ -25,8 +26,8 @@ class ProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final user = context.watch<AppState>().currentUser;
-    final influencerProfile = context.watch<AppState>().influencerProfile;
+    final user = context.watch<UserState>().currentUser;
+    final influencerProfile = context.watch<UserState>().influencerProfile;
     final l10n = AppLocalizations.of(context)!;
 
     if (user == null) {
@@ -277,7 +278,7 @@ class ProfileScreen extends StatelessWidget {
                 title: Text(l10n.rewardPoints, style: const TextStyle(fontWeight: FontWeight.bold)),
                 subtitle: Text(l10n.pointsEarned(user.totalRewardPoints)),
                 trailing: Chip(
-                  label: Text(l10n.pendingCount(context.watch<AppState>().myRewards.where((r) => !r.claimed).length)),
+                  label: Text(l10n.pendingCount(context.watch<RewardState>().myRewardsFor(user.id).where((r) => !r.claimed).length)),
                   backgroundColor: Colors.amber.shade100,
                   labelStyle: TextStyle(fontSize: 11, color: Colors.amber.shade900),
                 ),
@@ -343,7 +344,7 @@ class ProfileScreen extends StatelessWidget {
               width: double.infinity,
               child: OutlinedButton.icon(
                 onPressed: () {
-                  context.read<AppState>().logout();
+                  context.read<UserState>().logout();
                 },
                 icon: const Icon(Icons.logout, color: Colors.red),
                 label: Text(l10n.logout, style: const TextStyle(color: Colors.red)),
@@ -392,7 +393,7 @@ class ProfileScreen extends StatelessWidget {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(content: Text(l10n.accountDeleted)),
               );
-              context.read<AppState>().logout();
+              context.read<UserState>().logout();
             } catch (e) {
               setState(() {
                 loading = false;
@@ -477,7 +478,7 @@ class ProfileScreen extends StatelessWidget {
   }
 
   /// Gallery/camera → upload to the avatars bucket → save the URL on
-  /// the user row (via AppState, which also refreshes the UI).
+  /// the user row (via UserState, which also refreshes the UI).
   Future<void> _changeProfilePicture(BuildContext context) async {
     final l10n = AppLocalizations.of(context)!;
     final source = await showModalBottomSheet<ImageSource>(
@@ -509,7 +510,7 @@ class ProfileScreen extends StatelessWidget {
     );
     if (picked == null || !context.mounted) return;
 
-    final appState = context.read<AppState>();
+    final userState = context.read<UserState>();
     final messenger = ScaffoldMessenger.of(context);
     showDialog(
       context: context,
@@ -518,8 +519,8 @@ class ProfileScreen extends StatelessWidget {
     );
     try {
       final url = await StorageService()
-          .uploadProfileImage(File(picked.path), appState.currentUser!.id);
-      await appState.updateProfileImage(url);
+          .uploadProfileImage(File(picked.path), userState.currentUser!.id);
+      await userState.updateProfileImage(url);
     } catch (_) {
       messenger.showSnackBar(
         SnackBar(content: Text(l10n.photoUploadFailed), backgroundColor: Colors.red),

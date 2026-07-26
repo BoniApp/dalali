@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:dalali/config/app_theme.dart';
 import 'package:dalali/models/tenancy_model.dart';
 import 'package:dalali/models/user_model.dart';
-import 'package:dalali/providers/app_state.dart';
+import 'package:dalali/providers/user_state.dart';
+import 'package:dalali/providers/tenancy_state.dart';
 import 'package:dalali/screens/tenancy/tenancy_detail_screen.dart';
 import 'package:provider/provider.dart';
 
@@ -11,10 +12,13 @@ class MyTenanciesScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final appState = context.watch<AppState>();
-    final isLandlord = appState.currentUser?.role == UserRole.landlord ||
-        appState.currentUser?.role == UserRole.agent;
-    final tenancies = isLandlord ? appState.landlordTenancies : appState.myTenancies;
+    final userId = context.watch<UserState>().currentUser?.id;
+    final userRole = context.watch<UserState>().currentUser?.role;
+    final tenancyState = context.watch<TenancyState>();
+    final isLandlord = userRole == UserRole.landlord || userRole == UserRole.agent;
+    final tenancies = isLandlord
+        ? tenancyState.landlordTenanciesFor(userId)
+        : tenancyState.myTenanciesFor(userId);
 
     return Scaffold(
       appBar: AppBar(

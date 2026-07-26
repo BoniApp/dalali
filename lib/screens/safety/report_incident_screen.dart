@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:dalali/models/neighbourhood_report_model.dart';
 import 'package:dalali/models/user_model.dart';
-import 'package:dalali/providers/app_state.dart';
+import 'package:dalali/providers/user_state.dart';
+import 'package:dalali/providers/property_state.dart';
 
 class ReportIncidentScreen extends StatefulWidget {
   final String? initialLocation;
@@ -47,8 +48,7 @@ class _ReportIncidentScreenState extends State<ReportIncidentScreen> {
   void _submit() {
     if (!_formKey.currentState!.validate()) return;
 
-    final appState = context.read<AppState>();
-    final user = appState.currentUser;
+    final user = context.read<UserState>().currentUser;
     if (user == null) return;
 
     setState(() => _isLoading = true);
@@ -69,7 +69,7 @@ class _ReportIncidentScreenState extends State<ReportIncidentScreen> {
       reportedAt: DateTime.now(),
     );
 
-    appState.addNeighbourhoodReport(report);
+    context.read<PropertyState>().addNeighbourhoodReport(report);
 
     setState(() => _isLoading = false);
 

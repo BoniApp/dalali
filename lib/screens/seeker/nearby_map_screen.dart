@@ -12,7 +12,9 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:dalali/config/app_theme.dart';
 import 'package:dalali/l10n/app_localizations.dart';
 import 'package:dalali/models/property_model.dart';
-import 'package:dalali/providers/app_state.dart';
+import 'package:dalali/providers/user_state.dart';
+import 'package:dalali/providers/property_state.dart';
+import 'package:dalali/widgets/guest_gate.dart';
 import 'package:dalali/screens/shared/property_detail_screen.dart';
 import 'package:dalali/services/device_location_service.dart';
 import 'package:dalali/services/nearby_listings_service.dart';
@@ -988,8 +990,9 @@ class _NearbyCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final state = context.watch<AppState>();
-    final favorite = state.isFavorite(property.id);
+    final userId = context.watch<UserState>().currentUser?.id;
+    final state = context.watch<PropertyState>();
+    final favorite = state.isFavorite(userId, property.id);
     final area = property.ward.isNotEmpty ? property.ward : property.location;
     final premium = property.listingType == ListingType.featured;
 
@@ -1055,8 +1058,10 @@ class _NearbyCard extends StatelessWidget {
                               color: favorite ? Colors.red : Colors.grey,
                             ),
                             visualDensity: VisualDensity.compact,
-                            onPressed: () =>
-                                state.toggleFavorite(property.id),
+                            onPressed: () {
+                              if (!GuestGate.requireAuth(context, message: 'Sign up to save favorites.')) return;
+                              state.toggleFavorite(userId!, property.id);
+                            },
                           ),
                         ],
                       ),

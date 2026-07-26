@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:dalali/config/app_theme.dart';
 import 'package:dalali/l10n/app_localizations.dart';
 import 'package:dalali/models/influencer/campaign_model.dart';
-import 'package:dalali/providers/app_state.dart';
+import 'package:dalali/providers/user_state.dart';
 import 'package:dalali/services/influencer/campaign_service.dart';
 
 class InfluencerCampaignsScreen extends StatelessWidget {
@@ -11,7 +11,7 @@ class InfluencerCampaignsScreen extends StatelessWidget {
 
   Future<void> _joinCampaign(BuildContext context, CampaignModel campaign) async {
     final l10n = AppLocalizations.of(context)!;
-    final user = context.read<AppState>().currentUser;
+    final user = context.read<UserState>().currentUser;
     if (user == null) return;
     try {
       await CampaignService().joinCampaign(campaignId: campaign.id, userId: user.id);
@@ -32,7 +32,7 @@ class InfluencerCampaignsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final user = context.watch<AppState>().currentUser;
+    final user = context.watch<UserState>().currentUser;
 
     if (user == null) {
       return Scaffold(

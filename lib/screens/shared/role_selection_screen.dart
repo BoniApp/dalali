@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:dalali/config/app_theme.dart';
 import 'package:dalali/l10n/app_localizations.dart';
-import 'package:dalali/providers/app_state.dart';
+import 'package:dalali/providers/user_state.dart';
 import 'package:dalali/screens/auth/login_screen.dart';
 import 'package:dalali/screens/auth/register_screen.dart';
 import 'package:dalali/screens/admin/login_admin_screen.dart';
@@ -170,7 +170,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
   }
 
   void _continueAsGuest(BuildContext context) {
-    context.read<AppState>().enterGuestMode();
+    context.read<UserState>().enterGuestMode();
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (_) => const MainNavigation()),

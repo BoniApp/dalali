@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:dalali/config/app_theme.dart';
-import 'package:dalali/providers/app_state.dart';
+import 'package:dalali/providers/user_state.dart';
+import 'package:dalali/providers/property_state.dart';
 import 'package:dalali/widgets/property_card.dart';
 import 'package:dalali/screens/shared/property_detail_screen.dart';
 import 'package:provider/provider.dart';
@@ -10,7 +11,8 @@ class FavoritesScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final favorites = context.watch<AppState>().favoriteProperties;
+    final userId = context.watch<UserState>().currentUser?.id;
+    final favorites = context.watch<PropertyState>().favoritePropertiesFor(userId);
 
     return Scaffold(
       appBar: AppBar(

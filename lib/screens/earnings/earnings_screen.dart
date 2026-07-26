@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:dalali/config/app_theme.dart';
 import 'package:dalali/l10n/app_localizations.dart';
-import 'package:dalali/providers/app_state.dart';
+import 'package:dalali/providers/earnings_state.dart';
 import 'package:dalali/models/earnings_model.dart';
 import 'package:dalali/screens/earnings/agency_fee_history_screen.dart';
 import 'package:dalali/screens/wallet/withdrawal_screen.dart';
@@ -13,7 +13,7 @@ class EarningsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final appState = context.watch<AppState>();
+    final appState = context.watch<EarningsState>();
     final summary = appState.earningsSummary;
 
     return Scaffold(
