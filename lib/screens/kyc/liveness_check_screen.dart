@@ -23,12 +23,10 @@ import 'package:dalali/screens/kyc/verification_pending_screen.dart';
 ///
 class LivenessCheckScreen extends StatefulWidget {
   final String userId;
-  final String documentImagePath;
 
   const LivenessCheckScreen({
     super.key,
     required this.userId,
-    required this.documentImagePath,
   });
 
   @override

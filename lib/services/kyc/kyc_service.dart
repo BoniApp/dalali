@@ -42,6 +42,17 @@ class KycService {
     _livenessResult = result;
   }
 
+  DocumentCaptureResult? _documentCapture;
+
+  /// Outcome of the real document capture (photo + entered number +
+  /// local checksum check). Null until DocumentCaptureScreen records it.
+  DocumentCaptureResult? get documentCapture => _documentCapture;
+
+  /// Record the real capture — replaces the old hardcoded stub values.
+  void recordDocumentCapture(DocumentCaptureResult result) {
+    _documentCapture = result;
+  }
+
   /// Initialize or resume a KYC session for a user.
   Future<KycSessionModel> startSession(String userId) async {
     final session = KycSessionModel(
@@ -100,19 +111,25 @@ class KycService {
         .single();
     final serverSessionId = row['session_id'] as String;
 
-    // 2. Persist the captured document. The capture step is still a
-    //    stub, so the checksum is marked valid here; real OCR and
-    //    document validation replace this in production.
+    // 2. Persist the real captured document (photo path + entered
+    //    number + local checksum check) recorded by
+    //    DocumentCaptureScreen — no more hardcoded stub values.
+    final doc = _documentCapture;
     if (session.selectedDocumentType != null) {
       await _db.from('id_documents').insert({
         'user_id': session.userId,
         'document_type': session.selectedDocumentType!.name,
-        'checksum_valid': true,
-        'ocr_confidence': 0.9,
+        'front_image_url': doc?.frontImagePath,
+        'extracted_document_number': doc?.documentNumber,
+        'checksum_valid': doc?.checksumValid ?? false,
+        'ocr_confidence': doc?.ocrConfidence ?? 0.0,
       });
     }
 
-    // 3. Invoke the server pipeline with the user's JWT.
+    // 3. Invoke the server pipeline with the user's JWT. Liveness is
+    //    computed on-device (real front-camera challenge) but the
+    //    server makes the actual accept/reject decision — it must
+    //    see the real outcome, not assume it always passed.
     final token = _db.auth.currentSession?.accessToken;
     if (token == null) throw StateError('Not authenticated');
     final host =
@@ -123,7 +140,11 @@ class KycService {
         'Authorization': 'Bearer $token',
         'Content-Type': 'application/json',
       },
-      body: jsonEncode({'session_id': serverSessionId, 'user_id': session.userId}),
+      body: jsonEncode({
+        'session_id': serverSessionId,
+        'user_id': session.userId,
+        'liveness_passed': _livenessResult?.isSuccessful ?? false,
+      }),
     );
 
     final body = jsonDecode(resp.body);
@@ -170,4 +191,24 @@ class KycService {
   void dispose() {
     _statusController.close();
   }
+}
+
+/// Real outcome of DocumentCaptureScreen: the actual uploaded photo
+/// path plus the user-entered document number checked against
+/// [OcrValidationService]'s local checksum for that document type.
+/// checksumValid is a structural check only — it is not a NIDA/TRA
+/// registry match, and process-kyc-verification treats it as a
+/// decision aid for manual review, not an auto-verify signal.
+class DocumentCaptureResult {
+  final String? frontImagePath;
+  final String documentNumber;
+  final bool checksumValid;
+  final double ocrConfidence;
+
+  const DocumentCaptureResult({
+    this.frontImagePath,
+    required this.documentNumber,
+    required this.checksumValid,
+    required this.ocrConfidence,
+  });
 }

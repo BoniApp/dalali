@@ -13,6 +13,7 @@ class StorageService {
   static final _storage = SupabaseService.client.storage;
   static const String _propertiesBucket = 'properties';
   static const String _avatarsBucket = 'avatars';
+  static const String _idDocumentsBucket = 'id-documents';
 
   /// Upload a property image to the 'properties' bucket.
   /// Returns the public URL on success, throws on failure.
@@ -43,6 +44,21 @@ class StorageService {
       return '$url?v=${DateTime.now().millisecondsSinceEpoch}';
     } catch (e) {
       log('StorageService.uploadProfileImage ERROR: $e (bucket=$_avatarsBucket, path=$path)');
+      rethrow;
+    }
+  }
+
+  /// Upload a captured ID document photo to the private 'id-documents'
+  /// bucket. Returns the storage path (not a public URL — the bucket
+  /// is private; callers needing to display it must mint a signed URL).
+  /// Throws on failure.
+  Future<String> uploadIdDocument(File file, String userId, String side) async {
+    final path = '$userId/${side}_${DateTime.now().millisecondsSinceEpoch}.jpg';
+    try {
+      await _storage.from(_idDocumentsBucket).upload(path, file);
+      return path;
+    } catch (e) {
+      log('StorageService.uploadIdDocument ERROR: $e (bucket=$_idDocumentsBucket, path=$path)');
       rethrow;
     }
   }

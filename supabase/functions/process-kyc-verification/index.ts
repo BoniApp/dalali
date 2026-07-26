@@ -73,7 +73,7 @@ serve(async (req) => {
       })
     }
 
-    const { session_id, user_id } = await req.json()
+    const { session_id, user_id, liveness_passed } = await req.json()
 
     if (!session_id || !user_id) {
       return new Response(
@@ -114,34 +114,40 @@ serve(async (req) => {
     const doc = documents?.[0]
 
     // ─── 2. Verification path by document type ──────────────────
-    // NIDA ID → instant NIDA check (stubbed); voter's ID, driver's
-    // licence, passport and ZanID have no instant API in Tanzania —
-    // they go to manual review.
+    // There is no live NIDA/TRA registry integration yet (see
+    // NidaIntegrationService — a documented stub with placeholder
+    // credentials). checksum_valid only reflects OcrValidationService's
+    // local structural check of the number the user typed in — it is
+    // NOT a government registry match, so it must never auto-verify
+    // anyone by itself. It's recorded as a decision aid for the human
+    // reviewer, same as nida_match below.
     const isNidaDoc = doc?.document_type === 'nidaId'
     const nidaMatch = isNidaDoc && doc?.checksum_valid === true
-    const livenessPass = true // Verified by client-side proof-of-life step
+    // Liveness is a real front-camera two-capture challenge evaluated
+    // on-device (LivenessService) and must be explicitly reported by
+    // the client as having passed — it is never assumed.
+    const livenessPass = liveness_passed === true
 
     // ─── 3. AML screening (stubbed) ─────────────────────────────
     const amlClear = true
     const riskLevel: string = 'low'
 
-    // ─── 4. Determine status + tier ─────────────────────────────
+    // ─── 4. Determine status + tier ──────────────────────────────
+    // Every document type — including NIDA — goes to manual admin
+    // review; there is no auto-verify path until a real registry
+    // check exists. Admins finalize via AdminService.verifyLandlord.
     let newStatus: string
     let newTier: string
 
     if (!livenessPass) {
       newStatus = 'rejected'
       newTier = 'tier1'
-    } else if (!isNidaDoc || !amlClear || riskLevel === 'high' || riskLevel === 'critical') {
-      // Manual review: non-NIDA documents, or anything flagged.
-      newStatus = 'pendingReview'
-      newTier = 'tier1'
-    } else if (!nidaMatch) {
+    } else if (!amlClear || riskLevel === 'high' || riskLevel === 'critical') {
       newStatus = 'rejected'
       newTier = 'tier1'
     } else {
-      newStatus = 'verified'
-      newTier = 'tier2'
+      newStatus = 'pendingReview'
+      newTier = 'tier1'
     }
 
     const now = new Date().toISOString()
