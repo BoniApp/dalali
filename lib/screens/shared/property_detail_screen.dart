@@ -20,6 +20,7 @@ import 'package:dalali/services/chat_service.dart';
 import 'package:dalali/services/dpo_payment_service.dart';
 import 'package:dalali/screens/shared/chat_screen.dart';
 import 'package:dalali/widgets/safety_badge.dart';
+import 'package:dalali/widgets/guest_gate.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -130,7 +131,10 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
               ],
               IconButton(
                 icon: Icon(isFav ? Icons.favorite : Icons.favorite_border, color: isFav ? Colors.red : Colors.white),
-                onPressed: () => context.read<AppState>().toggleFavorite(p.id),
+                onPressed: () {
+                  if (!GuestGate.requireAuth(context, message: 'Sign up to save favorites.')) return;
+                  context.read<AppState>().toggleFavorite(p.id);
+                },
               ),
             ],
           ),
@@ -217,16 +221,19 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
                     children: [
                       const Text('Neighbourhood Safety', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                       TextButton.icon(
-                        onPressed: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => ReportIncidentScreen(
-                              initialLocation: p.location,
-                              initialLatitude: p.latitude,
-                              initialLongitude: p.longitude,
+                        onPressed: () {
+                          if (!GuestGate.requireAuth(context, message: 'Sign up to report a safety incident.')) return;
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => ReportIncidentScreen(
+                                initialLocation: p.location,
+                                initialLatitude: p.latitude,
+                                initialLongitude: p.longitude,
+                              ),
                             ),
-                          ),
-                        ),
+                          );
+                        },
                         icon: const Icon(Icons.report, size: 16),
                         label: const Text('Report'),
                       ),
@@ -343,7 +350,10 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(
-                      onPressed: () => _showScheduleDialog(context, p),
+                      onPressed: () {
+                        if (!GuestGate.requireAuth(context, message: 'Sign up to schedule a viewing.')) return;
+                        _showScheduleDialog(context, p);
+                      },
                       icon: const Icon(Icons.calendar_today),
                       label: const Text('Schedule Viewing'),
                       style: ElevatedButton.styleFrom(
@@ -357,10 +367,13 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(
-                      onPressed: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => PaymentScreen(property: p)),
-                      ),
+                      onPressed: () {
+                        if (!GuestGate.requireAuth(context, message: 'Sign up to pay the agency fee.')) return;
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => PaymentScreen(property: p)),
+                        );
+                      },
                       icon: const Icon(Icons.payments),
                       label: Text('Pay Agency Fee ${Helpers.formatPrice(AppSettings.agencyFee)}'),
                       style: ElevatedButton.styleFrom(
@@ -379,7 +392,10 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton.icon(
-                      onPressed: () => _showInquiryDialog(context, p),
+                      onPressed: () {
+                        if (!GuestGate.requireAuth(context, message: 'Sign up to send an inquiry.')) return;
+                        _showInquiryDialog(context, p);
+                      },
                       icon: const Icon(Icons.message, color: AppTheme.primary),
                       label: const Text('Send Inquiry'),
                     ),
@@ -388,7 +404,10 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton.icon(
-                      onPressed: () => _reportListing(context),
+                      onPressed: () {
+                        if (!GuestGate.requireAuth(context, message: 'Sign up to report a listing.')) return;
+                        _reportListing(context);
+                      },
                       icon: const Icon(Icons.report, color: Colors.red),
                       label: const Text('Report Fake Listing', style: TextStyle(color: Colors.red)),
                     ),
@@ -507,19 +526,30 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
       children: [
         IconButton(
           icon: const Icon(Icons.phone, color: AppTheme.primary),
-          onPressed: () => _call(p.landlordPhone),
+          onPressed: () {
+            if (!GuestGate.requireAuth(context, message: 'Sign up to contact this landlord.')) return;
+            _call(p.landlordPhone);
+          },
         ),
         IconButton(
           icon: const Icon(Icons.message, color: AppTheme.primary),
-          onPressed: () => _sms(p.landlordPhone),
+          onPressed: () {
+            if (!GuestGate.requireAuth(context, message: 'Sign up to contact this landlord.')) return;
+            _sms(p.landlordPhone);
+          },
         ),
         IconButton(
           icon: const Icon(Icons.chat_bubble_outline, color: AppTheme.primary),
-          onPressed: () => _openChat(context, p),
+          onPressed: () {
+            if (!GuestGate.requireAuth(context, message: 'Sign up to chat with this landlord.')) return;
+            _openChat(context, p);
+          },
         ),
       ],
     );
-    if (user == null) return const SizedBox.shrink();
+    // Guests see the same buttons (gated on tap above) rather than
+    // nothing at all — visible-but-locked is what drives sign-up.
+    if (user == null) return buttons;
     if (user.id == p.landlordId || user.id == p.listingCreatorId) return buttons;
     return StreamBuilder<bool>(
       stream: DpoPaymentService().watchPropertyAccess(user.id, p.id),

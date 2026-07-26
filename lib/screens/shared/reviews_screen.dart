@@ -5,6 +5,7 @@ import 'package:dalali/models/property_model.dart';
 import 'package:dalali/models/review_model.dart';
 
 import 'package:dalali/providers/app_state.dart';
+import 'package:dalali/widgets/guest_gate.dart';
 
 class ReviewsScreen extends StatefulWidget {
   final PropertyModel property;
@@ -40,7 +41,10 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => setState(() => _showForm = !_showForm),
+        onPressed: () {
+          if (!_showForm && !GuestGate.requireAuth(context, message: 'Sign up to write a review.')) return;
+          setState(() => _showForm = !_showForm);
+        },
         icon: Icon(_showForm ? Icons.close : Icons.rate_review),
         label: Text(_showForm ? 'Close' : 'Write Review'),
       ),

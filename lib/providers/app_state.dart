@@ -66,6 +66,21 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
   AppLifecycleState _lifecycleState = AppLifecycleState.resumed;
   bool _notificationsPrimed = false;
 
+  // Guest-first browsing: set by RoleSelectionScreen's "Continue as
+  // Guest" entry point. Lets an unauthenticated visitor see the public
+  // property feed (see _subscribeToPublicFeeds) before ever signing up;
+  // every mutating method above still no-ops without currentUser, so
+  // this is a UX signal only, not a security gate.
+  bool _isGuestMode = false;
+  bool get isGuestMode => _isGuestMode;
+
+  void enterGuestMode() {
+    if (_isGuestMode || currentUser != null) return;
+    _isGuestMode = true;
+    _subscribeToPublicFeeds();
+    notifyListeners();
+  }
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     _lifecycleState = state;
@@ -272,14 +287,19 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
   /// properties feed has delivered fresh data (5s timeout fallback
   /// so the refresh spinner never hangs).
   Future<void> refreshData() async {
-    if (currentUser == null) return;
+    if (currentUser == null && !_isGuestMode) return;
     final delivered = Completer<void>();
     final probe = _data.getProperties(limit: 100).listen((_) {
       if (!delivered.isCompleted) delivered.complete();
     }, onError: (_) {
       if (!delivered.isCompleted) delivered.complete();
     });
-    _subscribeToDatabase();
+    if (currentUser == null) {
+      _unsubscribeFromDatabase();
+      _subscribeToPublicFeeds();
+    } else {
+      _subscribeToDatabase();
+    }
     await delivered.future.timeout(
       const Duration(seconds: 5),
       onTimeout: () {},
@@ -320,6 +340,7 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
     _authService.signOut();
     _unsubscribeFromDatabase();
     currentUser = null;
+    _isGuestMode = false;
     _notifications = [];
     _notificationsPrimed = false;
     NotificationService.updateAppBadge(0);
@@ -329,18 +350,31 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
 
   // ─── Database Stream Subscriptions ──────────────────────────
 
-  void _subscribeToDatabase() {
-    if (currentUser == null) return;
-    _unsubscribeFromDatabase();
-    _notificationsPrimed = false;
-    final isLandlord = currentUser!.role == UserRole.landlord || currentUser!.role == UserRole.agent;
-
-    // Properties (public feed: approved + available only)
+  /// Properties + neighbourhood reports are public, RLS-safe reads —
+  /// available to guests (see enterGuestMode) as well as signed-in
+  /// users, so they're subscribed independently of the per-user feeds.
+  void _subscribeToPublicFeeds() {
     _subscriptions.add(_data.getProperties(limit: 100).listen((list) {
       _properties = list;
       _recomputeSafetyScores();
       notifyListeners();
     }));
+
+    _subscriptions.add(_data.getNeighbourhoodReports(limit: 200).listen((list) {
+      _neighbourhoodReports = list.cast<NeighbourhoodReportModel>();
+      _recomputeSafetyScores();
+      notifyListeners();
+    }));
+  }
+
+  void _subscribeToDatabase() {
+    if (currentUser == null) return;
+    _unsubscribeFromDatabase();
+    _isGuestMode = false;
+    _notificationsPrimed = false;
+    final isLandlord = currentUser!.role == UserRole.landlord || currentUser!.role == UserRole.agent;
+
+    _subscribeToPublicFeeds();
 
     // Landlord's own properties (all statuses, approval states)
     if (isLandlord) {
@@ -395,13 +429,6 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
     // Rewards
     _subscriptions.add(_data.getRewardsForUser(currentUser!.id).listen((list) {
       _rewards = list.cast<RewardModel>();
-      notifyListeners();
-    }));
-
-    // Neighbourhood reports
-    _subscriptions.add(_data.getNeighbourhoodReports(limit: 200).listen((list) {
-      _neighbourhoodReports = list.cast<NeighbourhoodReportModel>();
-      _recomputeSafetyScores();
       notifyListeners();
     }));
 

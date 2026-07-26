@@ -12,6 +12,8 @@ import 'package:dalali/screens/seeker/nearby_map_screen.dart';
 import 'package:dalali/l10n/app_localizations.dart';
 import 'package:dalali/models/move_listing_model.dart';
 import 'package:dalali/widgets/notification_bell.dart';
+import 'package:dalali/widgets/guest_gate.dart';
+import 'package:dalali/screens/auth/register_screen.dart';
 import 'package:provider/provider.dart';
 
 class SeekerHomeScreen extends StatefulWidget {
@@ -24,6 +26,7 @@ class SeekerHomeScreen extends StatefulWidget {
 class _SeekerHomeScreenState extends State<SeekerHomeScreen> {
   final TextEditingController _searchController = TextEditingController();
   Map<String, dynamic> _filters = {};
+  bool _guestBannerDismissed = false;
 
   @override
   void dispose() {
@@ -97,6 +100,8 @@ class _SeekerHomeScreenState extends State<SeekerHomeScreen> {
       ),
       body: Column(
         children: [
+          if (state.currentUser == null && !_guestBannerDismissed)
+            _GuestSignUpBanner(onDismiss: () => setState(() => _guestBannerDismissed = true)),
           Padding(
             padding: const EdgeInsets.all(16),
             child: TextField(
@@ -218,6 +223,45 @@ class _SeekerHomeScreenState extends State<SeekerHomeScreen> {
   }
 }
 
+class _GuestSignUpBanner extends StatelessWidget {
+  final VoidCallback onDismiss;
+  const _GuestSignUpBanner({required this.onDismiss});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      color: AppTheme.primary.withValues(alpha: 0.08),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      child: Row(
+        children: [
+          Icon(Icons.info_outline, size: 18, color: AppTheme.primary),
+          const SizedBox(width: 10),
+          const Expanded(
+            child: Text(
+              'Sign up to save favorites, apply, and chat with landlords.',
+              style: TextStyle(fontSize: 12.5),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const RegisterScreen()),
+            ),
+            style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 8)),
+            child: const Text('Sign Up', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+          IconButton(
+            icon: const Icon(Icons.close, size: 16),
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+            onPressed: onDismiss,
+          ),
+        ],
+      ),
+    );
+  }
+}
 
 class _PeopleMovingSection extends StatelessWidget {
   final List<MoveListingModel> moves;
@@ -238,10 +282,13 @@ class _PeopleMovingSection extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
             child: InkWell(
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const StartMoveScreen()),
-              ),
+              onTap: () {
+                if (!GuestGate.requireAuth(context, message: 'Sign up to plan your move.')) return;
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const StartMoveScreen()),
+                );
+              },
               borderRadius: BorderRadius.circular(16),
               child: Container(
                 padding: const EdgeInsets.all(16),

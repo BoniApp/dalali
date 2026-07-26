@@ -5,6 +5,7 @@ import 'package:dalali/models/tenancy_application_model.dart';
 import 'package:dalali/models/user_model.dart';
 import 'package:dalali/providers/app_state.dart';
 import 'package:dalali/widgets/pay_agency_fee_button.dart';
+import 'package:dalali/widgets/guest_gate.dart';
 import 'package:provider/provider.dart';
 
 class ReservationRequestsScreen extends StatelessWidget {
@@ -221,10 +222,12 @@ class ApplyForTenancyButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final appState = context.read<AppState>();
     final user = appState.currentUser;
-    if (user == null || user.role != UserRole.seeker) return const SizedBox.shrink();
+    // Landlords/agents never apply to their own listings; a guest or a
+    // seeker always can (guest is gated on tap below).
+    if (user != null && user.role != UserRole.seeker) return const SizedBox.shrink();
 
     // Check if already applied
-    final alreadyApplied = appState.tenancyApplications.any(
+    final alreadyApplied = user != null && appState.tenancyApplications.any(
       (a) => a.propertyId == property.id && a.tenantId == user.id,
     );
 
@@ -237,7 +240,10 @@ class ApplyForTenancyButton extends StatelessWidget {
     }
 
     return ElevatedButton.icon(
-      onPressed: () => _submitApplication(context, appState, user),
+      onPressed: () {
+        if (!GuestGate.requireAuth(context, message: 'Sign up to apply for this property.')) return;
+        _submitApplication(context, appState, appState.currentUser!);
+      },
       icon: const Icon(Icons.send),
       label: const Text('Apply to Rent'),
       style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primary, foregroundColor: Colors.white),

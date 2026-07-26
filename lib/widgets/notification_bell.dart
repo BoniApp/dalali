@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:dalali/providers/app_state.dart';
 import 'package:dalali/screens/shared/notifications_screen.dart';
+import 'package:dalali/widgets/guest_gate.dart';
 import 'package:provider/provider.dart';
 
 class NotificationBell extends StatelessWidget {
@@ -16,10 +17,13 @@ class NotificationBell extends StatelessWidget {
       children: [
         IconButton(
           icon: Icon(Icons.notifications_outlined, color: iconColor),
-          onPressed: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const NotificationsScreen()),
-          ),
+          onPressed: () {
+            if (!GuestGate.requireAuth(context)) return;
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const NotificationsScreen()),
+            );
+          },
         ),
         if (unreadCount > 0)
           Positioned(

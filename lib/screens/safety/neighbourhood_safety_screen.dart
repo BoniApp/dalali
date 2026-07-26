@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:dalali/models/neighbourhood_report_model.dart';
 import 'package:dalali/providers/app_state.dart';
 import 'package:dalali/screens/safety/report_incident_screen.dart';
+import 'package:dalali/widgets/guest_gate.dart';
 
 
 
@@ -40,10 +41,13 @@ class _NeighbourhoodSafetyScreenState extends State<NeighbourhoodSafetyScreen> {
           ? _SafetyMap(reports: unresolved)
           : _SafetyList(reports: unresolved, theme: theme),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const ReportIncidentScreen()),
-        ),
+        onPressed: () {
+          if (!GuestGate.requireAuth(context, message: 'Sign up to report a safety incident.')) return;
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const ReportIncidentScreen()),
+          );
+        },
         icon: const Icon(Icons.report),
         label: const Text('Report'),
         backgroundColor: Colors.red.shade700,

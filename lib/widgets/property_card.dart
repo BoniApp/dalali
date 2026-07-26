@@ -5,6 +5,7 @@ import 'package:dalali/providers/app_state.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:dalali/widgets/safety_badge.dart';
+import 'package:dalali/widgets/guest_gate.dart';
 import 'package:dalali/utils/helpers.dart';
 
 class PropertyCard extends StatelessWidget {
@@ -78,6 +79,7 @@ class PropertyCard extends StatelessWidget {
                             color: isFav ? Colors.red : Colors.grey,
                           ),
                           onPressed: () {
+                            if (!GuestGate.requireAuth(context, message: 'Sign up to save favorites.')) return;
                             context.read<AppState>().toggleFavorite(property.id);
                           },
                         ),

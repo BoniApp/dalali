@@ -16,6 +16,7 @@ import 'package:dalali/screens/influencer/influencer_dashboard_screen.dart';
 import 'package:dalali/screens/influencer/referral_link_screen.dart';
 import 'package:dalali/screens/influencer/influencer_campaigns_screen.dart';
 import 'package:dalali/screens/shared/conversations_screen.dart';
+import 'package:dalali/screens/safety/neighbourhood_safety_screen.dart';
 import 'package:dalali/services/chat_service.dart';
 import 'package:dalali/services/deep_link_service.dart';
 
@@ -54,10 +55,11 @@ class _MainNavigationState extends State<MainNavigation> {
 
   @override
   Widget build(BuildContext context) {
-    final user = context.watch<AppState>().currentUser;
+    final appState = context.watch<AppState>();
+    final user = appState.currentUser;
 
     if (user == null) {
-      return const LoginScreen();
+      return appState.isGuestMode ? const _GuestShell() : const LoginScreen();
     }
 
     final screens = _getScreens(user.role, user.id);
@@ -166,5 +168,43 @@ class _MainNavigationState extends State<MainNavigation> {
           NavigationDestination(icon: const Icon(Icons.person), label: l10n.profile),
         ];
     }
+  }
+}
+
+/// Cut-down shell for guest browsing (RoleSelectionScreen's "Explore
+/// First, Sign Up Later"): just Explore (SeekerHomeScreen, which shows
+/// its own sign-up banner for a null currentUser) and the safety map.
+/// Every other tab — Messages, Profile, Wallet, etc. — requires an
+/// account, so it isn't offered here at all rather than being shown
+/// and immediately gated.
+class _GuestShell extends StatefulWidget {
+  const _GuestShell();
+
+  @override
+  State<_GuestShell> createState() => _GuestShellState();
+}
+
+class _GuestShellState extends State<_GuestShell> {
+  int _currentIndex = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: IndexedStack(
+        index: _currentIndex,
+        children: const [
+          SeekerHomeScreen(),
+          NeighbourhoodSafetyScreen(),
+        ],
+      ),
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: _currentIndex,
+        onDestinationSelected: (index) => setState(() => _currentIndex = index),
+        destinations: const [
+          NavigationDestination(icon: Icon(Icons.home), label: 'Explore'),
+          NavigationDestination(icon: Icon(Icons.shield_outlined), label: 'Safety'),
+        ],
+      ),
+    );
   }
 }

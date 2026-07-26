@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:dalali/config/app_theme.dart';
 import 'package:dalali/l10n/app_localizations.dart';
+import 'package:dalali/providers/app_state.dart';
 import 'package:dalali/screens/auth/login_screen.dart';
 import 'package:dalali/screens/auth/register_screen.dart';
 import 'package:dalali/screens/admin/login_admin_screen.dart';
+import 'package:dalali/screens/shared/main_navigation.dart';
 
 class RoleSelectionScreen extends StatefulWidget {
   const RoleSelectionScreen({super.key});
@@ -111,6 +115,16 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                     color: Colors.pink,
                     onTap: () => _goToSignIn(context),
                   ),
+                  const SizedBox(height: 20),
+                  OutlinedButton.icon(
+                    onPressed: () => _continueAsGuest(context),
+                    icon: const Icon(Icons.explore_outlined),
+                    label: const Text('Explore First, Sign Up Later'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppTheme.primary,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                  ),
                   const SizedBox(height: 32),
                   const Divider(),
                   const SizedBox(height: 8),
@@ -152,6 +166,14 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (_) => const LoginScreen()),
+    );
+  }
+
+  void _continueAsGuest(BuildContext context) {
+    context.read<AppState>().enterGuestMode();
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => const MainNavigation()),
     );
   }
 }
