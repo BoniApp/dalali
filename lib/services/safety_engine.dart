@@ -1,4 +1,4 @@
-import 'dart:math' show exp;
+import 'dart:math' show exp, sin, cos, sqrt, atan2, pi;
 import 'package:dalali/models/neighbourhood_report_model.dart';
 import 'package:dalali/models/property_model.dart';
 
@@ -28,8 +28,6 @@ class SafetyEngine {
     required PropertyModel property,
     required List<NeighbourhoodReportModel> nearbyReports,
   }) {
-    if (nearbyReports.isEmpty) return 80.0; // default safe baseline
-
     double totalImpact = 0;
     for (final report in nearbyReports) {
       if (report.resolved) continue;
@@ -41,6 +39,13 @@ class SafetyEngine {
 
       totalImpact += impact;
     }
+
+    // No active negative signal (no reports at all, or every report was
+    // resolved/too old to count) — the default safe baseline. Without
+    // this, a property with only resolved reports scored 50 (the
+    // sigmoid's neutral midpoint) while one with zero reports ever
+    // filed scored 80, despite being equally safe.
+    if (totalImpact == 0) return 80.0;
 
     // Sigmoid mapping: score = 100 / (1 + exp(totalImpact / 10))
     // As impact → ∞, score → 0. As impact → 0, score → 100.
@@ -90,65 +95,11 @@ class SafetyEngine {
     const earthRadiusKm = 6371.0;
     final dLat = _toRadians(lat2 - lat1);
     final dLng = _toRadians(lng2 - lng1);
-    final a =
-        (dLat / 2).sin() * (dLat / 2).sin() +
-        _toRadians(lat1).cos() * _toRadians(lat2).cos() * (dLng / 2).sin() * (dLng / 2).sin();
-    final c = 2 * a.sqrt().atan2((1 - a).sqrt());
+    final a = sin(dLat / 2) * sin(dLat / 2) +
+        cos(_toRadians(lat1)) * cos(_toRadians(lat2)) * sin(dLng / 2) * sin(dLng / 2);
+    final c = 2 * atan2(sqrt(a), sqrt(1 - a));
     return earthRadiusKm * c;
   }
 
-  double _toRadians(double degrees) => degrees * 3.141592653589793 / 180;
-}
-
-extension _MathExt on double {
-  double sin() => _sin(this);
-  double cos() => _cos(this);
-  double sqrt() => _sqrt(this);
-  double atan2(double other) => _atan2(this, other);
-}
-
-double _sin(double x) {
-  // Taylor series approximation for sin(x)
-  double result = x;
-  double term = x;
-  for (int n = 1; n <= 7; n++) {
-    term *= -x * x / ((2 * n) * (2 * n + 1));
-    result += term;
-  }
-  return result;
-}
-
-double _cos(double x) {
-  double result = 1;
-  double term = 1;
-  for (int n = 1; n <= 7; n++) {
-    term *= -x * x / ((2 * n - 1) * (2 * n));
-    result += term;
-  }
-  return result;
-}
-
-double _sqrt(double x) {
-  if (x <= 0) return 0;
-  double guess = x;
-  for (int i = 0; i < 20; i++) {
-    guess = (guess + x / guess) / 2;
-  }
-  return guess;
-}
-
-double _atan2(double y, double x) {
-  // Approximation of atan2
-  if (x == 0) return y > 0 ? 1.57079632679 : -1.57079632679;
-  double angle = y / x;
-  if (angle.abs() <= 1) {
-    double result = angle / (1 + 0.28 * angle * angle);
-    if (x < 0) result += (y >= 0 ? 3.14159265359 : -3.14159265359);
-    return result;
-  } else {
-    double result = 1.57079632679 - angle / (angle * angle + 0.28);
-    if (y < 0) result = -1.57079632679 - angle / (angle * angle + 0.28);
-    if (x < 0) result += 3.14159265359;
-    return result;
-  }
+  double _toRadians(double degrees) => degrees * pi / 180;
 }
