@@ -16,6 +16,7 @@ class MoveState extends ChangeNotifier {
   final DataService _data = DataService();
   final List<StreamSubscription> _subscriptions = [];
   String? _lastUserId;
+  UserModel? _currentUser;
   UserState? _userState;
 
   void attachUserState(UserState userState) {
@@ -72,19 +73,44 @@ class MoveState extends ChangeNotifier {
     _subscriptions.clear();
   }
 
+  void _subscribe(UserModel user) {
+    _subscriptions.add(_data.getMoveListingsByUser(user.id).listen((list) {
+      _moveListings = list.cast<MoveListingModel>();
+      notifyListeners();
+    }));
+  }
+
   void onUserChanged(UserModel? user) {
     if (user?.id == _lastUserId) return;
     _lastUserId = user?.id;
+    _currentUser = user;
     _unsubscribe();
     if (user == null) {
       _moveListings = [];
       notifyListeners();
       return;
     }
-    _subscriptions.add(_data.getMoveListingsByUser(user.id).listen((list) {
-      _moveListings = list.cast<MoveListingModel>();
-      notifyListeners();
-    }));
+    _subscribe(user);
+  }
+
+  /// Re-fetch by re-subscribing (pull-to-refresh). Completes once fresh
+  /// data has been delivered (5s timeout fallback so the spinner never
+  /// hangs); a no-op when no user is signed in.
+  Future<void> refreshData() async {
+    final user = _currentUser;
+    if (user == null) return;
+    final delivered = Completer<void>();
+    final probe = _data.getMoveListingsByUser(user.id).listen((_) {
+      if (!delivered.isCompleted) delivered.complete();
+    }, onError: (_) {
+      if (!delivered.isCompleted) delivered.complete();
+    }, onDone: () {
+      if (!delivered.isCompleted) delivered.complete();
+    });
+    _unsubscribe();
+    _subscribe(user);
+    await delivered.future.timeout(const Duration(seconds: 5), onTimeout: () {});
+    await probe.cancel();
   }
 
   @override

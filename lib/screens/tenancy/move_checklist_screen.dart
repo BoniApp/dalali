@@ -15,12 +15,25 @@ class MoveChecklistScreen extends StatelessWidget {
     final checklist = tenancyState.getMyChecklist(userId, tenancyId);
 
     if (checklist == null) {
-      return const Center(child: Text('No checklist found for this move.'));
+      return RefreshIndicator(
+        color: AppTheme.primary,
+        onRefresh: () => context.read<TenancyState>().refreshData(),
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          children: const [
+            SizedBox(height: 160),
+            Center(child: Text('No checklist found for this move.')),
+          ],
+        ),
+      );
     }
 
     final progress = checklist.progress;
 
-    return Column(
+    return RefreshIndicator(
+      color: AppTheme.primary,
+      onRefresh: () => context.read<TenancyState>().refreshData(),
+      child: Column(
       children: [
         // Progress Header
         Container(
@@ -63,6 +76,7 @@ class MoveChecklistScreen extends StatelessWidget {
         // Checklist Items
         Expanded(
           child: ListView.builder(
+            physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.symmetric(vertical: 8),
             itemCount: checklist.items.length,
             itemBuilder: (context, index) {
@@ -88,6 +102,7 @@ class MoveChecklistScreen extends StatelessWidget {
           ),
         ),
       ],
+      ),
     );
   }
 }

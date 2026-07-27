@@ -37,24 +37,32 @@ class NotificationsScreen extends StatelessWidget {
             ),
         ],
       ),
-      body: notifications.isEmpty
-          ? const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
+      body: RefreshIndicator(
+        color: AppTheme.primary,
+        onRefresh: () => context.read<NotificationState>().refreshData(),
+        child: notifications.isEmpty
+            ? ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                children: const [
+                  SizedBox(height: 160),
                   Icon(Icons.notifications_none, size: 64, color: Colors.grey),
                   SizedBox(height: 16),
-                  Text('No notifications yet', style: TextStyle(color: Colors.grey, fontSize: 16)),
+                  Text(
+                    'No notifications yet',
+                    style: TextStyle(color: Colors.grey, fontSize: 16),
+                    textAlign: TextAlign.center,
+                  ),
                 ],
+              )
+            : ListView.builder(
+                physics: const AlwaysScrollableScrollPhysics(),
+                itemCount: notifications.length,
+                itemBuilder: (context, index) {
+                  final n = notifications[index];
+                  return _NotificationTile(notification: n);
+                },
               ),
-            )
-          : ListView.builder(
-              itemCount: notifications.length,
-              itemBuilder: (context, index) {
-                final n = notifications[index];
-                return _NotificationTile(notification: n);
-              },
-            ),
+      ),
     );
   }
 }

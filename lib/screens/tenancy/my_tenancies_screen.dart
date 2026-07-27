@@ -29,19 +29,24 @@ class MyTenanciesScreen extends StatelessWidget {
         backgroundColor: AppTheme.primary,
         foregroundColor: Colors.white,
       ),
-      body: tenancies.isEmpty
-          ? _EmptyState(isLandlord: isLandlord)
-          : ListView.builder(
-              padding: const EdgeInsets.all(12),
-              itemCount: tenancies.length + (currentTenancy != null ? 1 : 0),
-              itemBuilder: (context, index) {
-                if (currentTenancy != null) {
-                  if (index == 0) return _CurrentTenancySummary(tenancy: currentTenancy);
-                  return _TenancyCard(tenancy: tenancies[index - 1]);
-                }
-                return _TenancyCard(tenancy: tenancies[index]);
-              },
-            ),
+      body: RefreshIndicator(
+        color: AppTheme.primary,
+        onRefresh: () => context.read<TenancyState>().refreshData(),
+        child: tenancies.isEmpty
+            ? _EmptyState(isLandlord: isLandlord)
+            : ListView.builder(
+                padding: const EdgeInsets.all(12),
+                physics: const AlwaysScrollableScrollPhysics(),
+                itemCount: tenancies.length + (currentTenancy != null ? 1 : 0),
+                itemBuilder: (context, index) {
+                  if (currentTenancy != null) {
+                    if (index == 0) return _CurrentTenancySummary(tenancy: currentTenancy);
+                    return _TenancyCard(tenancy: tenancies[index - 1]);
+                  }
+                  return _TenancyCard(tenancy: tenancies[index]);
+                },
+              ),
+      ),
     );
   }
 }
@@ -106,25 +111,26 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.home_work, size: 64, color: Colors.grey[300]),
-          const SizedBox(height: 16),
-          Text(
-            isLandlord ? 'No active tenancies yet.' : 'You have no active tenancies.',
-            style: TextStyle(fontSize: 16, color: Colors.grey[600]),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            isLandlord
-                ? 'Approved reservations will appear here.'
-                : 'Apply for a property to start your tenancy journey.',
-            style: TextStyle(fontSize: 13, color: Colors.grey[500]),
-          ),
-        ],
-      ),
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      children: [
+        const SizedBox(height: 160),
+        Icon(Icons.home_work, size: 64, color: Colors.grey[300]),
+        const SizedBox(height: 16),
+        Text(
+          isLandlord ? 'No active tenancies yet.' : 'You have no active tenancies.',
+          style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 8),
+        Text(
+          isLandlord
+              ? 'Approved reservations will appear here.'
+              : 'Apply for a property to start your tenancy journey.',
+          style: TextStyle(fontSize: 13, color: Colors.grey[500]),
+          textAlign: TextAlign.center,
+        ),
+      ],
     );
   }
 }

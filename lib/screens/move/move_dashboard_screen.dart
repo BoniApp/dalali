@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import 'package:dalali/config/app_theme.dart';
 import 'package:dalali/models/move_listing_model.dart';
 import 'package:dalali/models/property_model.dart';
 import 'package:dalali/providers/user_state.dart';
@@ -23,13 +24,17 @@ class MoveDashboardScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(title: const Text('My Move')),
-      body: activeMove == null
-          ? _EmptyMoveState(onStart: () => _goToStartMove(context))
-          : _ActiveMoveBody(
-              move: activeMove,
-              moveState: moveState,
-              theme: theme,
-            ),
+      body: RefreshIndicator(
+        color: AppTheme.primary,
+        onRefresh: () => context.read<MoveState>().refreshData(),
+        child: activeMove == null
+            ? _EmptyMoveState(onStart: () => _goToStartMove(context))
+            : _ActiveMoveBody(
+                move: activeMove,
+                moveState: moveState,
+                theme: theme,
+              ),
+      ),
       floatingActionButton: activeMove == null
           ? FloatingActionButton.extended(
               onPressed: () => _goToStartMove(context),
@@ -55,33 +60,33 @@ class _EmptyMoveState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.local_shipping_outlined, size: 80, color: Colors.grey[400]),
-            const SizedBox(height: 24),
-            Text(
-              'Not Moving Yet?',
-              style: Theme.of(context).textTheme.headlineSmall,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Start your move to list your current home and discover your next one.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey[600]),
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: onStart,
-              icon: const Icon(Icons.add),
-              label: const Text('Start a Move'),
-            ),
-          ],
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.all(32),
+      children: [
+        const SizedBox(height: 120),
+        Icon(Icons.local_shipping_outlined, size: 80, color: Colors.grey[400]),
+        const SizedBox(height: 24),
+        Text(
+          'Not Moving Yet?',
+          style: Theme.of(context).textTheme.headlineSmall,
+          textAlign: TextAlign.center,
         ),
-      ),
+        const SizedBox(height: 8),
+        Text(
+          'Start your move to list your current home and discover your next one.',
+          textAlign: TextAlign.center,
+          style: TextStyle(color: Colors.grey[600]),
+        ),
+        const SizedBox(height: 24),
+        Center(
+          child: ElevatedButton.icon(
+            onPressed: onStart,
+            icon: const Icon(Icons.add),
+            label: const Text('Start a Move'),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -115,6 +120,7 @@ class _ActiveMoveBody extends StatelessWidget {
     );
 
     return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(16),
       children: [
         _StatusCard(move: move, theme: theme),

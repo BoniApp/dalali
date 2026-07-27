@@ -27,6 +27,7 @@ class TenancyState extends ChangeNotifier {
   final DataService _data = DataService();
   final List<StreamSubscription> _subscriptions = [];
   String? _lastUserId;
+  UserModel? _currentUser;
 
   List<TenancyApplicationModel> get tenancyApplications => _tenancyApplications;
   List<TenancyModel> get tenancies => _tenancies;
@@ -329,22 +330,7 @@ class TenancyState extends ChangeNotifier {
     _subscriptions.clear();
   }
 
-  void onUserChanged(UserModel? user) {
-    if (user?.id == _lastUserId) return;
-    _lastUserId = user?.id;
-    _unsubscribe();
-    _tenancyApplications = [];
-    _tenancies = [];
-    _maintenanceRequests = [];
-    _rentSchedules = [];
-    _inspections = [];
-    _depositTransactions = [];
-    _moveChecklists.clear();
-    if (user == null) {
-      notifyListeners();
-      return;
-    }
-
+  void _subscribe(UserModel user) {
     final isLandlord = user.role == UserRole.landlord || user.role == UserRole.agent;
 
     if (isLandlord) {
@@ -401,6 +387,49 @@ class TenancyState extends ChangeNotifier {
         ..addAll(list);
       notifyListeners();
     }));
+  }
+
+  void onUserChanged(UserModel? user) {
+    if (user?.id == _lastUserId) return;
+    _lastUserId = user?.id;
+    _currentUser = user;
+    _unsubscribe();
+    _tenancyApplications = [];
+    _tenancies = [];
+    _maintenanceRequests = [];
+    _rentSchedules = [];
+    _inspections = [];
+    _depositTransactions = [];
+    _moveChecklists.clear();
+    if (user == null) {
+      notifyListeners();
+      return;
+    }
+    _subscribe(user);
+  }
+
+  /// Re-fetch by re-subscribing (pull-to-refresh). Completes once fresh
+  /// data has been delivered (5s timeout fallback so the spinner never
+  /// hangs); a no-op when no user is signed in.
+  Future<void> refreshData() async {
+    final user = _currentUser;
+    if (user == null) return;
+    final delivered = Completer<void>();
+    final isLandlord = user.role == UserRole.landlord || user.role == UserRole.agent;
+    final probe = (isLandlord
+            ? _data.getApplicationsForLandlord(user.id)
+            : _data.getApplicationsForTenant(user.id))
+        .listen((_) {
+      if (!delivered.isCompleted) delivered.complete();
+    }, onError: (_) {
+      if (!delivered.isCompleted) delivered.complete();
+    }, onDone: () {
+      if (!delivered.isCompleted) delivered.complete();
+    });
+    _unsubscribe();
+    _subscribe(user);
+    await delivered.future.timeout(const Duration(seconds: 5), onTimeout: () {});
+    await probe.cancel();
   }
 
   @override

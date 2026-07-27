@@ -21,6 +21,7 @@ class EarningsState extends ChangeNotifier {
   final DataService _data = DataService();
   final List<StreamSubscription> _subscriptions = [];
   String? _lastUserId;
+  UserModel? _currentUser;
 
   List<PropertyRegistryModel> get propertyRegistry => _propertyRegistry;
   List<PropertyClaimModel> get myClaims => _myClaims;
@@ -37,18 +38,7 @@ class EarningsState extends ChangeNotifier {
     _subscriptions.clear();
   }
 
-  void onUserChanged(UserModel? user) {
-    if (user?.id == _lastUserId) return;
-    _lastUserId = user?.id;
-    _unsubscribe();
-    _myDeals = [];
-    _myAgencyFees = [];
-    _myEarnings = [];
-    _myClaims = [];
-    if (user == null) {
-      notifyListeners();
-      return;
-    }
+  void _subscribe(UserModel user) {
     _subscriptions.add(_data.getDealsForUser(user.id).listen((list) {
       _myDeals = list.cast<DealModel>();
       notifyListeners();
@@ -65,6 +55,42 @@ class EarningsState extends ChangeNotifier {
       _myClaims = list.cast<PropertyClaimModel>();
       notifyListeners();
     }));
+  }
+
+  void onUserChanged(UserModel? user) {
+    if (user?.id == _lastUserId) return;
+    _lastUserId = user?.id;
+    _currentUser = user;
+    _unsubscribe();
+    _myDeals = [];
+    _myAgencyFees = [];
+    _myEarnings = [];
+    _myClaims = [];
+    if (user == null) {
+      notifyListeners();
+      return;
+    }
+    _subscribe(user);
+  }
+
+  /// Re-fetch by re-subscribing (pull-to-refresh). Completes once fresh
+  /// data has been delivered (5s timeout fallback so the spinner never
+  /// hangs); a no-op when no user is signed in.
+  Future<void> refreshData() async {
+    final user = _currentUser;
+    if (user == null) return;
+    final delivered = Completer<void>();
+    final probe = _data.getDealsForUser(user.id).listen((_) {
+      if (!delivered.isCompleted) delivered.complete();
+    }, onError: (_) {
+      if (!delivered.isCompleted) delivered.complete();
+    }, onDone: () {
+      if (!delivered.isCompleted) delivered.complete();
+    });
+    _unsubscribe();
+    _subscribe(user);
+    await delivered.future.timeout(const Duration(seconds: 5), onTimeout: () {});
+    await probe.cancel();
   }
 
   @override

@@ -39,13 +39,17 @@ class _TenantView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final myApps = tenancyState.myTenancyApplicationsFor(userId);
-    if (myApps.isEmpty) {
-      return _EmptyState(message: 'You have not applied for any properties yet.', icon: Icons.send);
-    }
-    return ListView.builder(
-      padding: const EdgeInsets.all(12),
-      itemCount: myApps.length,
-      itemBuilder: (_, i) => _ApplicationCard(application: myApps[i], isLandlord: false),
+    return RefreshIndicator(
+      color: AppTheme.primary,
+      onRefresh: () => context.read<TenancyState>().refreshData(),
+      child: myApps.isEmpty
+          ? _EmptyState(message: 'You have not applied for any properties yet.', icon: Icons.send)
+          : ListView.builder(
+              padding: const EdgeInsets.all(12),
+              physics: const AlwaysScrollableScrollPhysics(),
+              itemCount: myApps.length,
+              itemBuilder: (_, i) => _ApplicationCard(application: myApps[i], isLandlord: false),
+            ),
     );
   }
 }
@@ -61,12 +65,20 @@ class _LandlordView extends StatelessWidget {
     final all = tenancyState.tenancyApplications.where((a) => a.landlordId == userId).toList();
 
     if (all.isEmpty) {
-      return _EmptyState(message: 'No reservation requests yet.', icon: Icons.inbox);
+      return RefreshIndicator(
+        color: AppTheme.primary,
+        onRefresh: () => context.read<TenancyState>().refreshData(),
+        child: _EmptyState(message: 'No reservation requests yet.', icon: Icons.inbox),
+      );
     }
 
-    return ListView(
-      padding: const EdgeInsets.all(12),
-      children: [
+    return RefreshIndicator(
+      color: AppTheme.primary,
+      onRefresh: () => context.read<TenancyState>().refreshData(),
+      child: ListView(
+        padding: const EdgeInsets.all(12),
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: [
         if (pending.isNotEmpty) ...[
           Text('Pending (${pending.length})', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
@@ -81,6 +93,7 @@ class _LandlordView extends StatelessWidget {
           ),
         ],
       ],
+      ),
     );
   }
 }
@@ -203,15 +216,14 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, size: 64, color: Colors.grey[300]),
-          const SizedBox(height: 16),
-          Text(message, style: TextStyle(fontSize: 15, color: Colors.grey[600])),
-        ],
-      ),
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      children: [
+        const SizedBox(height: 160),
+        Icon(icon, size: 64, color: Colors.grey[300]),
+        const SizedBox(height: 16),
+        Text(message, textAlign: TextAlign.center, style: TextStyle(fontSize: 15, color: Colors.grey[600])),
+      ],
     );
   }
 }

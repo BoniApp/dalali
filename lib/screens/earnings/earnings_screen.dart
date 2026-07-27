@@ -21,8 +21,12 @@ class EarningsScreen extends StatelessWidget {
         title: Text(l10n.earnings),
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
+        child: RefreshIndicator(
+          color: AppTheme.primary,
+          onRefresh: () => context.read<EarningsState>().refreshData(),
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -110,6 +114,7 @@ class EarningsScreen extends StatelessWidget {
                       ),
                     )),
             ],
+          ),
           ),
         ),
       ),

@@ -64,9 +64,13 @@ class ProfileScreen extends StatelessWidget {
         backgroundColor: AppTheme.primary,
         foregroundColor: Colors.white,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
+      body: RefreshIndicator(
+        color: AppTheme.primary,
+        onRefresh: () => context.read<RewardState>().refreshData(),
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(16),
+          child: Column(
           children: [
             GestureDetector(
               onTap: () => _changeProfilePicture(context),
@@ -362,6 +366,7 @@ class ProfileScreen extends StatelessWidget {
               ),
             ),
           ],
+          ),
         ),
       ),
     );

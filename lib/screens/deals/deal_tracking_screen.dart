@@ -19,12 +19,20 @@ class DealTrackingScreen extends StatelessWidget {
       appBar: AppBar(
         title: Text(l10n.dealTracking),
       ),
-      body: deals.isEmpty
-          ? Center(
-              child: Text('No deals yet'),
-            )
-          : ListView.builder(
-              itemCount: deals.length,
+      body: RefreshIndicator(
+        color: AppTheme.primary,
+        onRefresh: () => context.read<EarningsState>().refreshData(),
+        child: deals.isEmpty
+            ? ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                children: [
+                  const SizedBox(height: 160),
+                  Center(child: Text('No deals yet')),
+                ],
+              )
+            : ListView.builder(
+                physics: const AlwaysScrollableScrollPhysics(),
+                itemCount: deals.length,
               itemBuilder: (context, index) {
                 final deal = deals[index];
                 return Card(
@@ -67,6 +75,7 @@ class DealTrackingScreen extends StatelessWidget {
                 );
               },
             ),
+      ),
     );
   }
 

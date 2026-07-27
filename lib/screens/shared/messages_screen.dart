@@ -19,36 +19,44 @@ class MessagesScreen extends StatelessWidget {
         backgroundColor: AppTheme.primary,
         foregroundColor: Colors.white,
       ),
-      body: inquiries.isEmpty
-          ? const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
+      body: RefreshIndicator(
+        color: AppTheme.primary,
+        onRefresh: () => context.read<AppointmentState>().refreshData(),
+        child: inquiries.isEmpty
+            ? ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                children: const [
+                  SizedBox(height: 160),
                   Icon(Icons.message_outlined, size: 64, color: Colors.grey),
                   SizedBox(height: 16),
-                  Text('No messages yet', style: TextStyle(color: Colors.grey, fontSize: 16)),
+                  Text(
+                    'No messages yet',
+                    style: TextStyle(color: Colors.grey, fontSize: 16),
+                    textAlign: TextAlign.center,
+                  ),
                 ],
+              )
+            : ListView.builder(
+                physics: const AlwaysScrollableScrollPhysics(),
+                itemCount: inquiries.length,
+                itemBuilder: (context, index) {
+                  final i = inquiries[index];
+                  return ListTile(
+                    leading: CircleAvatar(
+                      backgroundColor: AppTheme.primary.withAlpha(26),
+                      child: const Icon(Icons.person, color: AppTheme.primary),
+                    ),
+                    title: Text(i.seekerName, style: const TextStyle(fontWeight: FontWeight.bold)),
+                    subtitle: Text(i.message, maxLines: 1, overflow: TextOverflow.ellipsis),
+                    trailing: Text(
+                      Helpers.formatDateOnly(i.createdAt),
+                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                    ),
+                    onTap: () => _showMessageDetail(context, i),
+                  );
+                },
               ),
-            )
-          : ListView.builder(
-              itemCount: inquiries.length,
-              itemBuilder: (context, index) {
-                final i = inquiries[index];
-                return ListTile(
-                  leading: CircleAvatar(
-                    backgroundColor: AppTheme.primary.withAlpha(26),
-                    child: const Icon(Icons.person, color: AppTheme.primary),
-                  ),
-                  title: Text(i.seekerName, style: const TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: Text(i.message, maxLines: 1, overflow: TextOverflow.ellipsis),
-                  trailing: Text(
-                    Helpers.formatDateOnly(i.createdAt),
-                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                  ),
-                  onTap: () => _showMessageDetail(context, i),
-                );
-              },
-            ),
+      ),
     );
   }
 
