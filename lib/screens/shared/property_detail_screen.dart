@@ -328,7 +328,7 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
                   ),
                   // Contact gate: seekers see call/SMS/chat only after
                   // paying the agency fee (property_access, migration 022).
-                  if (user != null && user.id != p.landlordId && user.id != p.listingCreatorId)
+                  if (user != null && user.role == UserRole.seeker && user.id != p.landlordId && user.id != p.listingCreatorId)
                     StreamBuilder<bool>(
                       stream: DpoPaymentService().watchPropertyAccess(user.id, p.id),
                       builder: (context, snapshot) {
@@ -349,71 +349,79 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
                       },
                     ),
                   const SizedBox(height: 24),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        if (!GuestGate.requireAuth(context, message: 'Sign up to schedule a viewing.')) return;
-                        _showScheduleDialog(context, p);
-                      },
-                      icon: const Icon(Icons.calendar_today),
-                      label: const Text('Schedule Viewing'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.primary,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
+                  // Seeker-only actions: landlords, agents and influencers
+                  // never schedule viewings or pay agency fees — those flows
+                  // start from the seeker. Guests still see the buttons and
+                  // are gated on tap by GuestGate.
+                  if (user == null || user.role == UserRole.seeker) ...[
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          if (!GuestGate.requireAuth(context, message: 'Sign up to schedule a viewing.')) return;
+                          _showScheduleDialog(context, p);
+                        },
+                        icon: const Icon(Icons.calendar_today),
+                        label: const Text('Schedule Viewing'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.primary,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        if (!GuestGate.requireAuth(context, message: 'Sign up to pay the agency fee.')) return;
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => PaymentScreen(property: p)),
-                        );
-                      },
-                      icon: const Icon(Icons.payments),
-                      label: Text('Pay Agency Fee ${Helpers.formatPrice(AppSettings.agencyFee)}'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.orange.shade700,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          if (!GuestGate.requireAuth(context, message: 'Sign up to pay the agency fee.')) return;
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => PaymentScreen(property: p)),
+                          );
+                        },
+                        icon: const Icon(Icons.payments),
+                        label: Text('Pay Agency Fee ${Helpers.formatPrice(AppSettings.agencyFee)}'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.orange.shade700,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 12),
+                    const SizedBox(height: 12),
+                  ],
                   SizedBox(
                     width: double.infinity,
                     child: ApplyForTenancyButton(property: p),
                   ),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton.icon(
-                      onPressed: () {
-                        if (!GuestGate.requireAuth(context, message: 'Sign up to send an inquiry.')) return;
-                        _showInquiryDialog(context, p);
-                      },
-                      icon: const Icon(Icons.message, color: AppTheme.primary),
-                      label: const Text('Send Inquiry'),
+                  if (user == null || user.role == UserRole.seeker) ...[
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          if (!GuestGate.requireAuth(context, message: 'Sign up to send an inquiry.')) return;
+                          _showInquiryDialog(context, p);
+                        },
+                        icon: const Icon(Icons.message, color: AppTheme.primary),
+                        label: const Text('Send Inquiry'),
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton.icon(
-                      onPressed: () {
-                        if (!GuestGate.requireAuth(context, message: 'Sign up to report a listing.')) return;
-                        _reportListing(context);
-                      },
-                      icon: const Icon(Icons.report, color: Colors.red),
-                      label: const Text('Report Fake Listing', style: TextStyle(color: Colors.red)),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          if (!GuestGate.requireAuth(context, message: 'Sign up to report a listing.')) return;
+                          _reportListing(context);
+                        },
+                        icon: const Icon(Icons.report, color: Colors.red),
+                        label: const Text('Report Fake Listing', style: TextStyle(color: Colors.red)),
+                      ),
                     ),
-                  ),
+                  ],
                   const SizedBox(height: 32),
                 ],
               ),
