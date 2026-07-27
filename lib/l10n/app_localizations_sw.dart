@@ -808,4 +808,71 @@ class AppLocalizationsSw extends AppLocalizations {
 
   @override
   String get photoUploadFailed => 'Imeshindwa kupakia picha. Jaribu tena.';
+
+  @override
+  String get markAsRented => 'Weka Kimekodishwa';
+
+  @override
+  String get selectSeekerWhoRented => 'Nani amekodi nyumba hii?';
+
+  @override
+  String get noEligibleSeekers =>
+      'Hakuna watafutaji wanaostahili bado. Watafutaji wanaonekana hapa baada ya kulipa ada ya dalali au kuomba.';
+
+  @override
+  String get paidFeeChip => 'Amelipa ada';
+
+  @override
+  String get appliedChip => 'Ameomba';
+
+  @override
+  String awaitingConfirmationFrom(String name) {
+    return 'Inasubiri uthibitisho kutoka kwa $name';
+  }
+
+  @override
+  String get cancelMark => 'Ghairi alama';
+
+  @override
+  String get markedAwaitingConfirmation =>
+      'Imewekwa kimekodishwa — inasubiri uthibitisho wa mtafutaji.';
+
+  @override
+  String get markCancelledSnack => 'Alama imeghairishwa.';
+
+  @override
+  String get rentalConfirmationsTitle => 'Uthibitisho wa Kukodi';
+
+  @override
+  String get noPendingRentalConfirmations =>
+      'Hakuna uthibitisho wa kukodi unaosubiri.';
+
+  @override
+  String markedByLine(String name, String role) {
+    return 'Imewekwa na $name ($role)';
+  }
+
+  @override
+  String get confirmIRented => 'Thibitisha Nimekodi';
+
+  @override
+  String get notMe => 'Sio mimi';
+
+  @override
+  String get disputeRentalTitle => 'Sio kukodi kwako?';
+
+  @override
+  String disputeRentalBody(String name) {
+    return 'Tutamwambia $name kuwa hukukodi nyumba hii. Orodha itabaki inapatikana.';
+  }
+
+  @override
+  String get rentalConfirmedSnack =>
+      'Kukodi kimethibitishwa — orodha imeondolewa sokoni.';
+
+  @override
+  String get rentalDisputedSnack => 'Umekataa — orodha inabaki inapatikana.';
+
+  @override
+  String get actionFailed => 'Kitendo kimeshindikana. Tafadhali jaribu tena.';
 }

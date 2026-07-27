@@ -12,6 +12,9 @@ enum NotificationType {
   message,
   broadcast,
   system,
+  rentalMarked,
+  rentalConfirmed,
+  rentalDisputed,
 }
 
 class NotificationModel {

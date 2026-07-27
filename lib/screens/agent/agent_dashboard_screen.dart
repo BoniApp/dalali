@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:dalali/config/app_theme.dart';
+import 'package:dalali/l10n/app_localizations.dart';
 import 'package:dalali/models/property_model.dart';
 import 'package:dalali/providers/user_state.dart';
 import 'package:dalali/providers/property_state.dart';
+import 'package:dalali/providers/tenancy_state.dart';
 import 'package:dalali/utils/helpers.dart';
 import 'package:dalali/screens/shared/property_detail_screen.dart';
 import 'package:dalali/screens/landlord/edit_property_screen.dart';
+import 'package:dalali/screens/shared/mark_rented_sheet.dart';
+import 'package:dalali/screens/tenancy/tenancy_detail_screen.dart';
+import 'package:dalali/screens/earnings/agency_fee_history_screen.dart';
 import 'package:dalali/widgets/notification_bell.dart';
 import 'package:provider/provider.dart';
 
@@ -18,6 +23,14 @@ class AgentDashboardScreen extends StatelessWidget {
     final properties = context.watch<PropertyState>().landlordProperties;
     final totalViews = properties.fold<int>(0, (sum, p) => sum + p.viewCount);
     final totalInquiries = properties.fold<int>(0, (sum, p) => sum + p.inquiryCount);
+
+    final managedTenancies = context
+        .watch<TenancyState>()
+        .tenancies
+        .where((t) => t.agentId == user?.id)
+        .toList();
+    final activeDeals = managedTenancies.where((t) => t.isActive).toList();
+    final upcomingExpiries = activeDeals.where((t) => t.isExpiringSoon).toList();
 
     return Scaffold(
       appBar: AppBar(
@@ -123,6 +136,50 @@ class AgentDashboardScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 24),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('Managed Tenancies', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                TextButton(
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const AgencyFeeHistoryScreen()),
+                  ),
+                  child: const Text('Commission History'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                _StatCard(icon: Icons.handshake, label: 'Active Deals', value: '${activeDeals.length}', color: Colors.teal),
+                const SizedBox(width: 12),
+                _StatCard(icon: Icons.hourglass_bottom, label: 'Expiring ≤60d', value: '${upcomingExpiries.length}', color: Colors.deepOrange),
+              ],
+            ),
+            if (activeDeals.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              ...activeDeals.map((t) => Card(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    child: ListTile(
+                      leading: Icon(
+                        t.isExpiringSoon ? Icons.warning_amber : Icons.home,
+                        color: t.isExpiringSoon ? Colors.deepOrange : Colors.purple,
+                      ),
+                      title: Text(t.propertyTitle, maxLines: 1, overflow: TextOverflow.ellipsis),
+                      subtitle: Text(
+                        t.isExpiringSoon
+                            ? 'Expires in ${t.daysUntilEnd} days'
+                            : 'Tenant: ${t.tenantName}',
+                      ),
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => TenancyDetailScreen(tenancyId: t.id)),
+                      ),
+                    ),
+                  )),
+            ],
+            const SizedBox(height: 24),
             const Text('My Listings', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
             if (properties.isEmpty)
@@ -199,6 +256,14 @@ class AgentDashboardScreen extends StatelessWidget {
                                   padding: EdgeInsets.zero,
                                   constraints: const BoxConstraints(),
                                 ),
+                                if (p.status == PropertyStatus.available)
+                                  IconButton(
+                                    icon: const Icon(Icons.handshake, size: 18, color: AppTheme.action),
+                                    onPressed: () => MarkRentedSheet.show(context, p),
+                                    tooltip: AppLocalizations.of(context)!.markAsRented,
+                                    padding: EdgeInsets.zero,
+                                    constraints: const BoxConstraints(),
+                                  ),
                               ],
                             ),
                           ],

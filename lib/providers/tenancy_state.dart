@@ -6,6 +6,8 @@ import 'package:dalali/models/tenancy_model.dart';
 import 'package:dalali/models/move_checklist_model.dart';
 import 'package:dalali/models/maintenance_request_model.dart';
 import 'package:dalali/models/rent_schedule_model.dart';
+import 'package:dalali/models/inspection_model.dart';
+import 'package:dalali/models/deposit_transaction_model.dart';
 import 'package:dalali/services/data_service.dart';
 
 /// Tenancy lifecycle: applications, tenancies, maintenance requests,
@@ -19,6 +21,8 @@ class TenancyState extends ChangeNotifier {
   final List<MoveChecklistModel> _moveChecklists = [];
   List<MaintenanceRequestModel> _maintenanceRequests = [];
   List<RentScheduleModel> _rentSchedules = [];
+  List<InspectionModel> _inspections = [];
+  List<DepositTransactionModel> _depositTransactions = [];
 
   final DataService _data = DataService();
   final List<StreamSubscription> _subscriptions = [];
@@ -29,6 +33,8 @@ class TenancyState extends ChangeNotifier {
   List<MoveChecklistModel> get moveChecklists => _moveChecklists;
   List<MaintenanceRequestModel> get maintenanceRequests => _maintenanceRequests;
   List<RentScheduleModel> get rentSchedules => _rentSchedules;
+  List<InspectionModel> get inspections => _inspections;
+  List<DepositTransactionModel> get depositTransactions => _depositTransactions;
 
   List<TenancyApplicationModel> myTenancyApplicationsFor(String? userId) {
     if (userId == null) return [];
@@ -65,6 +71,21 @@ class TenancyState extends ChangeNotifier {
   List<RentScheduleModel> myRentSchedulesFor(String? userId) {
     if (userId == null) return [];
     return _rentSchedules.where((r) => r.tenantId == userId).toList();
+  }
+
+  List<InspectionModel> landlordInspectionsFor(String? userId) {
+    if (userId == null) return [];
+    return _inspections.where((i) => i.landlordId == userId).toList();
+  }
+
+  List<DepositTransactionModel> myDepositTransactionsFor(String? userId) {
+    if (userId == null) return [];
+    return _depositTransactions.where((d) => d.tenantId == userId).toList();
+  }
+
+  List<DepositTransactionModel> landlordDepositTransactionsFor(String? userId) {
+    if (userId == null) return [];
+    return _depositTransactions.where((d) => d.landlordId == userId).toList();
   }
 
   MoveChecklistModel? getMyChecklist(String? userId, String tenancyId) {
@@ -134,6 +155,107 @@ class TenancyState extends ChangeNotifier {
       });
       notifyListeners();
     }
+  }
+
+  /// Give move-out notice (tenant or landlord). Server-side (RPC,
+  /// migration 029) stamps the notice fields, flips the property to
+  /// noticePeriod, and notifies the counterpart — this just fires
+  /// the call and lets the realtime stream reconcile local state.
+  Future<void> giveNotice(
+    String tenancyId, {
+    required String givenBy,
+    required DateTime plannedMoveOutDate,
+    String? reason,
+  }) {
+    return _data.giveTenancyNotice(
+      tenancyId,
+      givenBy: givenBy,
+      plannedMoveOutDate: plannedMoveOutDate,
+      reason: reason,
+    );
+  }
+
+  Future<void> requestRenewal(String tenancyId, {required String requestedBy}) {
+    return _data.requestTenancyRenewal(tenancyId, requestedBy: requestedBy);
+  }
+
+  /// Landlord confirms renewal terms; returns the new tenancy id.
+  Future<String> confirmRenewal(
+    String tenancyId, {
+    double? newRentAmount,
+    double? newDepositAmount,
+    int leaseDays = 365,
+  }) {
+    return _data.confirmTenancyRenewal(
+      tenancyId,
+      newRentAmount: newRentAmount,
+      newDepositAmount: newDepositAmount,
+      leaseDays: leaseDays,
+    );
+  }
+
+  Future<void> scheduleInspection({
+    required String propertyId,
+    required String tenancyId,
+    required String landlordId,
+    DateTime? scheduledDate,
+  }) {
+    return _data.scheduleInspection(
+      propertyId: propertyId,
+      tenancyId: tenancyId,
+      landlordId: landlordId,
+      scheduledDate: scheduledDate,
+    );
+  }
+
+  Future<void> completeInspection(
+    String inspectionId, {
+    required String conditionAfter,
+    double damageCost = 0,
+    String? notes,
+  }) {
+    return _data.completeInspection(
+      inspectionId,
+      conditionAfter: conditionAfter,
+      damageCost: damageCost,
+      notes: notes,
+    );
+  }
+
+  Future<void> openDepositTransaction({
+    required String tenancyId,
+    required String tenantId,
+    required String landlordId,
+    required double amount,
+  }) {
+    return _data.openDepositTransaction(
+      tenancyId: tenancyId,
+      tenantId: tenantId,
+      landlordId: landlordId,
+      amount: amount,
+    );
+  }
+
+  Future<void> settleDeposit(String depositId, {required double amount, required double deductions, String? notes}) {
+    return _data.settleDeposit(depositId, amount: amount, deductions: deductions, notes: notes);
+  }
+
+  Future<void> addTurnoverMaintenanceRequest({
+    required String landlordId,
+    required String landlordName,
+    required String propertyId,
+    required String propertyTitle,
+    String? tenancyId,
+    required String description,
+  }) {
+    return _data.addTurnoverMaintenanceRequest(
+      landlordId: landlordId,
+      landlordName: landlordName,
+      propertyId: propertyId,
+      propertyTitle: propertyTitle,
+      tenancyId: tenancyId,
+      description: description,
+    );
   }
 
   void addMaintenanceRequest(MaintenanceRequestModel request) {
@@ -215,6 +337,8 @@ class TenancyState extends ChangeNotifier {
     _tenancies = [];
     _maintenanceRequests = [];
     _rentSchedules = [];
+    _inspections = [];
+    _depositTransactions = [];
     _moveChecklists.clear();
     if (user == null) {
       notifyListeners();
@@ -240,6 +364,14 @@ class TenancyState extends ChangeNotifier {
         _rentSchedules = list;
         notifyListeners();
       }));
+      _subscriptions.add(_data.getInspectionsForLandlord(user.id).listen((list) {
+        _inspections = list;
+        notifyListeners();
+      }));
+      _subscriptions.add(_data.getDepositTransactionsForLandlord(user.id).listen((list) {
+        _depositTransactions = list;
+        notifyListeners();
+      }));
     } else {
       _subscriptions.add(_data.getApplicationsForTenant(user.id).listen((list) {
         _tenancyApplications = list.cast<TenancyApplicationModel>();
@@ -255,6 +387,10 @@ class TenancyState extends ChangeNotifier {
       }));
       _subscriptions.add(_data.getRentSchedulesForTenant(user.id).listen((list) {
         _rentSchedules = list;
+        notifyListeners();
+      }));
+      _subscriptions.add(_data.getDepositTransactionsForTenant(user.id).listen((list) {
+        _depositTransactions = list;
         notifyListeners();
       }));
     }

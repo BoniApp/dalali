@@ -2,7 +2,10 @@ enum PropertyType { apartment, house, villa, bedsitter, office, shop, room, self
 enum PropertyStatus { available, occupied, pending, unlisted }
 enum ListingType { basic, featured }
 enum ListingSource { landlordListing, userMoveListing, agentListing }
-enum ListingStatus { draft, active, viewing, negotiating, tenancyConfirmed, closed }
+enum ListingStatus {
+  draft, active, viewing, negotiating, tenancyConfirmed, closed,
+  noticePeriod, inspection, maintenanceInProgress, availableAgain, archived,
+}
 
 // ─── Rental Payment Terms Enums ───────────────────────────
 enum PaymentTerm { monthly, threeMonths, sixMonths, twelveMonths, negotiable }

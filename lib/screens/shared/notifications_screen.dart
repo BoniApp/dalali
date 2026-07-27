@@ -7,6 +7,7 @@ import 'package:dalali/screens/shared/conversations_screen.dart';
 import 'package:dalali/screens/shared/property_detail_screen.dart';
 import 'package:dalali/screens/tenancy/my_tenancies_screen.dart';
 import 'package:dalali/screens/tenancy/reservation_requests_screen.dart';
+import 'package:dalali/screens/seeker/rental_confirmations_screen.dart';
 import 'package:dalali/screens/wallet/payment_success_screen.dart';
 import 'package:dalali/services/data_service.dart';
 import 'package:dalali/services/dpo_payment_service.dart';
@@ -173,6 +174,11 @@ class _NotificationTile extends StatelessWidget {
           Navigator.push(context, MaterialPageRoute(builder: (_) => const ReservationRequestsScreen()));
         }
         break;
+      case 'rental_confirmations':
+        if (context.mounted) {
+          Navigator.push(context, MaterialPageRoute(builder: (_) => const RentalConfirmationsScreen()));
+        }
+        break;
     }
   }
 
@@ -204,6 +210,12 @@ class _NotificationTile extends StatelessWidget {
         return Icons.campaign;
       case NotificationType.system:
         return Icons.info;
+      case NotificationType.rentalMarked:
+        return Icons.home_work;
+      case NotificationType.rentalConfirmed:
+        return Icons.check_circle;
+      case NotificationType.rentalDisputed:
+        return Icons.report;
     }
   }
 }

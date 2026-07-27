@@ -16,6 +16,9 @@ import 'package:dalali/models/tenancy_model.dart';
 import 'package:dalali/models/move_checklist_model.dart';
 import 'package:dalali/models/rent_schedule_model.dart';
 import 'package:dalali/models/maintenance_request_model.dart';
+import 'package:dalali/models/inspection_model.dart';
+import 'package:dalali/models/deposit_transaction_model.dart';
+import 'package:dalali/models/rental_confirmation_model.dart';
 
 /// ═══════════════════════════════════════════════════════════════
 /// DATA SERVICE — Supabase PostgreSQL wrapper
@@ -549,11 +552,329 @@ class DataService {
     });
   }
 
-  Future<void> updateMaintenanceStatus(String id, MaintenanceStatus status, {String? resolutionNotes}) async {
+  Future<void> updateMaintenanceStatus(String id, MaintenanceStatus status, {String? resolutionNotes, double? cost}) async {
     await _db.from('maintenance_requests').update({
       'status': status.name,
       if (resolutionNotes != null) 'resolution_notes': resolutionNotes,
+      if (cost != null) 'cost': cost,
     }).eq('id', id);
+  }
+
+  /// Landlord-initiated turnover repair (no tenant to file it — the
+  /// unit is between tenancies). Same table as tenant-filed requests
+  /// (025); the "Maintenance insert landlord" policy (029) allows it.
+  Future<void> addTurnoverMaintenanceRequest({
+    required String landlordId,
+    required String landlordName,
+    required String propertyId,
+    required String propertyTitle,
+    String? tenancyId,
+    required String description,
+  }) async {
+    await _db.from('maintenance_requests').insert({
+      'tenant_id': landlordId,
+      'tenant_name': landlordName,
+      'landlord_id': landlordId,
+      'property_id': propertyId,
+      'property_title': propertyTitle,
+      'tenancy_id': tenancyId,
+      'category': 'structural',
+      'description': description,
+      'status': 'open',
+    });
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  //  RENTAL CONFIRMATIONS — "Mark as Rented" (migration 030)
+  //
+  //  Direct rented-mark path alongside the application flow (019):
+  //  a landlord/agent marks an available listing as rented by a
+  //  seeker; the seeker confirms (property → occupied + tenancy
+  //  created server-side) or disputes. ALL writes go through SECURITY
+  //  DEFINER RPCs (mark/respond/cancel) which bundle the status
+  //  transition, side effects, and notifications atomically — the
+  //  client never inserts or updates rental_confirmations rows.
+  // ═══════════════════════════════════════════════════════════════
+
+  /// Eligible seekers for the mark-as-rented picker: agency-fee payers
+  /// (property_access) ∪ tenancy applicants, resolved server-side
+  /// (users RLS only exposes one's own row, so names/phones cannot be
+  /// joined client-side).
+  Future<List<RentableSeeker>> listRentableSeekers(String propertyId) async {
+    final rows = await _db.rpc('list_rentable_seekers', params: {'p_property_id': propertyId});
+    return (rows as List).map((r) => RentableSeeker.fromJson(Map<String, dynamic>.from(r))).toList();
+  }
+
+  /// The open (pending) mark for a property, if any. RLS scopes reads
+  /// to the seeker, the marker, and the property's landlord/creator.
+  Future<RentalConfirmationModel?> getPendingRentalConfirmation(String propertyId) async {
+    final data = await _db
+        .from('rental_confirmations')
+        .select()
+        .eq('property_id', propertyId)
+        .eq('status', 'pending')
+        .maybeSingle();
+    if (data == null) return null;
+    return RentalConfirmationModel.fromJson(data);
+  }
+
+  /// Landlord/agent marks their available listing as rented by
+  /// [seekerId]. Returns the confirmation id. The listing stays in
+  /// the feed until the seeker confirms.
+  Future<String> markListingRented(String propertyId, String seekerId) async {
+    final id = await _db.rpc('mark_listing_rented', params: {
+      'p_property_id': propertyId,
+      'p_seeker_id': seekerId,
+    });
+    return id as String;
+  }
+
+  /// Seeker confirms (listing drops + tenancy created) or disputes.
+  Future<void> respondRentalConfirmation(String confirmationId, bool confirm) async {
+    await _db.rpc('respond_rental_confirmation', params: {
+      'p_confirmation_id': confirmationId,
+      'p_confirm': confirm,
+    });
+  }
+
+  /// Marker (or the property's landlord) withdraws a pending mark.
+  Future<void> cancelRentalConfirmation(String confirmationId) async {
+    await _db.rpc('cancel_rental_confirmation', params: {
+      'p_confirmation_id': confirmationId,
+    });
+  }
+
+  /// The seeker's open marks, newest first (drives the confirmation
+  /// screen). The stream builder has no double-filter, so status is
+  /// filtered client-side — RLS already scopes rows to the seeker.
+  Stream<List<RentalConfirmationModel>> watchPendingRentalConfirmations(String seekerId) {
+    return _db
+        .from('rental_confirmations')
+        .stream(primaryKey: ['id'])
+        .eq('seeker_id', seekerId)
+        .map((rows) {
+          final list = rows
+              .map(RentalConfirmationModel.fromJson)
+              .where((r) => r.status == RentalConfirmationStatus.pending)
+              .toList();
+          list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+          return list;
+        });
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  //  PROPERTY LIFECYCLE — Notice, Renewal, Inspections, Deposits
+  //  (migration 029)
+  //
+  //  Notice/renewal requests go through SECURITY DEFINER RPCs
+  //  (give_tenancy_notice / request_tenancy_renewal) so the status
+  //  fields, property.listing_status side effect, and counterpart
+  //  notification stay atomic — same reasoning as the application
+  //  approval trigger (019). Renewal confirmation and inspection
+  //  release are edge functions because they create a second row
+  //  (a new tenancy / next turnover stage) rather than a single
+  //  guarded UPDATE.
+  // ═══════════════════════════════════════════════════════════════
+
+  Future<void> giveTenancyNotice(
+    String tenancyId, {
+    required String givenBy,
+    required DateTime plannedMoveOutDate,
+    String? reason,
+  }) async {
+    await _db.rpc('give_tenancy_notice', params: {
+      'p_tenancy_id': tenancyId,
+      'p_given_by': givenBy,
+      'p_planned_move_out_date': plannedMoveOutDate.toIso8601String(),
+      'p_reason': reason,
+    });
+  }
+
+  Future<void> requestTenancyRenewal(String tenancyId, {required String requestedBy}) async {
+    await _db.rpc('request_tenancy_renewal', params: {
+      'p_tenancy_id': tenancyId,
+      'p_requested_by': requestedBy,
+    });
+  }
+
+  /// Landlord confirms renewal terms; creates the next tenancy row
+  /// server-side (create-renewal-record edge function).
+  Future<String> confirmTenancyRenewal(
+    String tenancyId, {
+    double? newRentAmount,
+    double? newDepositAmount,
+    int leaseDays = 365,
+  }) async {
+    final res = await _db.functions.invoke('create-renewal-record', body: {
+      'tenancy_id': tenancyId,
+      if (newRentAmount != null) 'new_rent_amount': newRentAmount,
+      if (newDepositAmount != null) 'new_deposit_amount': newDepositAmount,
+      'lease_days': leaseDays,
+    });
+    final data = res.data as Map<String, dynamic>;
+    if (data['error'] != null) throw Exception(data['error']);
+    return data['tenancy_id'] as String;
+  }
+
+  Stream<List<InspectionModel>> getInspectionsForLandlord(String landlordId) {
+    return _db
+        .from('inspections')
+        .stream(primaryKey: ['id'])
+        .eq('landlord_id', landlordId)
+        .order('created_at', ascending: false)
+        .map((rows) => rows.map(_inspectionFromJson).toList());
+  }
+
+  Stream<List<InspectionModel>> getInspectionsForTenancy(String tenancyId) {
+    return _db
+        .from('inspections')
+        .stream(primaryKey: ['id'])
+        .eq('tenancy_id', tenancyId)
+        .map((rows) => rows.map(_inspectionFromJson).toList());
+  }
+
+  Future<void> scheduleInspection({
+    required String propertyId,
+    required String tenancyId,
+    required String landlordId,
+    DateTime? scheduledDate,
+  }) async {
+    await _db.from('inspections').insert({
+      'property_id': propertyId,
+      'tenancy_id': tenancyId,
+      'landlord_id': landlordId,
+      'status': 'scheduled',
+      'scheduled_date': scheduledDate?.toIso8601String(),
+    });
+  }
+
+  /// Landlord finalizes the move-out inspection; routes the property
+  /// to maintenanceInProgress or availableAgain server-side
+  /// (release-property-after-inspection edge function).
+  Future<void> completeInspection(
+    String inspectionId, {
+    required String conditionAfter,
+    double damageCost = 0,
+    String? notes,
+  }) async {
+    final res = await _db.functions.invoke('release-property-after-inspection', body: {
+      'inspection_id': inspectionId,
+      'condition_after': conditionAfter,
+      'damage_cost': damageCost,
+      'notes': notes,
+    });
+    final data = res.data as Map<String, dynamic>;
+    if (data['error'] != null) throw Exception(data['error']);
+  }
+
+  Stream<List<DepositTransactionModel>> getDepositTransactionsForTenant(String tenantId) {
+    return _db
+        .from('deposit_transactions')
+        .stream(primaryKey: ['id'])
+        .eq('tenant_id', tenantId)
+        .order('created_at', ascending: false)
+        .map((rows) => rows.map(_depositFromJson).toList());
+  }
+
+  Stream<List<DepositTransactionModel>> getDepositTransactionsForLandlord(String landlordId) {
+    return _db
+        .from('deposit_transactions')
+        .stream(primaryKey: ['id'])
+        .eq('landlord_id', landlordId)
+        .order('created_at', ascending: false)
+        .map((rows) => rows.map(_depositFromJson).toList());
+  }
+
+  Future<void> openDepositTransaction({
+    required String tenancyId,
+    required String tenantId,
+    required String landlordId,
+    required double amount,
+  }) async {
+    await _db.from('deposit_transactions').insert({
+      'tenancy_id': tenancyId,
+      'tenant_id': tenantId,
+      'landlord_id': landlordId,
+      'amount': amount,
+    });
+  }
+
+  /// Record-keeping only — no money moves through Dalali for
+  /// deposits, same as rent. refund_amount must equal amount -
+  /// deductions or the deposit_transaction_guard trigger rejects it.
+  Future<void> settleDeposit(String depositId, {required double amount, required double deductions, String? notes}) async {
+    await _db.from('deposit_transactions').update({
+      'status': 'settled',
+      'deductions': deductions,
+      'refund_amount': amount - deductions,
+      if (notes != null) 'notes': notes,
+    }).eq('id', depositId);
+  }
+
+  /// Chronological event list for a property's lifecycle timeline
+  /// screen, assembled client-side from already-persisted rows — no
+  /// dedicated DB view.
+  Future<List<Map<String, dynamic>>> getPropertyTimeline(String propertyId) async {
+    final events = <Map<String, dynamic>>[];
+
+    final property = await _db.from('properties').select('created_at, title').eq('id', propertyId).maybeSingle();
+    if (property != null) {
+      events.add({
+        'date': DateTime.tryParse(property['created_at'] ?? '') ?? DateTime.now(),
+        'title': 'Listed',
+        'subtitle': property['title'] ?? '',
+      });
+    }
+
+    final applications = await _db
+        .from('tenancy_applications')
+        .select('resolved_at, tenant_name')
+        .eq('property_id', propertyId)
+        .eq('status', 'approved');
+    for (final a in applications as List) {
+      if (a['resolved_at'] == null) continue;
+      events.add({
+        'date': DateTime.parse(a['resolved_at']),
+        'title': 'Tenant Selected',
+        'subtitle': a['tenant_name'] ?? '',
+      });
+    }
+
+    final tenancies = await _db.from('tenancies').select().eq('property_id', propertyId);
+    for (final t in tenancies as List) {
+      if (t['activated_at'] != null) {
+        events.add({'date': DateTime.parse(t['activated_at']), 'title': 'Tenancy Started', 'subtitle': t['tenant_name'] ?? ''});
+      }
+      if (t['notice_given_at'] != null) {
+        events.add({'date': DateTime.parse(t['notice_given_at']), 'title': 'Notice Given', 'subtitle': t['termination_reason'] ?? ''});
+      }
+      if (t['renewal_requested_at'] != null) {
+        events.add({'date': DateTime.parse(t['renewal_requested_at']), 'title': 'Renewal Requested', 'subtitle': ''});
+      }
+      if (t['completed_at'] != null) {
+        final label = t['status'] == 'renewed' ? 'Renewed' : t['status'] == 'terminated' ? 'Terminated' : 'Tenancy Ended';
+        events.add({'date': DateTime.parse(t['completed_at']), 'title': label, 'subtitle': t['tenant_name'] ?? ''});
+      }
+    }
+
+    final inspections = await _db.from('inspections').select().eq('property_id', propertyId);
+    for (final i in inspections as List) {
+      events.add({
+        'date': DateTime.tryParse(i['created_at'] ?? '') ?? DateTime.now(),
+        'title': 'Inspection Scheduled',
+        'subtitle': i['status'] == 'completed' ? 'Completed' : 'Pending',
+      });
+      if (i['completed_at'] != null) {
+        events.add({
+          'date': DateTime.parse(i['completed_at']),
+          'title': 'Inspection Completed',
+          'subtitle': (i['damage_cost'] ?? 0) > 0 ? 'Damages found' : 'No damages',
+        });
+      }
+    }
+
+    events.sort((a, b) => (a['date'] as DateTime).compareTo(b['date'] as DateTime));
+    return events;
   }
 
   // ═══════════════════════════════════════════════════════════════
@@ -791,6 +1112,7 @@ class DataService {
       tenantName: json['tenant_name'] ?? '',
       landlordId: json['landlord_id'] ?? '',
       landlordName: json['landlord_name'] ?? '',
+      agentId: json['agent_id'],
       propertyId: json['property_id'] ?? '',
       propertyTitle: json['property_title'] ?? '',
       propertyLocation: json['property_location'] ?? '',
@@ -810,6 +1132,12 @@ class DataService {
       completedAt: json['completed_at'] != null
           ? DateTime.tryParse(json['completed_at'])
           : null,
+      terminationReason: json['termination_reason'],
+      noticeGivenAt: json['notice_given_at'] != null ? DateTime.tryParse(json['notice_given_at']) : null,
+      noticeBy: json['notice_by'],
+      plannedMoveOutDate: json['planned_move_out_date'] != null ? DateTime.tryParse(json['planned_move_out_date']) : null,
+      renewalRequestedAt: json['renewal_requested_at'] != null ? DateTime.tryParse(json['renewal_requested_at']) : null,
+      renewedFromTenancyId: json['renewed_from_tenancy_id'],
     );
   }
 
@@ -858,6 +1186,7 @@ class DataService {
       landlordId: json['landlord_id'] ?? '',
       propertyId: json['property_id'] ?? '',
       propertyTitle: json['property_title'] ?? '',
+      tenancyId: json['tenancy_id'],
       category: MaintenanceCategory.values.firstWhere(
         (e) => e.name == json['category'],
         orElse: () => MaintenanceCategory.general,
@@ -868,9 +1197,55 @@ class DataService {
         orElse: () => MaintenanceStatus.open,
       ),
       photos: (json['photos'] as List<dynamic>?)?.cast<String>() ?? [],
+      cost: (json['cost'] as num?)?.toDouble() ?? 0,
       createdAt: DateTime.tryParse(json['created_at'] ?? '') ?? DateTime.now(),
       resolvedAt: json['resolved_at'] != null ? DateTime.tryParse(json['resolved_at']) : null,
       resolutionNotes: json['resolution_notes'],
+    );
+  }
+
+  // ─── Inspection ─────────────────────────────────────────────────
+
+  InspectionModel _inspectionFromJson(Map<String, dynamic> json) {
+    return InspectionModel(
+      id: json['id'] ?? '',
+      propertyId: json['property_id'] ?? '',
+      tenancyId: json['tenancy_id'] ?? '',
+      landlordId: json['landlord_id'] ?? '',
+      inspectorId: json['inspector_id'],
+      status: InspectionStatus.values.firstWhere(
+        (e) => e.name == json['status'],
+        orElse: () => InspectionStatus.scheduled,
+      ),
+      scheduledDate: json['scheduled_date'] != null ? DateTime.tryParse(json['scheduled_date']) : null,
+      conditionBefore: json['condition_before'],
+      conditionAfter: json['condition_after'],
+      damageCost: (json['damage_cost'] as num?)?.toDouble() ?? 0,
+      photos: (json['photos'] as List<dynamic>?)?.cast<String>() ?? [],
+      notes: json['notes'],
+      createdAt: DateTime.tryParse(json['created_at'] ?? '') ?? DateTime.now(),
+      completedAt: json['completed_at'] != null ? DateTime.tryParse(json['completed_at']) : null,
+    );
+  }
+
+  // ─── Deposit Transaction ────────────────────────────────────────
+
+  DepositTransactionModel _depositFromJson(Map<String, dynamic> json) {
+    return DepositTransactionModel(
+      id: json['id'] ?? '',
+      tenancyId: json['tenancy_id'] ?? '',
+      tenantId: json['tenant_id'] ?? '',
+      landlordId: json['landlord_id'] ?? '',
+      amount: (json['amount'] as num?)?.toDouble() ?? 0,
+      deductions: (json['deductions'] as num?)?.toDouble() ?? 0,
+      refundAmount: (json['refund_amount'] as num?)?.toDouble() ?? 0,
+      status: DepositStatus.values.firstWhere(
+        (e) => e.name == json['status'],
+        orElse: () => DepositStatus.pending,
+      ),
+      notes: json['notes'],
+      createdAt: DateTime.tryParse(json['created_at'] ?? '') ?? DateTime.now(),
+      settledAt: json['settled_at'] != null ? DateTime.tryParse(json['settled_at']) : null,
     );
   }
 

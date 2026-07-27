@@ -50,7 +50,7 @@ lib/
   utils/helpers.dart   # Formatting helpers (TZS currency, dates)
   l10n/                # ARB files (app_en.arb, app_sw.arb) + generated localizations
 supabase/
-  migrations/          # Numbered SQL migrations (001–026; note there are two 001_* and two 002_* files)
+  migrations/          # Numbered SQL migrations (001–030; note there are two 001_* and two 002_* files)
   functions/           # Deno/TypeScript Edge Functions (payment webhooks, withdrawals, KYC, influencer commissions, ...)
   DEPLOYMENT_GUIDE.md  # How to run migrations & deploy edge functions (current, use this one)
 test/                  # flutter_test widget + unit tests (widget_test.dart, influencer_models_test.dart)
@@ -119,6 +119,15 @@ assets/images/         # Bundled image assets
 - Was client-complete with **no table** (stubbed `DataService` methods); 025 adds `maintenance_requests` (RLS: tenants insert own `open` rows, only the landlord updates, no deletes) plus the `maintenance_request_guard` trigger (`open → inProgress → resolved`, resolved terminal, details immutable, `resolved_at` stamped). Also joined to the realtime publication there (023 skips tables that don't exist yet).
 - Client: `lib/models/maintenance_request_model.dart`, `DataService` (`getMaintenanceForTenant/Landlord`, `addMaintenanceRequest`, `updateMaintenanceStatus`), UI in `tenancy_detail_screen.dart` (tenant files, landlord advances status).
 
+## Rental Confirmations — "Mark as Rented" (migration 030)
+
+- Direct off-market path for listings rented **offline**, alongside the application flow (019): a landlord or agent marks their `available` listing as rented on receipt of payment; the picked seeker confirms or disputes. `rental_confirmations`: `pending → confirmed | disputed | cancelled` (terminal), enforced by the `rental_confirmation_guard` trigger; one open mark per listing (partial unique index).
+- **All writes are SECURITY DEFINER RPCs** (`mark_listing_rented`, `respond_rental_confirmation`, `cancel_rental_confirmation`) — no client INSERT/UPDATE policies; RLS is read-only (seeker / marker / property landlord or listing_creator / admin). Side effects are transactional: confirm → property `status='occupied'` + `listing_status='tenancyConfirmed'` + `tenancy_confirmed=true` (atomic `WHERE status='available'` double-booking guard) + a `tenancies` row with the 019 defaults (move-in +14d, deposit 2× rent; `application_id` NULL — `setup_new_tenancy` and `attach_tenancy_agent` fire normally); dispute → property untouched. Each step notifies the counterpart (`rentalMarked`/`rentalConfirmed`/`rentalDisputed`).
+- The listing **stays in the feed** while a mark is pending — it only drops on seeker confirmation.
+- Picker pool = agency-fee payers (`property_access.paid`) ∪ tenancy applicants, served by the `list_rentable_seekers` RPC (users RLS is self-only, so the client can't join seeker names/phones).
+- Client: `lib/models/rental_confirmation_model.dart`, `DataService` (`listRentableSeekers`, `getPendingRentalConfirmation`, `markListingRented`, `respondRentalConfirmation`, `cancelRentalConfirmation`, `watchPendingRentalConfirmations`). UI: `lib/screens/shared/mark_rented_sheet.dart` (handshake icon on available listings in the landlord + agent dashboards), `lib/screens/seeker/rental_confirmations_screen.dart` (reached via notification tap, `target_collection='rental_confirmations'`).
+- Migration 030 also repairs `notifications_type_check` — 029's re-creation had dropped `'message'`/`'broadcast'` (017); keep all three sets of values if the constraint is touched again.
+
 ## Build & Test Commands
 
 ```bash
@@ -146,7 +155,7 @@ Deploy per `supabase/DEPLOYMENT_GUIDE.md` (Supabase CLI: `supabase db push`, `su
 
 ### Database migrations
 
-SQL migrations in `supabase/migrations/` are applied in filename order via `supabase db push` or `psql -f`. **Caution**: there are two files numbered `001_*` and two numbered `002_*` — check actual file contents before adding a new migration; use the next free number (`027_...`).
+SQL migrations in `supabase/migrations/` are applied in filename order via `supabase db push` or `psql -f`. **Caution**: there are two files numbered `001_*` and two numbered `002_*` — check actual file contents before adding a new migration; use the next free number (`031_...`).
 
 ## Testing Instructions
 
@@ -158,6 +167,7 @@ SQL migrations in `supabase/migrations/` are applied in filename order via `supa
 
 - **Secrets**: `SUPABASE_SERVICE_ROLE_KEY`, `ADMIN_API_SECRET`, `COMMISSION_SECRET`, and `FCM_SERVICE_ACCOUNT` (Firebase service account JSON, used by `send-notification`) must never appear in client code — they are Edge Function environment variables only (set via `supabase secrets set`). `COMMISSION_SECRET` gates the server-to-server influencer commission endpoints (`calculate-influencer-commission`, `verify-referral-payment`). The anon key in `lib/config/supabase_config.dart` is the publishable client key and relies on RLS for protection.
 - **Row Level Security** is the primary authorization mechanism. Policies gate admin access via `users.is_admin`; see `supabase/migrations/006_admin_rls_policies.sql` and `SUPABASE_SCHEMA_UPGRADE.md`. When adding tables/columns, also add RLS policies and test them.
+- **`spatial_ref_sys` linter finding is accepted**: Supabase's `rls_disabled_in_public` ERROR flags the PostGIS EPSG reference table (installed into `public` by the platform-owned `supabase_admin` role). User roles cannot enable RLS on it (`must be owner of table` / `permission denied to set role "supabase_admin"`), so no migration can fix it — it's a false positive (public reference data, no user rows). Don't add a migration for it.
 - **Anti-tamper**: Postgres triggers (`prevent_property_tamper`, `prevent_influencer_tamper`) block clients from modifying moderation fields like `is_approved`, `view_count`, ratings, safety scores, influencer status/counters/referral_code. `prevent_user_verification_tamper` (018/026) additionally locks `users.role` after signup — one role per user, changeable only by admins or the service role (re-setting the same value is a no-op, so registration still works). Don't attempt to write these from the client.
 - **Payments**: DPO Pay is the sole gateway. The `DPO_COMPANY_TOKEN` is a function secret only — all DPO API calls (`CreateToken`/`VerifyToken`, XML in `_shared/dpo.ts`) happen inside edge functions; the app only calls Supabase. `dpo-callback` is intentionally `verify_jwt = false` (browser redirect) but only ever settles idempotently via `_shared/dpo_settlement.ts`. Commission crediting happens server-side only; wallet mutations are service-role only (`USING (false)` client policies).
 - **KYC**: Sensitive identity data (NIDA integration, OCR, liveness) flows through `lib/services/kyc/` and the `process-kyc-verification` function (JWT-gated: caller must own the session, or be admin); location data collection is opt-in and requires explicit user consent. Liveness is a real two-capture front-camera proof-of-life challenge (`liveness_service.dart`), not a pass-through.

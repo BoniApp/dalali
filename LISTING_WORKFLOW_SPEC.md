@@ -260,6 +260,7 @@ Parallel machine that monetizes the journey (`deals`, `agency_fees` — fully pe
 | G8 | ❌ No notification on appointment status change | Seeker not told of confirm/cancel | Notify counterpart in update path (or DB trigger) |
 | G9 | ❌ Side effects run client-side, fire-and-forget | Partial failures leave graph inconsistent (e.g., application approved but property not reserved) | Move T2/activation/expiration side effects into DB triggers or an Edge Function transaction |
 | G10 | ❌ `terminated` tenancy unreachable; no early-exit flow | Dead enum value | Terminate flow + handover report linkage |
+| G11 | ✅ **Done** — `supabase/migrations/030_rental_confirmations.sql`: no off-market path for listings rented offline (outside the application flow). Landlord/agent marks an `available` listing as rented on receipt of payment, picking the seeker (fee payers ∪ applicants via `list_rentable_seekers` RPC); the seeker confirms → property `occupied` + `listing_status='tenancyConfirmed'` + tenancy created (same defaults as 019), or disputes → property untouched; marker can cancel a pending mark. Table + RLS + guard trigger; all writes via SECURITY DEFINER RPCs with bundled notifications | — | Apply with `supabase db push` |
 
 ---
 
@@ -273,4 +274,7 @@ Parallel machine that monetizes the journey (`deals`, `agency_fees` — fully pe
 | Application rejected | Tenant | `system` | "Application Rejected" | ✅ |
 | New chat message | Recipient | `message` | (sender name) | ✅ (migration 017 trigger) |
 | Appointment confirmed/cancelled | Counterpart | — | — | ❌ missing |
+| Listing marked as rented | Seeker | `rentalMarked` | "Did you rent this home?" | ✅ (migration 030 RPC) |
+| Rental confirmed | Marker (landlord/agent) | `rentalConfirmed` | "Rental Confirmed" | ✅ (migration 030 RPC) |
+| Rental disputed | Marker (landlord/agent) | `rentalDisputed` | "Rental Disputed" | ✅ (migration 030 RPC) |
 | Reservation expiring / expired 🆕 | Both | `system` | "Reservation Expired" | 🆕 |

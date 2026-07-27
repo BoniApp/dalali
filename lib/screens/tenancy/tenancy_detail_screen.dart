@@ -4,8 +4,11 @@ import 'package:dalali/models/tenancy_model.dart';
 import 'package:dalali/models/user_model.dart';
 import 'package:dalali/models/maintenance_request_model.dart';
 import 'package:dalali/models/rent_schedule_model.dart';
+import 'package:dalali/models/inspection_model.dart';
+import 'package:dalali/models/deposit_transaction_model.dart';
 import 'package:dalali/providers/user_state.dart';
 import 'package:dalali/providers/tenancy_state.dart';
+import 'package:dalali/services/data_service.dart';
 import 'package:dalali/screens/tenancy/move_checklist_screen.dart';
 import 'package:dalali/widgets/pay_agency_fee_button.dart';
 import 'package:provider/provider.dart';
@@ -22,18 +25,20 @@ class TenancyDetailScreen extends StatelessWidget {
     final isLandlord = currentUser?.id == tenancy.landlordId;
 
     return DefaultTabController(
-      length: 4,
+      length: 5,
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Tenancy Details'),
           backgroundColor: AppTheme.primary,
           foregroundColor: Colors.white,
           bottom: const TabBar(
+            isScrollable: true,
             tabs: [
               Tab(icon: Icon(Icons.info), text: 'Details'),
               Tab(icon: Icon(Icons.checklist), text: 'Checklist'),
               Tab(icon: Icon(Icons.build), text: 'Maintenance'),
               Tab(icon: Icon(Icons.payments), text: 'Rent'),
+              Tab(icon: Icon(Icons.moving), text: 'Move-Out'),
             ],
             labelColor: Colors.white,
             unselectedLabelColor: Colors.white70,
@@ -50,6 +55,7 @@ class TenancyDetailScreen extends StatelessWidget {
               currentUser: currentUser,
             ),
             _RentTab(tenancy: tenancy, tenancyState: tenancyState),
+            _MoveOutTab(tenancy: tenancy, tenancyState: tenancyState, isLandlord: isLandlord),
           ],
         ),
       ),
@@ -111,17 +117,168 @@ class _DetailsTab extends StatelessWidget {
               style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
             ),
           ),
-        if (tenancy.isActive)
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: () => tenancyState.completeTenancy(tenancy.id),
-              icon: const Icon(Icons.done_all),
-              label: const Text('Mark Tenancy Complete'),
+        if (tenancy.isActive) ...[
+          if (tenancy.noticeGiven)
+            Container(
+              padding: const EdgeInsets.all(12),
+              margin: const EdgeInsets.only(bottom: 12),
+              decoration: BoxDecoration(color: Colors.deepOrange.withAlpha(20), borderRadius: BorderRadius.circular(8)),
+              child: Row(
+                children: [
+                  const Icon(Icons.info_outline, size: 18, color: Colors.deepOrange),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Notice given by ${tenancy.noticeBy}. Planned move-out: ${tenancy.plannedMoveOutDate != null ? _fmt(tenancy.plannedMoveOutDate!) : '-'}.',
+                      style: const TextStyle(fontSize: 12, color: Colors.deepOrange),
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else if (tenancy.renewalRequested)
+            Container(
+              padding: const EdgeInsets.all(12),
+              margin: const EdgeInsets.only(bottom: 12),
+              decoration: BoxDecoration(color: Colors.blue.withAlpha(20), borderRadius: BorderRadius.circular(8)),
+              child: Row(
+                children: [
+                  const Icon(Icons.autorenew, size: 18, color: Colors.blue),
+                  const SizedBox(width: 8),
+                  const Expanded(
+                    child: Text('Renewal requested — awaiting landlord confirmation.', style: TextStyle(fontSize: 12, color: Colors.blue)),
+                  ),
+                ],
+              ),
+            )
+          else
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () => _showRequestRenewalDialog(context, tenancyState, isLandlord),
+                    icon: const Icon(Icons.autorenew),
+                    label: const Text('Request Renewal'),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () => _showGiveNoticeDialog(context, tenancyState, isLandlord),
+                    icon: const Icon(Icons.exit_to_app),
+                    label: const Text('Give Notice'),
+                    style: OutlinedButton.styleFrom(foregroundColor: Colors.red),
+                  ),
+                ),
+              ],
             ),
-          ),
+          if (isLandlord && tenancy.renewalRequested) ...[
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () => _confirmRenewal(context, tenancyState),
+                icon: const Icon(Icons.check_circle),
+                label: const Text('Confirm Renewal'),
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
+              ),
+            ),
+          ],
+          const SizedBox(height: 12),
+          if (isLandlord)
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () => tenancyState.completeTenancy(tenancy.id),
+                icon: const Icon(Icons.done_all),
+                label: const Text('Mark Tenancy Complete'),
+              ),
+            ),
+        ],
       ],
     );
+  }
+
+  void _showGiveNoticeDialog(BuildContext context, TenancyState tenancyState, bool isLandlord) {
+    DateTime plannedDate = DateTime.now().add(const Duration(days: 30));
+    final reasonController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setState) => AlertDialog(
+          title: const Text('Give Move-Out Notice'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Planned move-out: ${_fmt(plannedDate)}'),
+              TextButton(
+                onPressed: () async {
+                  final picked = await showDatePicker(
+                    context: dialogContext,
+                    initialDate: plannedDate,
+                    firstDate: DateTime.now(),
+                    lastDate: DateTime.now().add(const Duration(days: 365)),
+                  );
+                  if (picked != null) setState(() => plannedDate = picked);
+                },
+                child: const Text('Change Date'),
+              ),
+              TextField(
+                controller: reasonController,
+                decoration: const InputDecoration(labelText: 'Reason (optional)', border: OutlineInputBorder()),
+                maxLines: 2,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Cancel')),
+            ElevatedButton(
+              onPressed: () {
+                tenancyState.giveNotice(
+                  tenancy.id,
+                  givenBy: isLandlord ? 'landlord' : 'tenant',
+                  plannedMoveOutDate: plannedDate,
+                  reason: reasonController.text.isEmpty ? null : reasonController.text,
+                );
+                Navigator.pop(dialogContext);
+              },
+              child: const Text('Submit Notice'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showRequestRenewalDialog(BuildContext context, TenancyState tenancyState, bool isLandlord) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Request Renewal'),
+        content: const Text('Ask the other party to renew this tenancy for another term?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () {
+              tenancyState.requestRenewal(tenancy.id, requestedBy: isLandlord ? 'landlord' : 'tenant');
+              Navigator.pop(dialogContext);
+            },
+            child: const Text('Request'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmRenewal(BuildContext context, TenancyState tenancyState) async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await tenancyState.confirmRenewal(tenancy.id);
+      messenger.showSnackBar(const SnackBar(content: Text('Tenancy renewed.')));
+    } catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text('Renewal failed: $e'), backgroundColor: Colors.red));
+    }
   }
 
   String _fmt(DateTime d) => '${d.day}/${d.month}/${d.year}';
@@ -135,9 +292,10 @@ class _StatusCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final color = switch (tenancy.status) {
       TenancyStatus.upcoming => Colors.orange,
-      TenancyStatus.active => Colors.green,
+      TenancyStatus.active => tenancy.noticeGiven ? Colors.deepOrange : Colors.green,
       TenancyStatus.completed => Colors.blue,
       TenancyStatus.terminated => Colors.red,
+      TenancyStatus.renewed => Colors.blueGrey,
     };
     return Card(
       color: color.withAlpha(20),
@@ -411,4 +569,251 @@ class _RentTab extends StatelessWidget {
   }
 
   String _fmt(DateTime d) => '${d.day}/${d.month}/${d.year}';
+}
+
+/// Post-tenancy turnover: inspection (scheduled by process-tenancy-
+/// expiry or manually) and deposit settlement. Record-keeping only —
+/// no payment moves through the app for the deposit, same as rent.
+class _MoveOutTab extends StatelessWidget {
+  final TenancyModel tenancy;
+  final TenancyState tenancyState;
+  final bool isLandlord;
+  const _MoveOutTab({required this.tenancy, required this.tenancyState, required this.isLandlord});
+
+  @override
+  Widget build(BuildContext context) {
+    final userId = context.watch<UserState>().currentUser?.id;
+    final deposits = (isLandlord
+            ? tenancyState.landlordDepositTransactionsFor(userId)
+            : tenancyState.myDepositTransactionsFor(userId))
+        .where((d) => d.tenancyId == tenancy.id)
+        .toList();
+    final deposit = deposits.isNotEmpty ? deposits.first : null;
+    final canWindDown = tenancy.isActive || tenancy.isCompleted || tenancy.isTerminated;
+
+    if (!canWindDown) {
+      return Center(
+        child: Text('Move-out details appear once the tenancy ends.', style: TextStyle(color: Colors.grey[600])),
+      );
+    }
+
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        const Text('Inspection', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+        const SizedBox(height: 8),
+        StreamBuilder<List<InspectionModel>>(
+          stream: DataService().getInspectionsForTenancy(tenancy.id),
+          builder: (context, snapshot) {
+            final inspections = snapshot.data ?? [];
+            if (inspections.isEmpty) {
+              return Card(
+                child: ListTile(
+                  leading: const Icon(Icons.fact_check_outlined),
+                  title: const Text('No inspection scheduled yet'),
+                  trailing: isLandlord && !tenancy.isActive
+                      ? TextButton(
+                          onPressed: () => tenancyState.scheduleInspection(
+                            propertyId: tenancy.propertyId,
+                            tenancyId: tenancy.id,
+                            landlordId: tenancy.landlordId,
+                            scheduledDate: DateTime.now().add(const Duration(days: 3)),
+                          ),
+                          child: const Text('Schedule'),
+                        )
+                      : null,
+                ),
+              );
+            }
+            final inspection = inspections.first;
+            return Card(
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          inspection.isCompleted ? Icons.check_circle : Icons.schedule,
+                          color: inspection.isCompleted ? Colors.green : Colors.orange,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(inspection.isCompleted ? 'Inspection completed' : 'Inspection scheduled'),
+                      ],
+                    ),
+                    if (inspection.isCompleted) ...[
+                      const SizedBox(height: 8),
+                      Text('Condition: ${inspection.conditionAfter ?? '-'}', style: const TextStyle(fontSize: 13)),
+                      Text(
+                        inspection.hasDamage
+                            ? 'Damages found: TZS ${inspection.damageCost.toStringAsFixed(0)}'
+                            : 'No damages found',
+                        style: TextStyle(fontSize: 13, color: inspection.hasDamage ? Colors.red : Colors.green),
+                      ),
+                    ] else if (isLandlord)
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton(
+                          onPressed: () => _showCompleteInspectionDialog(context, inspection),
+                          child: const Text('Complete Inspection'),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
+        const SizedBox(height: 24),
+        const Text('Deposit Settlement', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+        const SizedBox(height: 8),
+        if (deposit == null)
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.account_balance_wallet_outlined),
+              title: Text('Deposit held: TZS ${tenancy.depositAmount.toStringAsFixed(0)}'),
+              subtitle: const Text('Not yet settled'),
+              trailing: isLandlord && !tenancy.isActive
+                  ? TextButton(
+                      onPressed: () => tenancyState.openDepositTransaction(
+                        tenancyId: tenancy.id,
+                        tenantId: tenancy.tenantId,
+                        landlordId: tenancy.landlordId,
+                        amount: tenancy.depositAmount,
+                      ),
+                      child: const Text('Open Settlement'),
+                    )
+                  : null,
+            ),
+          )
+        else
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Amount held: TZS ${deposit.amount.toStringAsFixed(0)}'),
+                  if (deposit.isSettled) ...[
+                    Text('Deductions: TZS ${deposit.deductions.toStringAsFixed(0)}', style: const TextStyle(color: Colors.red)),
+                    Text('Refund: TZS ${deposit.refundAmount.toStringAsFixed(0)}', style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
+                    if (deposit.notes != null && deposit.notes!.isNotEmpty) Text(deposit.notes!, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+                  ] else if (isLandlord)
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton(
+                        onPressed: () => _showSettleDepositDialog(context, deposit),
+                        child: const Text('Settle Deposit'),
+                      ),
+                    )
+                  else
+                    const Text('Awaiting landlord settlement.', style: TextStyle(color: Colors.grey)),
+                ],
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  void _showCompleteInspectionDialog(BuildContext context, InspectionModel inspection) {
+    final conditionController = TextEditingController();
+    final damageController = TextEditingController(text: '0');
+    final notesController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Complete Inspection'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: conditionController,
+              decoration: const InputDecoration(labelText: 'Condition found', border: OutlineInputBorder()),
+              maxLines: 2,
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: damageController,
+              decoration: const InputDecoration(labelText: 'Damage cost (TZS, 0 if none)', border: OutlineInputBorder()),
+              keyboardType: TextInputType.number,
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: notesController,
+              decoration: const InputDecoration(labelText: 'Notes (optional)', border: OutlineInputBorder()),
+              maxLines: 2,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () async {
+              final messenger = ScaffoldMessenger.of(context);
+              Navigator.pop(dialogContext);
+              try {
+                await tenancyState.completeInspection(
+                  inspection.id,
+                  conditionAfter: conditionController.text,
+                  damageCost: double.tryParse(damageController.text) ?? 0,
+                  notes: notesController.text.isEmpty ? null : notesController.text,
+                );
+              } catch (e) {
+                messenger.showSnackBar(SnackBar(content: Text('Failed: $e'), backgroundColor: Colors.red));
+              }
+            },
+            child: const Text('Submit'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showSettleDepositDialog(BuildContext context, DepositTransactionModel deposit) {
+    final deductionsController = TextEditingController(text: '0');
+    final notesController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Settle Deposit'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Amount held: TZS ${deposit.amount.toStringAsFixed(0)}'),
+            const SizedBox(height: 12),
+            TextField(
+              controller: deductionsController,
+              decoration: const InputDecoration(labelText: 'Deductions (TZS)', border: OutlineInputBorder()),
+              keyboardType: TextInputType.number,
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: notesController,
+              decoration: const InputDecoration(labelText: 'Notes (optional)', border: OutlineInputBorder()),
+              maxLines: 2,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () {
+              final deductions = double.tryParse(deductionsController.text) ?? 0;
+              tenancyState.settleDeposit(
+                deposit.id,
+                amount: deposit.amount,
+                deductions: deductions,
+                notes: notesController.text.isEmpty ? null : notesController.text,
+              );
+              Navigator.pop(dialogContext);
+            },
+            child: const Text('Settle'),
+          ),
+        ],
+      ),
+    );
+  }
 }

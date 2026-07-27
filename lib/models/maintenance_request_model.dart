@@ -8,10 +8,12 @@ class MaintenanceRequestModel {
   final String landlordId;
   final String propertyId;
   final String propertyTitle;
+  final String? tenancyId;
   final MaintenanceCategory category;
   final String description;
   final MaintenanceStatus status;
   final List<String> photos;
+  final double cost;
   final DateTime createdAt;
   final DateTime? resolvedAt;
   final String? resolutionNotes;
@@ -23,10 +25,12 @@ class MaintenanceRequestModel {
     required this.landlordId,
     required this.propertyId,
     required this.propertyTitle,
+    this.tenancyId,
     required this.category,
     required this.description,
     this.status = MaintenanceStatus.open,
     this.photos = const [],
+    this.cost = 0,
     required this.createdAt,
     this.resolvedAt,
     this.resolutionNotes,
@@ -38,10 +42,12 @@ class MaintenanceRequestModel {
     'landlordId': landlordId,
     'propertyId': propertyId,
     'propertyTitle': propertyTitle,
+    'tenancyId': tenancyId,
     'category': category.name,
     'description': description,
     'status': status.name,
     'photos': photos,
+    'cost': cost,
     'createdAt': createdAt.toIso8601String(),
     'resolvedAt': resolvedAt?.toIso8601String(),
     'resolutionNotes': resolutionNotes,
@@ -55,6 +61,7 @@ class MaintenanceRequestModel {
         landlordId: json['landlordId'] ?? '',
         propertyId: json['propertyId'] ?? '',
         propertyTitle: json['propertyTitle'] ?? '',
+        tenancyId: json['tenancyId'],
         category: MaintenanceCategory.values.firstWhere(
           (e) => e.name == json['category'],
           orElse: () => MaintenanceCategory.general,
@@ -65,6 +72,7 @@ class MaintenanceRequestModel {
           orElse: () => MaintenanceStatus.open,
         ),
         photos: (json['photos'] as List<dynamic>?)?.cast<String>() ?? [],
+        cost: (json['cost'] as num?)?.toDouble() ?? 0,
         createdAt: DateTime.parse(json['createdAt']),
         resolvedAt: json['resolvedAt'] != null ? DateTime.parse(json['resolvedAt']) : null,
         resolutionNotes: json['resolutionNotes'],
@@ -74,6 +82,7 @@ class MaintenanceRequestModel {
     MaintenanceStatus? status,
     DateTime? resolvedAt,
     String? resolutionNotes,
+    double? cost,
   }) => MaintenanceRequestModel(
     id: id,
     tenantId: tenantId,
@@ -81,10 +90,12 @@ class MaintenanceRequestModel {
     landlordId: landlordId,
     propertyId: propertyId,
     propertyTitle: propertyTitle,
+    tenancyId: tenancyId,
     category: category,
     description: description,
     status: status ?? this.status,
     photos: photos,
+    cost: cost ?? this.cost,
     createdAt: createdAt,
     resolvedAt: resolvedAt ?? this.resolvedAt,
     resolutionNotes: resolutionNotes ?? this.resolutionNotes,

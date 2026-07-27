@@ -20,6 +20,9 @@ class MyTenanciesScreen extends StatelessWidget {
         ? tenancyState.landlordTenanciesFor(userId)
         : tenancyState.myTenanciesFor(userId);
 
+    final activeTenancies = !isLandlord ? tenancies.where((t) => t.isActive).toList() : const <TenancyModel>[];
+    final currentTenancy = activeTenancies.isNotEmpty ? activeTenancies.first : null;
+
     return Scaffold(
       appBar: AppBar(
         title: Text(isLandlord ? 'Active Tenancies' : 'My Tenancies'),
@@ -30,9 +33,69 @@ class MyTenanciesScreen extends StatelessWidget {
           ? _EmptyState(isLandlord: isLandlord)
           : ListView.builder(
               padding: const EdgeInsets.all(12),
-              itemCount: tenancies.length,
-              itemBuilder: (context, index) => _TenancyCard(tenancy: tenancies[index]),
+              itemCount: tenancies.length + (currentTenancy != null ? 1 : 0),
+              itemBuilder: (context, index) {
+                if (currentTenancy != null) {
+                  if (index == 0) return _CurrentTenancySummary(tenancy: currentTenancy);
+                  return _TenancyCard(tenancy: tenancies[index - 1]);
+                }
+                return _TenancyCard(tenancy: tenancies[index]);
+              },
             ),
+    );
+  }
+}
+
+class _CurrentTenancySummary extends StatelessWidget {
+  final TenancyModel tenancy;
+  const _CurrentTenancySummary({required this.tenancy});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      color: AppTheme.primary.withAlpha(15),
+      margin: const EdgeInsets.only(bottom: 16),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => TenancyDetailScreen(tenancyId: tenancy.id)),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.home, color: AppTheme.primary),
+                  const SizedBox(width: 8),
+                  const Text('Current Tenancy', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  const Spacer(),
+                  if (tenancy.noticeGiven)
+                    const Chip(
+                      label: Text('Notice Given', style: TextStyle(fontSize: 11, color: Colors.white)),
+                      backgroundColor: Colors.deepOrange,
+                      visualDensity: VisualDensity.compact,
+                    )
+                  else if (tenancy.isExpiringSoon)
+                    const Chip(
+                      label: Text('Expiring Soon', style: TextStyle(fontSize: 11, color: Colors.white)),
+                      backgroundColor: Colors.orange,
+                      visualDensity: VisualDensity.compact,
+                    ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(tenancy.propertyTitle, style: const TextStyle(fontSize: 14)),
+              Text(
+                'TZS ${tenancy.rentAmount.toStringAsFixed(0)}/mo · ends ${tenancy.effectiveEndDate.day}/${tenancy.effectiveEndDate.month}/${tenancy.effectiveEndDate.year}',
+                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
@@ -75,9 +138,10 @@ class _TenancyCard extends StatelessWidget {
     final theme = Theme.of(context);
     final statusColor = switch (tenancy.status) {
       TenancyStatus.upcoming => Colors.orange,
-      TenancyStatus.active => Colors.green,
+      TenancyStatus.active => tenancy.noticeGiven ? Colors.deepOrange : Colors.green,
       TenancyStatus.completed => Colors.blue,
       TenancyStatus.terminated => Colors.red,
+      TenancyStatus.renewed => Colors.blueGrey,
     };
 
     return Card(

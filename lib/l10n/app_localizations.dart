@@ -1616,6 +1616,120 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Couldn\'t upload photo. Try again.'**
   String get photoUploadFailed;
+
+  /// No description provided for @markAsRented.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark as rented'**
+  String get markAsRented;
+
+  /// No description provided for @selectSeekerWhoRented.
+  ///
+  /// In en, this message translates to:
+  /// **'Who rented this listing?'**
+  String get selectSeekerWhoRented;
+
+  /// No description provided for @noEligibleSeekers.
+  ///
+  /// In en, this message translates to:
+  /// **'No eligible seekers yet. Seekers appear here after they pay the agency fee or apply.'**
+  String get noEligibleSeekers;
+
+  /// No description provided for @paidFeeChip.
+  ///
+  /// In en, this message translates to:
+  /// **'Paid fee'**
+  String get paidFeeChip;
+
+  /// No description provided for @appliedChip.
+  ///
+  /// In en, this message translates to:
+  /// **'Applied'**
+  String get appliedChip;
+
+  /// No description provided for @awaitingConfirmationFrom.
+  ///
+  /// In en, this message translates to:
+  /// **'Awaiting confirmation from {name}'**
+  String awaitingConfirmationFrom(String name);
+
+  /// No description provided for @cancelMark.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel mark'**
+  String get cancelMark;
+
+  /// No description provided for @markedAwaitingConfirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'Marked as rented — awaiting the seeker\'s confirmation.'**
+  String get markedAwaitingConfirmation;
+
+  /// No description provided for @markCancelledSnack.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark cancelled.'**
+  String get markCancelledSnack;
+
+  /// No description provided for @rentalConfirmationsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Rental Confirmations'**
+  String get rentalConfirmationsTitle;
+
+  /// No description provided for @noPendingRentalConfirmations.
+  ///
+  /// In en, this message translates to:
+  /// **'No pending rental confirmations.'**
+  String get noPendingRentalConfirmations;
+
+  /// No description provided for @markedByLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Marked by {name} ({role})'**
+  String markedByLine(String name, String role);
+
+  /// No description provided for @confirmIRented.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm I rented it'**
+  String get confirmIRented;
+
+  /// No description provided for @notMe.
+  ///
+  /// In en, this message translates to:
+  /// **'Not me'**
+  String get notMe;
+
+  /// No description provided for @disputeRentalTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Not your rental?'**
+  String get disputeRentalTitle;
+
+  /// No description provided for @disputeRentalBody.
+  ///
+  /// In en, this message translates to:
+  /// **'We\'ll tell {name} you did not rent this listing. The listing stays available.'**
+  String disputeRentalBody(String name);
+
+  /// No description provided for @rentalConfirmedSnack.
+  ///
+  /// In en, this message translates to:
+  /// **'Rental confirmed — the listing is off the market.'**
+  String get rentalConfirmedSnack;
+
+  /// No description provided for @rentalDisputedSnack.
+  ///
+  /// In en, this message translates to:
+  /// **'Disputed — the listing stays available.'**
+  String get rentalDisputedSnack;
+
+  /// No description provided for @actionFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Action failed. Please try again.'**
+  String get actionFailed;
 }
 
 class _AppLocalizationsDelegate

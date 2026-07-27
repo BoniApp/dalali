@@ -1,11 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:dalali/config/app_theme.dart';
+import 'package:dalali/l10n/app_localizations.dart';
 import 'package:dalali/models/property_model.dart';
+import 'package:dalali/models/maintenance_request_model.dart';
 import 'package:dalali/providers/property_state.dart';
+import 'package:dalali/providers/tenancy_state.dart';
+import 'package:dalali/providers/user_state.dart';
 import 'package:dalali/utils/helpers.dart';
 import 'package:dalali/screens/shared/property_detail_screen.dart';
 import 'package:dalali/screens/landlord/add_property_screen.dart';
 import 'package:dalali/screens/landlord/edit_property_screen.dart';
+import 'package:dalali/screens/landlord/property_timeline_screen.dart';
+import 'package:dalali/screens/shared/mark_rented_sheet.dart';
 import 'package:dalali/widgets/notification_bell.dart';
 import 'package:provider/provider.dart';
 
@@ -18,6 +24,19 @@ class LandlordDashboardScreen extends StatelessWidget {
     final totalViews = properties.fold<int>(0, (sum, p) => sum + p.viewCount);
     final totalInquiries = properties.fold<int>(0, (sum, p) => sum + p.inquiryCount);
     final activeListings = properties.where((p) => p.status == PropertyStatus.available).length;
+
+    final userId = context.watch<UserState>().currentUser?.id;
+    final tenancyState = context.watch<TenancyState>();
+    final landlordTenancies = tenancyState.landlordTenanciesFor(userId);
+    final activeTenants = landlordTenancies.where((t) => t.isActive).length;
+    final expiringSoon = landlordTenancies.where((t) => t.isExpiringSoon).length;
+    final vacantProperties = properties
+        .where((p) => p.status == PropertyStatus.unlisted || p.status == PropertyStatus.available)
+        .length;
+    final openMaintenance = tenancyState
+        .landlordMaintenanceRequestsFor(userId)
+        .where((r) => r.status != MaintenanceStatus.resolved)
+        .length;
 
     return Scaffold(
       appBar: AppBar(
@@ -65,6 +84,24 @@ class LandlordDashboardScreen extends StatelessWidget {
                     value: properties.isEmpty ? '0%' : '${((properties.where((p) => p.status == PropertyStatus.occupied).length / properties.length) * 100).toInt()}%',
                     color: Colors.purple,
                   ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              const Text('Lifecycle Overview', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  _StatCard(icon: Icons.people, label: 'Active Tenants', value: '$activeTenants', color: Colors.teal),
+                  const SizedBox(width: 12),
+                  _StatCard(icon: Icons.hourglass_bottom, label: 'Expiring ≤60d', value: '$expiringSoon', color: Colors.deepOrange),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  _StatCard(icon: Icons.meeting_room, label: 'Vacant Properties', value: '$vacantProperties', color: Colors.blueGrey),
+                  const SizedBox(width: 12),
+                  _StatCard(icon: Icons.build, label: 'Open Maintenance', value: '$openMaintenance', color: Colors.red),
                 ],
               ),
               const SizedBox(height: 24),
@@ -159,6 +196,26 @@ class LandlordDashboardScreen extends StatelessWidget {
                                     padding: EdgeInsets.zero,
                                     constraints: const BoxConstraints(),
                                   ),
+                                  IconButton(
+                                    icon: const Icon(Icons.timeline, size: 18, color: Colors.blueGrey),
+                                    onPressed: () => Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => PropertyTimelineScreen(propertyId: p.id, propertyTitle: p.title),
+                                      ),
+                                    ),
+                                    tooltip: 'Timeline',
+                                    padding: EdgeInsets.zero,
+                                    constraints: const BoxConstraints(),
+                                  ),
+                                  if (p.status == PropertyStatus.available)
+                                    IconButton(
+                                      icon: const Icon(Icons.handshake, size: 18, color: AppTheme.action),
+                                      onPressed: () => MarkRentedSheet.show(context, p),
+                                      tooltip: AppLocalizations.of(context)!.markAsRented,
+                                      padding: EdgeInsets.zero,
+                                      constraints: const BoxConstraints(),
+                                    ),
                                   if (p.status == PropertyStatus.unlisted)
                                     IconButton(
                                       icon: const Icon(Icons.replay, size: 18, color: Colors.green),

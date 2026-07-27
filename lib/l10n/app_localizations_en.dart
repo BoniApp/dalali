@@ -807,4 +807,70 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get photoUploadFailed => 'Couldn\'t upload photo. Try again.';
+
+  @override
+  String get markAsRented => 'Mark as rented';
+
+  @override
+  String get selectSeekerWhoRented => 'Who rented this listing?';
+
+  @override
+  String get noEligibleSeekers =>
+      'No eligible seekers yet. Seekers appear here after they pay the agency fee or apply.';
+
+  @override
+  String get paidFeeChip => 'Paid fee';
+
+  @override
+  String get appliedChip => 'Applied';
+
+  @override
+  String awaitingConfirmationFrom(String name) {
+    return 'Awaiting confirmation from $name';
+  }
+
+  @override
+  String get cancelMark => 'Cancel mark';
+
+  @override
+  String get markedAwaitingConfirmation =>
+      'Marked as rented — awaiting the seeker\'s confirmation.';
+
+  @override
+  String get markCancelledSnack => 'Mark cancelled.';
+
+  @override
+  String get rentalConfirmationsTitle => 'Rental Confirmations';
+
+  @override
+  String get noPendingRentalConfirmations => 'No pending rental confirmations.';
+
+  @override
+  String markedByLine(String name, String role) {
+    return 'Marked by $name ($role)';
+  }
+
+  @override
+  String get confirmIRented => 'Confirm I rented it';
+
+  @override
+  String get notMe => 'Not me';
+
+  @override
+  String get disputeRentalTitle => 'Not your rental?';
+
+  @override
+  String disputeRentalBody(String name) {
+    return 'We\'ll tell $name you did not rent this listing. The listing stays available.';
+  }
+
+  @override
+  String get rentalConfirmedSnack =>
+      'Rental confirmed — the listing is off the market.';
+
+  @override
+  String get rentalDisputedSnack => 'Disputed — the listing stays available.';
+
+  @override
+  String get actionFailed => 'Action failed. Please try again.';
 }
