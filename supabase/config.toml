@@ -9,3 +9,13 @@ verify_jwt = false
 # payment page — no auth headers exist on a redirect.
 [functions.dpo-callback]
 verify_jwt = false
+
+# Scheduled tenancy jobs are invoked by the scheduler with
+# `Authorization: Bearer <CRON_SECRET>` — a shared secret, not a JWT.
+# They enforce CRON_SECRET themselves (same shape as
+# scheduled-settlement), so gateway JWT verification stays off.
+[functions.process-tenancy-expiry]
+verify_jwt = false
+
+[functions.send-tenancy-expiry-reminders]
+verify_jwt = false
