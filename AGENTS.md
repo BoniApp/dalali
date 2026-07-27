@@ -50,7 +50,7 @@ lib/
   utils/helpers.dart   # Formatting helpers (TZS currency, dates)
   l10n/                # ARB files (app_en.arb, app_sw.arb) + generated localizations
 supabase/
-  migrations/          # Numbered SQL migrations (001–030; note there are two 001_* and two 002_* files)
+  migrations/          # Numbered SQL migrations (001–032, sequentially numbered)
   functions/           # Deno/TypeScript Edge Functions (payment webhooks, withdrawals, KYC, influencer commissions, ...)
   DEPLOYMENT_GUIDE.md  # How to run migrations & deploy edge functions (current, use this one)
 test/                  # flutter_test widget + unit tests (widget_test.dart, influencer_models_test.dart)
@@ -155,7 +155,7 @@ Deploy per `supabase/DEPLOYMENT_GUIDE.md` (Supabase CLI: `supabase db push`, `su
 
 ### Database migrations
 
-SQL migrations in `supabase/migrations/` are applied in filename order via `supabase db push` or `psql -f`. **Caution**: there are two files numbered `001_*` and two numbered `002_*` — check actual file contents before adding a new migration; use the next free number (`031_...`).
+SQL migrations in `supabase/migrations/` are applied in filename order via `supabase db push` or `psql -f`; use the next free number (`033_...`). Note: `031_initial_schema.sql` and `032_wallet_rpcs_and_withdrawals.sql` are the original `001_`/`002_` duplicates renumbered (2026-07) so the CLI can track them — their contents predate 003–026 and were repair-marked applied, never re-run; treat them as historical, not as deploy order.
 
 ## Testing Instructions
 

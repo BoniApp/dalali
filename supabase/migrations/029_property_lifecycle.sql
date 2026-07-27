@@ -353,11 +353,14 @@ CREATE TRIGGER trg_deposit_transaction_guard
 -- ─── 6. NOTIFICATIONS: new lifecycle event types ────────────────
 
 ALTER TABLE notifications DROP CONSTRAINT IF EXISTS notifications_type_check;
+-- Keep 'message'/'broadcast' (017) in the list — production rows exist
+-- with those types; dropping them makes this constraint un-creatable.
 ALTER TABLE notifications ADD CONSTRAINT notifications_type_check
   CHECK (type IN (
     'inquiry','appointment','propertyApproved','propertyRejected',
     'tenancyApplication','tenancyApproved','maintenanceUpdate','rentDue',
     'paymentReceived','withdrawalProcessed','system',
+    'message','broadcast',
     'tenancyExpiring','noticeGiven','renewalRequested',
     'inspectionScheduled','depositSettled'
   ));
