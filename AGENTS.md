@@ -50,7 +50,7 @@ lib/
   utils/helpers.dart   # Formatting helpers (TZS currency, dates)
   l10n/                # ARB files (app_en.arb, app_sw.arb) + generated localizations
 supabase/
-  migrations/          # Numbered SQL migrations (001–033, sequentially numbered)
+  migrations/          # Numbered SQL migrations (001–034, sequentially numbered)
   functions/           # Deno/TypeScript Edge Functions (payment webhooks, withdrawals, KYC, influencer commissions, ...)
   DEPLOYMENT_GUIDE.md  # How to run migrations & deploy edge functions (current, use this one)
 test/                  # flutter_test widget + unit tests (widget_test.dart, influencer_models_test.dart)
@@ -131,7 +131,7 @@ assets/images/         # Bundled image assets
 ## Scheduled Tenancy Jobs (migration 033)
 
 - `033_cron_tenancy_jobs.sql` enables `pg_cron` + `pg_net` and schedules the two 029 cron edge functions daily (UTC): `process-tenancy-expiry` (03:17) closes overdue active tenancies (→ `completed`, property `unlisted` + inspection row), `send-tenancy-expiry-reminders` (06:43) reminds both parties ≤60 days before lease end. Both functions are deployed `--no-verify-jwt` (pinned in `supabase/config.toml`) and self-gate on `Authorization: Bearer <CRON_SECRET>`.
-- Calls go through `public.invoke_edge_function(text)` — EXECUTE-revoked from `PUBLIC`/`anon`/`authenticated` (pg_cron-only plumbing, not a client RPC; keep the REVOKE if re-created). The bearer is read from the **`app.cron_secret` database GUC**, set manually (`ALTER DATABASE postgres SET app.cron_secret = '...'`) so the secret never enters git; jobs log a warning and skip until it is set.
+- Calls go through `public.invoke_edge_function(text)` — EXECUTE-revoked from `PUBLIC`/`anon`/`authenticated` (pg_cron-only plumbing, not a client RPC; keep the REVOKE if re-created). The bearer lives in **`private.app_settings`** (034 — a non-PostgREST-exposed schema; the `app.cron_secret` GUC approach fails on hosted Supabase's PG15+ parameter privileges), inserted out-of-band so the secret never enters git; jobs log a warning and skip until the `cron_secret` row exists.
 - `CRON_SECRET` also gates `scheduled-settlement` (same pattern), which has **no pg_cron job** — if it isn't invoked elsewhere, it needs the same treatment.
 
 ## Build & Test Commands
@@ -161,7 +161,7 @@ Deploy per `supabase/DEPLOYMENT_GUIDE.md` (Supabase CLI: `supabase db push`, `su
 
 ### Database migrations
 
-SQL migrations in `supabase/migrations/` are applied in filename order via `supabase db push` or `psql -f`; use the next free number (`034_...`). Note: `031_initial_schema.sql` and `032_wallet_rpcs_and_withdrawals.sql` are the original `001_`/`002_` duplicates renumbered (2026-07) so the CLI can track them — their contents predate 003–026 and were repair-marked applied, never re-run; treat them as historical, not as deploy order.
+SQL migrations in `supabase/migrations/` are applied in filename order via `supabase db push` or `psql -f`; use the next free number (`035_...`). Note: `031_initial_schema.sql` and `032_wallet_rpcs_and_withdrawals.sql` are the original `001_`/`002_` duplicates renumbered (2026-07) so the CLI can track them — their contents predate 003–026 and were repair-marked applied, never re-run; treat them as historical, not as deploy order.
 
 ## Testing Instructions
 
