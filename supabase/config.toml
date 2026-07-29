@@ -19,3 +19,10 @@ verify_jwt = false
 
 [functions.send-tenancy-expiry-reminders]
 verify_jwt = false
+
+# scheduled-settlement is invoked by pg_cron (migration 038) with
+# `Authorization: Bearer <CRON_SECRET>` — a shared secret, not a JWT.
+# The function enforces CRON_SECRET itself (and fails closed when the
+# secret is unset), so gateway JWT verification stays off.
+[functions.scheduled-settlement]
+verify_jwt = false

@@ -9,10 +9,13 @@
 ///   → { paymentUrl, token, paymentId }
 ///
 /// Idempotent: an open (pending) payment for the same tenant+property
-/// returns its existing token; a paid one returns 409.
+/// returns its existing token while the token is still fresh (DPO
+/// tokens live 60 minutes — PTL=60); a stale attempt is expired and
+/// replaced with a new one. A paid payment returns 409.
 ///
-/// Secrets: DPO_COMPANY_TOKEN (never in client code), DPO_SERVICE_TYPE
-/// (default 85325 — DPO test service).
+/// Secrets: DPO_COMPANY_TOKEN and DPO_SERVICE_TYPE — both are
+/// REQUIRED (fail closed; the previous '85325' test-service default
+/// would silently send production traffic to the DPO test endpoint).
 ///
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
@@ -26,6 +29,10 @@ import {
 
 /// Fixed agency fee — mirrors AppSettings.agencyFee on the client.
 const AGENCY_FEE_TZS = 20000
+
+/// DPO hosted-page tokens expire after PTL=60 minutes; only reuse a
+/// pending attempt younger than this.
+const TOKEN_REUSE_WINDOW_MS = 55 * 60 * 1000
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -45,8 +52,8 @@ serve(async (req) => {
 
   try {
     const companyToken = Deno.env.get('DPO_COMPANY_TOKEN')
-    if (!companyToken) return json({ error: 'DPO is not configured' }, 500)
-    const serviceType = Deno.env.get('DPO_SERVICE_TYPE') ?? '85325'
+    const serviceType = Deno.env.get('DPO_SERVICE_TYPE')
+    if (!companyToken || !serviceType) return json({ error: 'DPO is not configured' }, 500)
 
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -88,12 +95,18 @@ serve(async (req) => {
       return json({ error: 'Agency fee already paid for this property' }, 409)
     }
     if (existing?.status === 'pending' && existing.dpo_token) {
-      return json({
-        paymentUrl: `${DPO_PAY_PAGE}${existing.dpo_token}`,
-        token: existing.dpo_token,
-        paymentId: existing.id,
-        reused: true,
-      })
+      const ageMs = Date.now() - new Date(existing.created_at).getTime()
+      if (ageMs < TOKEN_REUSE_WINDOW_MS) {
+        return json({
+          paymentUrl: `${DPO_PAY_PAGE}${existing.dpo_token}`,
+          token: existing.dpo_token,
+          paymentId: existing.id,
+          reused: true,
+        })
+      }
+      // Token is stale (past DPO's lifetime) — expire the attempt and
+      // fall through to mint a fresh one.
+      await supabase.from('payments').update({ status: 'expired' }).eq('id', existing.id)
     }
 
     // ─── Create the payment row ───────────────────────────────
@@ -111,7 +124,8 @@ serve(async (req) => {
       .select()
       .single()
     if (insertError || !payment) {
-      return json({ error: `Could not create payment: ${insertError?.message}` }, 500)
+      console.error('create-dpo-token payment insert failed:', insertError)
+      return json({ error: 'Could not create payment' }, 500)
     }
 
     // ─── DPO CreateToken ──────────────────────────────────────
@@ -134,13 +148,16 @@ serve(async (req) => {
       method: 'POST',
       headers: { 'Content-Type': 'application/xml' },
       body: xml,
+      // Fail fast on a hung DPO endpoint instead of burning wall clock.
+      signal: AbortSignal.timeout(20000),
     })
     const dpoBody = await dpoRes.text()
     const parsed = parseCreateTokenResponse(dpoBody)
 
     if (!parsed.ok) {
       await supabase.from('payments').update({ status: 'failed' }).eq('id', payment.id)
-      return json({ error: `DPO CreateToken failed (${parsed.result}): ${parsed.explanation}` }, 502)
+      console.error(`DPO CreateToken failed (${parsed.result}): ${parsed.explanation}`)
+      return json({ error: 'Payment initiation failed — please try again' }, 502)
     }
 
     await supabase.from('payments').update({ dpo_token: parsed.transToken }).eq('id', payment.id)
@@ -151,6 +168,8 @@ serve(async (req) => {
       paymentId: payment.id,
     })
   } catch (error) {
-    return json({ error: error.message }, 500)
+    // Log details server-side; never leak internals to the client.
+    console.error('create-dpo-token error:', error)
+    return json({ error: 'Internal error' }, 500)
   }
 })

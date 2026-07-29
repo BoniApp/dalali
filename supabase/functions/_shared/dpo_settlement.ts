@@ -27,6 +27,9 @@ export const defaultPoster: XmlPoster = async (url, xml) => {
     method: "POST",
     headers: { "Content-Type": "application/xml" },
     body: xml,
+    // A hung DPO endpoint must not burn the function's wall clock —
+    // fail fast so the caller can retry.
+    signal: AbortSignal.timeout(20000),
   });
   return await res.text();
 };
@@ -79,6 +82,29 @@ export async function verifyAndSettle(
   if (status !== "paid") {
     await supabase.from("payments").update({ status }).eq("id", payment.id);
     return { status, payment: { ...payment, status }, verify };
+  }
+
+  // ─── Cross-check the settled transaction against the order ─────
+  // The callback/poll only carries the token; DPO's own VerifyToken
+  // response must agree with the payment row on amount AND currency.
+  // Never settle on a mismatch — fail the attempt instead.
+  if (verify.amount != null && Number(verify.amount) !== Number(payment.amount)) {
+    await supabase.from("payments").update({ status: "failed" }).eq("id", payment.id);
+    return {
+      status: "failed",
+      payment: { ...payment, status: "failed" },
+      verify,
+      note: `amount_mismatch: dpo=${verify.amount} expected=${payment.amount}`,
+    };
+  }
+  if (verify.currency != null && verify.currency !== payment.currency) {
+    await supabase.from("payments").update({ status: "failed" }).eq("id", payment.id);
+    return {
+      status: "failed",
+      payment: { ...payment, status: "failed" },
+      verify,
+      note: `currency_mismatch: dpo=${verify.currency} expected=${payment.currency}`,
+    };
   }
 
   // ─── 1-3. Mark paid, unlock access, ledger + wallet split ─────

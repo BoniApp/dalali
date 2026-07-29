@@ -87,6 +87,15 @@ class FcmService {
     }
   }
 
+  /// Clear this device's push token from the user profile.
+  ///
+  /// MUST be called while the session is still valid (i.e. BEFORE
+  /// `signOut()`) — after sign-out there is no JWT and the update is
+  /// rejected, leaving the device subscribed to the previous user's
+  /// pushes. `UserState.logout()` calls this first; the `signedOut`
+  /// listener below stays as a harmless best-effort fallback.
+  static Future<void> clearToken() => _clearToken();
+
   static Future<void> _clearToken() async {
     final uid = SupabaseService.currentUserId;
     if (uid == null) return;

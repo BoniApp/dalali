@@ -55,5 +55,22 @@
 	<array>
 		<string>remote-notification</string>
 	</array>
+	<!-- DPO payment return deep links (dalali://payment-*), handled by
+	     DeepLinkService.openPaymentLink. -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>tz.dalali.app</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>dalali</string>
+			</array>
+		</dict>
+	</array>
+	<!-- HTTPS-only app: skip the export-compliance question on every
+	     App Store Connect upload. -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 </dict>
 </plist>

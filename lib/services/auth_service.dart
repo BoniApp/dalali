@@ -85,28 +85,11 @@ class AuthService {
 
   // ─── Profile Updates ────────────────────────────────────────
 
-  Future<void> updatePhoneVerification(bool verified) async {
-    final uid = SupabaseService.currentUserId;
-    if (uid != null) {
-      await _db.from('users')
-          .update({'is_phone_verified': verified})
-          .eq('id', uid);
-    }
-  }
-
-  Future<void> submitVerification({
-    required String nationalId,
-    String? agentLicense,
-  }) async {
-    final uid = SupabaseService.currentUserId;
-    if (uid != null) {
-      await _db.from('users').update({
-        'national_id': nationalId,
-        'agent_license': agentLicense,
-        'verification_status': 'pending',
-      }).eq('id', uid);
-    }
-  }
+  // NOTE: verification_status / is_phone_verified are server-owned
+  // (process-kyc-verification, guarded by the 018 tamper trigger) —
+  // the client must never write them. The former submitVerification /
+  // updatePhoneVerification helpers were removed: they had no callers
+  // and would be rejected by the trigger anyway.
 
   // ─── User Data Fetching ─────────────────────────────────────
 

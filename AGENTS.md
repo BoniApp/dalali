@@ -50,7 +50,7 @@ lib/
   utils/helpers.dart   # Formatting helpers (TZS currency, dates)
   l10n/                # ARB files (app_en.arb, app_sw.arb) + generated localizations
 supabase/
-  migrations/          # Numbered SQL migrations (001–034, sequentially numbered)
+  migrations/          # Numbered SQL migrations (001–040, sequentially numbered)
   functions/           # Deno/TypeScript Edge Functions (payment webhooks, withdrawals, KYC, influencer commissions, ...)
   DEPLOYMENT_GUIDE.md  # How to run migrations & deploy edge functions (current, use this one)
 test/                  # flutter_test widget + unit tests (widget_test.dart, influencer_models_test.dart)
@@ -75,7 +75,6 @@ assets/images/         # Bundled image assets
 - **Design system**: `lib/config/app_theme.dart` defines the semantic colors (primary `#0D9488` teal, action `#F97316` orange CTA, text `#1F2937`, border `#E5E7EB`, dark bg `#0F172A`), the typography scale (32/24/18/16/14), button/input states, and 8pt spacing constants, per the DalaliApp UI Component Specification. `ThemeProvider` and `main_admin.dart` both consume `AppTheme.light()/dark()` — prefer `AppTheme` constants over hardcoded `Colors.teal`.
 - **Brand asset**: `assets/images/dalali_logo.png` (512×512) is the canonical logo; the Android/iOS/web launcher icons are generated from it.
 - **Linting**: `flutter_lints` defaults only (`analysis_options.yaml` has no custom rules). Keep code `flutter analyze`-clean.
-- **Dead code note**: `lib/services/mock_data_service.dart` exists but is not referenced elsewhere; verify before building on it.
 
 ## Influencer Partnership System (migration 011)
 
@@ -132,7 +131,17 @@ assets/images/         # Bundled image assets
 
 - `033_cron_tenancy_jobs.sql` enables `pg_cron` + `pg_net` and schedules the two 029 cron edge functions daily (UTC): `process-tenancy-expiry` (03:17) closes overdue active tenancies (→ `completed`, property `unlisted` + inspection row), `send-tenancy-expiry-reminders` (06:43) reminds both parties ≤60 days before lease end. Both functions are deployed `--no-verify-jwt` (pinned in `supabase/config.toml`) and self-gate on `Authorization: Bearer <CRON_SECRET>`.
 - Calls go through `public.invoke_edge_function(text)` — EXECUTE-revoked from `PUBLIC`/`anon`/`authenticated` (pg_cron-only plumbing, not a client RPC; keep the REVOKE if re-created). The bearer lives in **`private.app_settings`** (034 — a non-PostgREST-exposed schema; the `app.cron_secret` GUC approach fails on hosted Supabase's PG15+ parameter privileges), inserted out-of-band so the secret never enters git; jobs log a warning and skip until the `cron_secret` row exists.
-- `CRON_SECRET` also gates `scheduled-settlement` (same pattern), which has **no pg_cron job** — if it isn't invoked elsewhere, it needs the same treatment.
+- `CRON_SECRET` also gates `scheduled-settlement` (same pattern). Migration **038** added its pg_cron job (`scheduled-settlement-daily`, 02:29 UTC) — without it, agent/influencer earnings never moved pending → available. The function fails closed when `CRON_SECRET` is unset and is pinned `verify_jwt = false` in `supabase/config.toml`.
+
+## Security Hardening (migrations 035–039, 2026-07)
+
+- **035** — `prevent_user_verification_tamper` now also blocks client edits of `is_admin`, `admin_role`, `subscription_tier`, `total_reward_points` (closing the self-serve admin privilege escalation; wallets/payments/transactions writes were already server-only via RLS).
+- **036** — re-created every `NO ACTION` FK into `users(id)` with `ON DELETE SET NULL`/`CASCADE` so `delete-account` works for users with listings/inquiries/disputes; `transactions.payer_id/payee_id` intentionally stay NO ACTION (the function de-links them itself). Also adds `transactions_property_id_fkey` where missing (fresh-install parity).
+- **037** — RLS + server-only/admin-read policies on legacy `commissions`/`gateway_logs`/`refunds` (existence-guarded — the tables are absent on some projects).
+- **038** — `settlement_log` table + `scheduled-settlement` cron + EXECUTE revoked from `PUBLIC`/`anon`/`authenticated` on all wallet/settlement RPCs (mirror if new money RPCs are added).
+- **039** — scripted `storage.objects` policies for the `properties` bucket (public read; upload/update/delete scoped to the listing's landlord or creator by folder prefix). 005's manual dashboard steps are superseded.
+- `001_create_payment_tables.sql` was **repaired for fresh installs**: it bootstraps `users` (031's definition) and creates `wallets`/`transactions` directly in the 003 shape — previously a fresh `db push` failed immediately (users didn't exist until 031) and installed the wrong wallet schema. Don't reintroduce `text` FKs into `users(id)` there.
+- **040** — `transactions.property_id` and `disputes.property_id` re-created `ON DELETE SET NULL` (the last NO ACTION FKs blocking landlord account deletion; `transactions.payer_id/payee_id` stay NO ACTION by design — delete-account de-links them). 035–040 were pushed to production 2026-07-29 and verified live (privilege-escalation blocked, cron jobs active, storage policies present, RPC EXECUTE locked).
 
 ## Build & Test Commands
 
@@ -161,7 +170,7 @@ Deploy per `supabase/DEPLOYMENT_GUIDE.md` (Supabase CLI: `supabase db push`, `su
 
 ### Database migrations
 
-SQL migrations in `supabase/migrations/` are applied in filename order via `supabase db push` or `psql -f`; use the next free number (`035_...`). Note: `031_initial_schema.sql` and `032_wallet_rpcs_and_withdrawals.sql` are the original `001_`/`002_` duplicates renumbered (2026-07) so the CLI can track them — their contents predate 003–026 and were repair-marked applied, never re-run; treat them as historical, not as deploy order.
+SQL migrations in `supabase/migrations/` are applied in filename order via `supabase db push` or `psql -f`; use the next free number (`041_...`). Note: `031_initial_schema.sql` and `032_wallet_rpcs_and_withdrawals.sql` are the original `001_`/`002_` duplicates renumbered (2026-07) so the CLI can track them — their contents predate 003–026 and were repair-marked applied, never re-run; treat them as historical, not as deploy order. `001_create_payment_tables.sql` was repaired (2026-07-29) so fresh `db push` works: it bootstraps `users` and creates `wallets`/`transactions` in the 003 shape — keep those definitions aligned with 003.
 
 ## Testing Instructions
 

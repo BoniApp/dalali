@@ -5,6 +5,7 @@ import 'package:dalali/models/user_model.dart';
 import 'package:dalali/models/influencer/influencer_model.dart';
 import 'package:dalali/services/data_service.dart';
 import 'package:dalali/services/auth_service.dart';
+import 'package:dalali/services/fcm_service.dart';
 import 'package:dalali/services/influencer/influencer_service.dart';
 
 /// Who-am-I state: the signed-in user (or guest), their influencer
@@ -37,30 +38,42 @@ class UserState extends ChangeNotifier {
   UserState() {
     _authService.authStateChanges.listen((AuthState state) async {
       final user = state.session?.user;
-      if (user != null) {
-        final userDoc = await _data.getUserById(user.id);
-        if (userDoc != null) {
-          currentUser = userDoc;
-        } else {
-          currentUser = UserModel(
-            id: user.id,
-            fullName: user.userMetadata?['full_name'] ?? 'User',
-            email: user.email ?? '',
-            phone: user.phone ?? '',
-            role: UserRole.seeker,
-            createdAt: DateTime.now(),
-          );
-        }
-        _isGuestMode = false;
-        try {
-          influencerProfile = await InfluencerService().getInfluencerProfile(currentUser!.id);
-        } catch (e) {
-          debugPrint('getInfluencerProfile error: $e');
+      if (user == null) {
+        // Server-side sign-out (logout, token revocation/expiry,
+        // account deletion): drop all local session state so the app
+        // returns to the logged-out UI instead of running queries
+        // with a dead session.
+        if (currentUser != null || influencerProfile != null || _isGuestMode) {
+          _unsubscribeInfluencerProfile();
+          currentUser = null;
           influencerProfile = null;
+          _isGuestMode = false;
+          notifyListeners();
         }
-        _subscribeInfluencerProfile();
-        notifyListeners();
+        return;
       }
+      final userDoc = await _data.getUserById(user.id);
+      if (userDoc != null) {
+        currentUser = userDoc;
+      } else {
+        currentUser = UserModel(
+          id: user.id,
+          fullName: user.userMetadata?['full_name'] ?? 'User',
+          email: user.email ?? '',
+          phone: user.phone ?? '',
+          role: UserRole.seeker,
+          createdAt: DateTime.now(),
+        );
+      }
+      _isGuestMode = false;
+      try {
+        influencerProfile = await InfluencerService().getInfluencerProfile(currentUser!.id);
+      } catch (e) {
+        debugPrint('getInfluencerProfile error: $e');
+        influencerProfile = null;
+      }
+      _subscribeInfluencerProfile();
+      notifyListeners();
     });
   }
 
@@ -120,8 +133,12 @@ class UserState extends ChangeNotifier {
     notifyListeners();
   }
 
-  void logout() {
-    _authService.signOut();
+  Future<void> logout() async {
+    // Clear the device push token BEFORE sign-out, while the JWT is
+    // still valid — after signOut the users update is rejected and
+    // this device would keep receiving the previous user's pushes.
+    await FcmService.clearToken();
+    await _authService.signOut();
     _unsubscribeInfluencerProfile();
     currentUser = null;
     influencerProfile = null;

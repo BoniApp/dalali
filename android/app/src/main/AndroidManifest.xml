@@ -7,7 +7,7 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.VIBRATE" />
     <application
-        android:label="dalali"
+        android:label="Dalali"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
@@ -40,6 +40,16 @@
                 <category android:name="android.intent.category.DEFAULT"/>
                 <category android:name="android.intent.category.BROWSABLE"/>
                 <data android:scheme="https" android:host="dalaliapp.com" android:pathPrefix="/ref"/>
+            </intent-filter>
+            <!-- DPO payment return: dpo-callback redirects the browser to
+                 dalali://payment-success|payment-pending|payment-failed?token=…
+                 (handled by DeepLinkService.openPaymentLink). Without this
+                 filter the OS never delivers the redirect to the app. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="dalali"/>
             </intent-filter>
         </activity>
         <!-- Don't delete the meta-data below.
